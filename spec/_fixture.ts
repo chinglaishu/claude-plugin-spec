@@ -6,6 +6,10 @@ import type { APIRequestContext } from '@playwright/test'
 // is enough for the running server to serve the fresh board — no rebuild endpoint needed, and the
 // module-cache trap that forbids the SERVER importing the builder does not apply to a test process.
 import { build } from '../tools/build-board.mjs'
+// the production drawing pass's own two halves (phase 7): the behaviour parser the board reads a
+// requirement with, and the archetype kit tools/viz-derive.mjs draws a no-UI screen's sketch with
+import { parseBehavior } from '../tools/behavior.mjs'
+import { deriveSchematic } from '../tools/viz.mjs'
 
 // A drafted-but-unbuilt screen, created on demand. Two gate specs need one — a screen with a PRD
 // and a draft but no screenshot — to prove that gate A holds the bar until a build exists and gate
@@ -79,6 +83,33 @@ export function makeGreenfieldScreen (name: string) {
   writeFileSync(join(dir, 'prd.md'),
     `---\nscreen: ${name}\narea: Core\ntitle: ${name}\nroute: /${name}\n---\n\n` +
     '## R1 — A requirement, not yet drafted\n\nOne behaviour, waiting for a wireframe.\n')
+  return name
+}
+
+// A NO-UI SCREEN WITH A SKETCH (phase 7, 2026-09-04): a PRD with a real Given/When→Then and its
+// archetype drawing, and nothing else — no test, no screenshot, no harvest, so no replica anywhere.
+// This is the state every screen starts in, and the one this repo's own four screens have all grown
+// out of: each of them is harvested, so the borrowed-chrome case cannot be observed on any of them.
+//
+// The sketch is DERIVED by the production pass (tools/viz-derive.mjs deriveSchematic), never
+// authored here — a hand-written svg would prove the reader renders a fixture, not that it renders
+// what the kit draws. The behaviour is written to fit an archetype on purpose (open → reveal); it
+// throws rather than returning a screen with no drawing, so a kit change that stops fitting this
+// sentence fails loudly instead of quietly skipping the case.
+export function makeSketchScreen (name: string) {
+  const dir = join(SPEC, name)
+  mkdirSync(dir, { recursive: true })
+  const body = '## R1 — The plan opens in full\n\n' +
+    '- **Given** a saved plan\n' +
+    '- **When** you open its detail\n' +
+    '- **Then** the whole plan opens — every step it holds, each by name, in full — not a truncated summary\n'
+  writeFileSync(join(dir, 'prd.md'),
+    `---\nscreen: ${name}\narea: Core\ntitle: A screen with no UI yet\nroute: /${name}\n---\n\n` + body)
+  const drawn = deriveSchematic(parseBehavior(body))
+  if (!drawn) throw new Error(`no archetype fits ${name}'s behaviour — the fixture cannot make a sketch`)
+  mkdirSync(join(dir, 'viz'), { recursive: true })
+  writeFileSync(join(dir, 'viz', 'R1.svg'), drawn.svg + '\n')
+  build()
   return name
 }
 

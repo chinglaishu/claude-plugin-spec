@@ -7,3 +7,6 @@ e2e/.report.json
 # serve's spawn lock — runtime state, one per machine.
 .kg-serve.lock
 .superpowers/
+
+# macOS finder droppings — never a source file
+.DS_Store

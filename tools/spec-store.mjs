@@ -9,7 +9,7 @@ import { createHash } from 'node:crypto'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { aggregateCoverage, deriveReqState, deriveReqStatus, qualify } from './coverage.mjs'
-import { foldEvidence } from './evidence.mjs'
+import { foldEvidence, contentRect } from './evidence.mjs'
 import { parseBehavior } from './behavior.mjs'
 // pure: the beat-function metadata (GIVEN + BEATS) of a screen's steps.ts, read statically (Task 5)
 import { parseBeats } from './compose.mjs'
@@ -883,6 +883,61 @@ export function allScreens () {
     .filter(n => !n.startsWith('_') && statSync(join(SPEC, n)).isDirectory())
     .map(n => readScreen(n, results))
     .filter(Boolean)
+}
+
+// ── A SCREEN WITH NO UI BORROWS A SIBLING'S CHROME (phase 7, 2026-09-04) ─────────────────────────
+// A screen nobody has tested yet harvests nothing, so it has no replica and its Expected cell falls
+// back to the archetype SKETCH. Standing on bare paper that sketch says nothing about WHOSE product
+// it belongs to; standing inside a sibling screen's captured page — the app's own header and rail
+// around it — it reads as this product's screen, not built yet. Two halves, kept apart on purpose:
+// `chromeSource` is the disk read (which captured page a screen can lend), `chromeFrom` is the
+// CHOICE, and the choice is pure so it can be pinned (tools/chrome-from.test.mjs).
+//
+// Only a screen with a committed BEFORE page can lend one: a before moment rang nothing, so its
+// replica is the whole page — the chrome — rather than one component cropped out of it.
+export function chromeSource (name) {
+  const dir = join(SPEC, name, 'evidence')
+  let files = []
+  try { files = readdirSync(dir) } catch { return null }
+  // deterministic: the first Before page by name that still has the skeleton it was measured with —
+  // the skeleton is what says where the shell ends and a screen's own words begin
+  for (const f of files.filter(n => n.endsWith('.before.actual.html')).sort()) {
+    const layName = f.replace(/\.actual\.html$/, '.layout.json')
+    if (!files.includes(layName)) continue
+    let lay = null
+    try { lay = JSON.parse(readFileSync(join(dir, layName), 'utf8')) } catch { continue }
+    const content = contentRect(lay)
+    if (!content) continue
+    return {
+      replica: `spec/${name}/evidence/${f}`,
+      layout: `spec/${name}/evidence/${layName}`,
+      vw: Number(lay.w),
+      vh: Number(lay.h),
+      content
+    }
+  }
+  return null
+}
+// Has this screen any captured markup of its own? A screen that has is never given someone else's
+// chrome — it has its own picture, and two kinds of picture down one requirement is a comparison of
+// nothing (the same rule the storyline's `hasReplicas` states on the client).
+export function hasAnyReplica (name) {
+  try { return readdirSync(join(SPEC, name, 'evidence')).some(f => f.endsWith('.actual.html')) } catch { return false }
+}
+// PURE. Same area first — a screen's siblings look like it — then the screen with the most
+// requirements (the most-worked-on screen is the most representative page of the product), then by
+// name so a tie can never render two different boards from one tree. `screens` are screen objects
+// carrying the `chrome` chromeSource read for each; one with none cannot lend.
+export function chromeFrom (screen, screens) {
+  const name = screen && screen.name
+  if (!name) return null
+  const lenders = (screens || []).filter(s => s && s.name !== name && s.chrome && s.chrome.replica)
+  if (!lenders.length) return null
+  const sameArea = lenders.filter(s => s.area === (screen.area || 'Other'))
+  const pool = sameArea.length ? sameArea : lenders
+  const pick = pool.slice().sort((a, b) =>
+    ((b.reqs || []).length - (a.reqs || []).length) || String(a.name).localeCompare(String(b.name)))[0]
+  return pick ? { screen: pick.name, title: pick.title || pick.name, ...pick.chrome } : null
 }
 
 // THE CI GATE, DERIVED — never stored (the human, 2026-08-30: "user need to be clear that they can

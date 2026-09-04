@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { extractCheckReqBlocks, hasValueAssertion, lintSource, perturbNumbers } from './proof-integrity.mjs'
+import { extractCheckReqBlocks, hasValueAssertion, lintSource, perturbNumbers, functionBodies } from './proof-integrity.mjs'
 
 const SRC = `
 await checkReq('R5', async () => {
@@ -354,7 +354,7 @@ test('the CLI\'s node text gate never demands text back from a style/script/etc-
 // fact the picture can never show. So every fact a Then names must be a SOFT claim (proveVisible
 // `soft: true`): the beat reaches and photographs each of them and fails once at its end with the
 // whole list, instead of stopping at the first red with the rest of the requirement unshown.
-import { splitFacts, lintIntent, isAbsenceFact } from './proof-integrity.mjs'
+import { splitFacts, lintIntent, isAbsenceFact, absenceTarget } from './proof-integrity.mjs'
 
 test('splitFacts splits a Then only where BOTH sides carry a verb-ish token', () => {
   // both sides carry one — two facts
@@ -489,12 +489,18 @@ test('two', async ({ page }) => {
   await checkReq('R1', async () => { /* beat 1 again */ })
 })
 `
+  // …and since fix round 2 the beat is scored on the block that covers it LEAST (I2), so the second
+  // test's empty first block is what beat 1 reads — and the three-blocks-for-two-beats test is
+  // itself a beat-mismatch row. (This test asserted "the best of the two tests' first blocks" until
+  // 2026-09-04; the controller overruled that reading — rule 4, the test was the wrong side.)
   const rows = lintIntent(prd, spec)
-  assert.equal(rows.length, 2)
-  assert.equal(rows[0].beat, 1)
-  assert.equal(rows[0].claims, 1, "beat 1 is proven by the best of the two tests' first blocks")
-  assert.equal(rows[1].beat, 2)
-  assert.equal(rows[1].claims, 1)
+  const beats = rows.filter(r => r.state !== 'beat-mismatch')
+  assert.equal(beats.length, 2)
+  assert.equal(beats[0].beat, 1)
+  assert.equal(beats[0].claims, 0, 'the second test proves beat 1 with no claim at all')
+  assert.equal(beats[1].beat, 2)
+  assert.equal(beats[1].claims, 0, 'the clamped third block harvests beat 2 too, and it claims nothing')
+  assert.ok(rows.some(r => r.state === 'beat-mismatch'), 'three blocks for two beats is a mismatch')
 })
 
 // ── THE EXISTENCE LINT READS A BEAT'S FUNCTIONS TOO (phase 6, 2026-09-04) ────────────────────────
@@ -616,16 +622,258 @@ test('board', async ({ page }) => {
   assert.match(row.why, /MISSING/, 'and it says what to write instead')
 })
 
-test('the absence vocabulary is the fact\'s own subject, not any use of the word', () => {
-  // "there is no control", "carries no chip", "no per-cell caption" — a fact ABOUT something not
-  // being there. But "accepted, never refused or queued" and "gone from the slot" are facts about a
-  // decision and a server's state, on beats with no page at all; reading every `never` as a
-  // claimable absence would refuse exactly the declarations this mechanism exists for.
+// (superseded 2026-09-04 by the controller's I4 — the narrow subject-only vocabulary let an
+// absence the splitter had just isolated be declared away instead of claimed. What the wide list
+// must NOT do is refuse a declaration on a beat that photographs nothing at all; that narrowing
+// moved from the vocabulary into lintIntent, and is tested there.)
+
+// ── FIX ROUND 2 (2026-09-04) — the controller's rulings C1, I1+I2, I3, I4 ────────────────────────
+
+// C1 · A CONCISE ARROW HAS NO BRACE, and reading one as if it did credits a beat with claims it
+// never makes. `functionBodies`' declaration scan took `text.indexOf('{', …)` as the body's opening
+// brace, so `const op = (l) => l.evaluate(…)` captured the next `{` ANYWHERE in the file — on the
+// board's own spec that handed `rowOf` 2514 chars of R23's checkReq and `marked` 3514 of R22's, and
+// board R11's beat 2 read "2 claims" for a block that contains no proveVisible at all: the one false
+// green the phase exists to make impossible. A body is the expression after `=>` up to the end of the
+// statement, or the brace block when the brace is the very next thing.
+test('functionBodies reads a CONCISE arrow as its expression, never the next brace in the file (C1)', () => {
+  const src = [
+    "const op = (l) => l.evaluate(n => n.getBoundingClientRect().width)",
+    "const plain = s => s.trim()",
+    "async function later (page) {",
+    "  await proveVisible(page.locator('.n'), '4', 'To do', { soft: true })",
+    "}"
+  ].join('\n')
+  const bodies = functionBodies(src)
+  assert.match(bodies.get('op'), /getBoundingClientRect/)
+  assert.equal(/proveVisible/.test(bodies.get('op')), false, 'a later block is not this arrow\'s body')
+  assert.equal(bodies.get('plain').trim(), 's.trim()')
+  assert.match(bodies.get('later'), /proveVisible/)
+})
+
+test('…so a block whose helpers make no claim reads honestly — the R11 b2 repro (C1)', () => {
+  // the exact shape measured on spec/board/test.spec.ts at fix round 1's HEAD: a beat that calls a
+  // concise-arrow helper and claims nothing, credited with the claims of an unrelated block below it.
+  const spec = [
+    "const width = (l) => l.evaluate(n => n.getBoundingClientRect().width)",
+    "async function readBoth (page) {",
+    "  await proveVisible(page.locator('.x'), '1', 'x', { soft: true })",
+    "  await proveVisible(page.locator('.y'), '2', 'y', { soft: true })",
+    "}",
+    "test('reader', async ({ page }) => {",
+    "  await checkReq('R1', async () => {",
+    "    await proveVisible(page.locator('.a'), '1', 'one', { soft: true })",
+    "    await proveVisible(page.locator('.b'), '2', 'two', { soft: true })",
+    "  })",
+    "  await checkReq('R1', async () => {",
+    "    expect(await width(page.locator('.c'))).toBeGreaterThan(0)",
+    "  })",
+    "})",
+    "test('elsewhere', async ({ page }) => {",
+    "  await checkReq('R2', async () => {",
+    "    await proveVisible(page.locator('.d'), 'x', 'd', { soft: true })",
+    "    await proveVisible(page.locator('.e'), 'y', 'e', { soft: true })",
+    "  })",
+    "})"
+  ].join('\n')
+  const b2 = lintIntent(PRD_TWO_BEATS, spec).find(r => r.beat === 2 && r.id === 'R1')
+  assert.equal(b2.claims, 0, 'the second block claims nothing')
+  assert.equal(b2.ok, false)
+})
+
+const PRD_TWO_BEATS = `---
+screen: todo
+---
+
+## R1 — two beats
+
+- **Given** the seeded board
+- **When** you tick one
+- **Then** the count reads 4
+- **When** you tick the last one
+- **Then** the container completes itself
+`
+
+// I1 · THE LINT MIRRORS THE HARNESS EXACTLY. Block k IS beat k, and a requirement whose blocks do
+// not walk its beats is a beat-mismatch: the harness files every block's harvest under the beat its
+// POSITION names, so an extra block hands its pictures to a sentence it is not about (board R20 had
+// seven blocks for six beats, and the beat-1 row showed another test's pictures).
+test('a requirement with more blocks than beats is a beat-mismatch that fails the gate (I1)', () => {
+  const spec = [
+    "test('one', async ({ page }) => {",
+    "  await checkReq('R1', async () => { await proveVisible(a, '4', 'To do', { soft: true }) })",
+    "  await checkReq('R1', async () => { await proveVisible(a, 'done', 'The container', { soft: true }) })",
+    "  await checkReq('R1', async () => { await proveVisible(a, 'x', 'clamped onto beat 2', { soft: true }) })",
+    "})"
+  ].join('\n')
+  const rows = lintIntent(PRD_TWO_BEATS, spec)
+  const mism = rows.find(r => r.state === 'beat-mismatch')
+  assert.ok(mism, 'the mismatch is its own row')
+  assert.equal(mism.ok, false, 'and it fails the gate')
+  assert.match(mism.why, /3 blocks, 2 beats/)
+})
+
+test('…and two tests walking DIFFERENT numbers of its beats is the same defect (I1)', () => {
+  // board R20's shape: one test proves beat 1 only, another walks all of them — and both write
+  // R20.b1.*, so which pictures the beat-1 row shows is decided by which test ran last.
+  const spec = [
+    "test('one', async ({ page }) => {",
+    "  await checkReq('R1', async () => { await proveVisible(a, '4', 'To do', { soft: true }) })",
+    "})",
+    "test('two', async ({ page }) => {",
+    "  await checkReq('R1', async () => { await proveVisible(a, '4', 'To do', { soft: true }) })",
+    "  await checkReq('R1', async () => { await proveVisible(a, 'done', 'The container', { soft: true }) })",
+    "})"
+  ].join('\n')
+  const mism = lintIntent(PRD_TWO_BEATS, spec).find(r => r.state === 'beat-mismatch')
+  assert.ok(mism)
+  assert.match(mism.why, /3 blocks, 2 beats/)
+})
+
+test('…while two tests that each walk the SAME beats are not a mismatch (I1)', () => {
+  const spec = [
+    "test('unit', async ({ page }) => {",
+    "  await checkReq('R1', async () => { await proveVisible(a, '4', 'To do', { soft: true }) })",
+    "  await checkReq('R1', async () => { await proveVisible(a, 'done', 'The container', { soft: true }) })",
+    "})",
+    "test('flow', async ({ page }) => {",
+    "  await checkReq('R1', async () => { await proveVisible(a, '4', 'To do', { soft: true }) })",
+    "  await checkReq('R1', async () => { await proveVisible(a, 'done', 'The container', { soft: true }) })",
+    "})"
+  ].join('\n')
+  assert.equal(lintIntent(PRD_TWO_BEATS, spec).some(r => r.state === 'beat-mismatch'), false)
+})
+
+// I2 · EVERY block that harvests a beat must cover it — the row is scored on the WORST of them,
+// never the best. A beat that reads ok from one block while the picture on the board comes from
+// another is the false green in another dress.
+test('a beat is scored on the block that covers it least, never the best (I2)', () => {
+  const spec = [
+    "test('unit', async ({ page }) => {",
+    "  await checkReq('R1', async () => { await proveVisible(a, '4', 'To do', { soft: true }) })",
+    "  await checkReq('R1', async () => { await proveVisible(a, 'done', 'The container', { soft: true }) })",
+    "})",
+    "test('flow', async ({ page }) => {",
+    "  await checkReq('R1', async () => { expect(1).toBe(1) })",
+    "  await checkReq('R1', async () => { await proveVisible(a, 'done', 'The container', { soft: true }) })",
+    "})"
+  ].join('\n')
+  const b1 = lintIntent(PRD_TWO_BEATS, spec).find(r => r.beat === 1 && r.state !== 'beat-mismatch')
+  assert.equal(b1.claims, 0, 'the flow block claims nothing and it harvests this beat too')
+  assert.equal(b1.ok, false)
+  assert.ok(b1.line, 'the row names the line the verdict came from')
+})
+
+// I3 · THE FACT SPLIT IS BLUNT AND WIDE. No verb test: a Then is cut at every seam whose two sides
+// each carry three words or more. Over-splitting is safe — a fragment is then either claimed or
+// declared — while under-splitting HIDES a fact behind a green row.
+test('splitFacts cuts every seam whose two sides carry three words each (I3)', () => {
+  assert.deepEqual(splitFacts('the row stays listed — the count reads 4'),
+    ['the row stays listed', 'the count reads 4'])
+  // the old verb list read this as one fact; both sides are three words or more, so it is two
+  assert.equal(splitFacts('it scrolls inside the card, the card\'s header stays pinned, and the page itself never scrolls').length, 3)
+  // …but a short apposition is not a fact of its own — "route" is one word
+  assert.equal(splitFacts('only cards matching a name, route, or requirement stay').length, 1)
+  assert.equal(splitFacts('an Undo appears; the count stays 5').length, 2)
+  // an aside still never splits
+  assert.deepEqual(splitFacts('the banner is shown *(removed 2026-09-02; the human: "avoid useless things")*'),
+    ['the banner is shown *(removed 2026-09-02; the human: "avoid useless things")*'])
+  assert.deepEqual(splitFacts('the ring shows 2 / 4'), ['the ring shows 2 / 4'])
+})
+
+// I4 · AN ABSENCE IS ANY FACT WHOSE SUBJECT OR PREDICATE SAYS SOMETHING IS NOT THERE — tested on
+// the strings this tree actually carries, never on a string invented for the test.
+test('the absence vocabulary reads the tree\'s own facts (I4)', () => {
+  assert.equal(isAbsenceFact('gone from the slot'), true, 'dispatch R5 b1, as splitFacts cuts it')
   assert.equal(isAbsenceFact('there is no control to change it'), true)
   assert.equal(isAbsenceFact('a moment that claimed nothing carries no chip at all'), true)
   assert.equal(isAbsenceFact('no design chip, no design link and no embedded wireframe exist anywhere in it'), true)
-  assert.equal(isAbsenceFact('the run panel is gone from the slot'), true)
-  assert.equal(isAbsenceFact('the running job is cancelled and the new one takes the slot — accepted, never refused or queued'), false)
+  assert.equal(isAbsenceFact('not a full-screen scrim'), true, 'board R10 b3, as splitFacts cuts it')
+  assert.equal(isAbsenceFact('never refused or queued'), true, 'dispatch R4 b1, as splitFacts cuts it')
+  assert.equal(isAbsenceFact('the card is gone from Open'), true, 'conflicts R4 b1')
+  assert.equal(isAbsenceFact('no rows show'), true, 'init R4 b1')
+  assert.equal(isAbsenceFact('the toast is dismissed'), true)
+  assert.equal(isAbsenceFact('the box is cleared'), true)
+  assert.equal(isAbsenceFact('the row vanishes'), true)
+  assert.equal(isAbsenceFact('the count reads 4'), false)
   assert.equal(isAbsenceFact('the process is killed'), false)
-  assert.equal(isAbsenceFact('so the replica and the photograph can never frame different things'), false)
+  assert.equal(isAbsenceFact('the run panel opens naming that screen'), false)
+})
+
+// …and a declaration is refused for an absence ONLY where the beat photographs something. A beat
+// that claims nothing at all has no page open (dispatch's specs drive /api/run with no browser), and
+// an absence there has no more surface to ring than a presence does — refusing its declaration would
+// demand a claim nobody can write.
+test('an absence on a beat that photographs NOTHING may still be declared (I4)', () => {
+  const prd = `---
+screen: dispatch
+---
+
+## R5 — the takeover
+
+- **Given** a job holding the slot
+- **When** the person cancels it
+- **Then** the process is killed, gone from the slot, and its partial work is left in place
+`
+  const spec = [
+    "test('dispatch', async ({ request }) => {",
+    "  await checkReq('R5', async () => {",
+    "    intentGap('no page is open at all — this beat drives /api/cancel and reads the server\\'s own state')",
+    "    expect((await request.post('/api/cancel')).status()).toBe(200)",
+    "  })",
+    "})"
+  ].join('\n')
+  const row = lintIntent(prd, spec)[0]
+  assert.equal(row.state, 'declared')
+  assert.equal(row.ok, true)
+})
+
+// …and a DECLARATION COVERS ONE FACT, like a claim does. A Then that names five facts, four of them
+// on screen and one only in a file, is four claims and one declaration — not one declaration that
+// waves the whole beat through.
+test('a declaration covers one fact; the rest of the beat still needs its claims (I3)', () => {
+  const prd = `---
+screen: todo
+---
+
+## R1 — three facts
+
+- **Given** the seeded board
+- **When** you tick one sub-task
+- **Then** the row stays listed, the count reads 4, and the log records the tick
+`
+  const one = [
+    "test('todo', async ({ page }) => {",
+    "  await checkReq('R1', async () => {",
+    "    intentGap('the log is a file on disk — no screen shows it')",
+    "    await proveVisible(a, 'Water the plants', 'The row', { soft: true })",
+    "  })",
+    "})"
+  ].join('\n')
+  const short = lintIntent(prd, one)[0]
+  assert.equal(short.facts, 3)
+  assert.equal(short.ok, false, 'one claim and one declaration do not cover three facts')
+  const full = one.replace("    await proveVisible(a, 'Water the plants', 'The row', { soft: true })",
+    "    await proveVisible(a, 'Water the plants', 'The row', { soft: true })\n    await proveVisible(b, '4', 'To do', { soft: true })")
+  const row = lintIntent(prd, full)[0]
+  assert.equal(row.state, 'declared')
+  assert.equal(row.ok, true)
+})
+
+// …and the REFUSAL asks a narrower question than the vocabulary does. "Does this fact speak of an
+// absence" (wide, above) tells an author a MISSING claim is available. "Is there a NAMED THING
+// whose absence can be photographed" is what may refuse a declaration — and only that: a fragment
+// like "not a truncated snippet" or "never a gap" says the app shows nothing OF A KIND, and a
+// proveVisible(…, MISSING) on a selector the app has never had is an assertion that cannot fail,
+// which is the one thing rule 2 refuses.
+test('a declaration is refused only for an absence with a NAMED subject (I4)', () => {
+  assert.equal(absenceTarget('there is no control to change it'), true)
+  assert.equal(absenceTarget('a moment that claimed nothing carries no chip at all'), true)
+  assert.equal(absenceTarget('no design chip, no design link and no embedded wireframe exist anywhere in it'), true)
+  assert.equal(absenceTarget('the card is gone from Open'), true)
+  assert.equal(absenceTarget('no rows show'), true)
+  assert.equal(absenceTarget('not a truncated snippet'), false, 'dispatch R6 b1 — nothing to ring')
+  assert.equal(absenceTarget('never a gap'), false, 'conflicts R1 b1')
+  assert.equal(absenceTarget('never refused or queued'), false, 'dispatch R4 b1')
+  assert.equal(absenceTarget('the count reads 4'), false)
 })

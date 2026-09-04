@@ -484,6 +484,42 @@ export function focusFromLayouts (layouts) {
   return out
 }
 
+// THE HOLE IN THE SHELL (phase 7, 2026-09-04) — where a borrowed page has room for a picture.
+// A screen with no test has no harvest and therefore no replica: its Expected cell is the archetype
+// SKETCH. On bare paper that sketch reads as a diagram out of some other product; inside a SIBLING
+// screen's captured page it reads as this product's screen, not built yet. So the sketch is placed
+// in the CONTENT area of the borrowed page — the viewport minus the shell bands the harvest
+// measured: a painted box that hugs one edge and spans (almost) the whole of the perpendicular side
+// is the app's header, footer or rail, and what is left between them is where a screen's own words
+// go. Measured, never guessed — the same `bg` signal the plates use, on the same skeleton — and it
+// refuses to shrink the page to a sliver: a shell it cannot read as a frame leaves the whole page,
+// which is honest rather than a picture in a slot that is not there. Pure; unit-tested in
+// tools/chrome-from.test.mjs.
+const SHELL_SPAN = 0.9      // a band spans (almost) the whole perpendicular side …
+const SHELL_MAX = 0.5       // … and is never more than half the page: that is a page, not a band
+const SHELL_MIN = 0.25      // what must be LEFT for the hole to be a hole at all
+export function contentRect (layout) {
+  const vw = Number(layout && layout.w) || 0
+  const vh = Number(layout && layout.h) || 0
+  if (!(vw > 0) || !(vh > 0)) return null
+  const els = (layout && Array.isArray(layout.els)) ? layout.els : []
+  const whole = { x: 0, y: 0, w: vw, h: vh }
+  let l = 0; let t = 0; let r = vw; let b = vh
+  for (const e of els) {
+    if (!e || !e.bg) continue
+    const x = Number(e.x); const y = Number(e.y); const w = Number(e.w); const h = Number(e.h)
+    if (!(w > 0) || !(h > 0) || !Number.isFinite(x) || !Number.isFinite(y)) continue
+    const wide = w >= vw * SHELL_SPAN && h <= vh * SHELL_MAX
+    const tall = h >= vh * SHELL_SPAN && w <= vw * SHELL_MAX
+    if (wide && y <= 1) t = Math.max(t, y + h)                  // the header
+    if (wide && y + h >= vh - 1) b = Math.min(b, y)             // the footer
+    if (tall && x <= 1) l = Math.max(l, x + w)                  // the left rail
+    if (tall && x + w >= vw - 1) r = Math.min(r, x)             // the right rail
+  }
+  if (!(r - l >= vw * SHELL_MIN) || !(b - t >= vh * SHELL_MIN)) return whole
+  return { x: l, y: t, w: r - l, h: b - t }
+}
+
 // Fold one run's harvest into the results index — the same rules coverage follows: merged per
 // requirement onto the REQUIREMENT's screen (a qualified `x:R3` lands on screen x, wherever the
 // tagging test's file lives), and a requirement or screen the run did not touch keeps its evidence

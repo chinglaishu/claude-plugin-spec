@@ -486,7 +486,19 @@ const B = window.__BOARD__ || {}
         at: node.getAttribute('data-ev-at') || '',
         // the screen's one committed @font-face sheet (phase 4a) — the Expected cell writes it into
         // the replica's srcdoc so the app's own words are laid out in the app's own type
-        faces: node.getAttribute('data-ev-faces') || ''
+        faces: node.getAttribute('data-ev-faces') || '',
+        // THE BORROWED CHROME (phase 7): a screen with no harvest of its own has no replica, so its
+        // Expected cell is the archetype SKETCH — and the builder names a SIBLING screen's captured
+        // Before page to stand it in, with the hole in that page's shell already measured
+        // (tools/spec-store.mjs chromeFrom + tools/evidence.mjs contentRect). Absent everywhere else.
+        chrome: (function () {
+          const raw = node.getAttribute('data-ev-chrome')
+          if (!raw) return null
+          try {
+            const v = JSON.parse(raw)
+            return (v && v.replica && v.vw > 0 && v.vh > 0 && v.content) ? v : null
+          } catch (e) { return null }
+        })()
       },
       title: ttlEl ? ttlEl.textContent : '',
       family: node.getAttribute('data-fam') || '',   // the prd's `###` family this sits under (board R17); '' = none
@@ -1404,7 +1416,24 @@ const B = window.__BOARD__ || {}
       '[data-plate="space"][data-plate][data-plate]{background:transparent;border:0}',
       '.sbring{position:absolute;border:' + RINGG.stroke + 'px solid ' + ink + ';border-radius:' + RINGG.radius +
         'px;box-shadow:0 0 0 ' + RINGG.halo + 'px ' + PAPER.halo + ',0 0 0 9999px ' + PAPER.veil + ';pointer-events:none}',
-      '.sbdim{position:absolute;inset:0;background:' + PAPER.veil + ';pointer-events:none}'
+      '.sbdim{position:absolute;inset:0;background:' + PAPER.veil + ';pointer-events:none}',
+      // THE SKETCH IN A BORROWED PAGE (phase 7). The chrome behind it is somebody else's screen, so
+      // it takes the same even wash a ringless photograph takes — it is the frame, not the subject —
+      // and the sketch stands on this page's own paper in the hole the shell leaves. Its animations
+      // are PARKED exactly as the board's own sheet parks a drawn cell's (there is no proof beside a
+      // no-UI row for a moving picture to be out of step with, and a still is what a reader compares).
+      // …and the drawing's OWN five variables, re-declared here because this is a document of its
+      // own: the archetype svg is authored against the design system (--ink, --ink-3, --line,
+      // --paper, --wash), and inside a srcdoc that inherits no stylesheet every one of them fell
+      // back to black. Scoped to the sketch so a replica beside it can never take a variable it did
+      // not have, and read from the one build-time reading of spec/_design.css (BOARD.paperCss).
+      '.sbsk{position:absolute;background:' + PAPER.paper + ';border:1px solid ' + PAPER.hair +
+        ';--ink:' + PAPER.ink + ';--ink-3:' + PAPER.ink3 + ';--line:' + PAPER.line +
+        ';--paper:' + PAPER.paper + ';--wash:' + PAPER.wash +
+        ';display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;padding:16px}',
+      '.sbsk svg{display:block;width:100%;height:100%;max-height:100%}',
+      '.sbsk svg *{animation-play-state:paused!important;animation-delay:' +
+        (parts.sketch && isFinite(Number(parts.sketch.park)) ? Number(parts.sketch.park) : 0) + 's!important}'
     ].join('\n')
     const plates = (parts.plates || []).map(function (p) {
       return '<div class="sbplate" style="left:' + p.x + 'px;top:' + p.y + 'px;width:' + p.w + 'px;height:' + p.h + 'px"></div>'
@@ -1426,8 +1455,18 @@ const B = window.__BOARD__ || {}
         'font:italic 13px ui-sans-serif,system-ui,sans-serif;color:' + PAPER.ink3 + ';text-align:center;' +
         'padding:0 24px;box-sizing:border-box">◌ ' + String(parts.note).replace(/[<>&"]/g, '') + '</div>'
       : ''
+    // …and the SKETCH, where this page is a borrowed one (phase 7): the sibling's captured page is
+    // the chrome around it — washed by the same even veil a ringless page takes, since nothing on it
+    // is the subject — and the drawing stands in the hole its shell leaves. The caption
+    // saying whose chrome this is rides on the CELL, in the reader's own type — never burned into
+    // the picture, where it would read as something the app renders.
+    const sk = parts.sketch
+    const sketch = sk
+      ? '<div class="sbsk" style="left:' + sk.rect.x + 'px;top:' + sk.rect.y +
+        'px;width:' + sk.rect.w + 'px;height:' + sk.rect.h + 'px">' + sk.svg + '</div>'
+      : ''
     return '<!doctype html><html><head><meta charset="utf-8"><style>' + css + '</style></head><body>' +
-      plates + body + over + note + '</body></html>'
+      plates + body + over + note + sketch + '</body></html>'
   }
 
   // ── THE FRAME-STEPPER, at any scale ──────────────────────────────────────────────────────────
@@ -1991,9 +2030,17 @@ const B = window.__BOARD__ || {}
     const beh = r.behHtml ? behParts(r.behHtml) : null
     const nbeats = beh ? beh.beats.length : 0
     const phases = (v && v.phases && v.phases.length) ? v.phases : null
+    // A NO-UI ROW'S PICTURE IS THE SKETCH IN A BORROWED PAGE (phase 7, 2026-09-04). The builder names
+    // a sibling screen's captured page for a screen that has harvested nothing at all, and the
+    // sketch stands in the hole that page's shell leaves. Such a row's camera is WHOLE — nothing
+    // rang, so there is nothing to zoom to — and its picture is a document in a frame, not an inline
+    // svg the row's stepper can scrub: `canPair` is therefore false here, which routes every cell
+    // through chromeCell below and leaves the drawing-driving machinery (link / drawOnly / _drive)
+    // untouched rather than half-applied to a cell that has no svg in it.
+    const chrome = (v && v.svg && r.ev && r.ev.chrome) ? r.ev.chrome : null
     // the frames key to the beats only when a drawing exists AND its phase count matches them
     // (given + one per beat) — otherwise the whole drawing rides the Given row, unsplit
-    const canPair = !!(v && v.svg && beh && phases && phases.length === nbeats + 1)
+    const canPair = !chrome && !!(v && v.svg && beh && phases && phases.length === nbeats + 1)
     const short = function (h) { return String(h || '').slice(0, 6) }
     // THE BEAT'S OWN SCENES (2026-08-29). A drawing that enacts its beat carries one park point per
     // scene of that beat — the state it starts in, then each asserted value, then the result —
@@ -2141,9 +2188,11 @@ const B = window.__BOARD__ || {}
     // Every replica of the row is fetched ONCE, up front, never on each step: a person walking a
     // beat back and forth must not re-download the picture, and a moment whose file has not arrived
     // yet simply holds the one before it rather than flashing blank.
-    const replicaCell = function (shots, focus, vp, facesPath, layPath, momentCam) {
-      const fr = document.createElement('div'); fr.className = 'sbframe sbrep'
-      const box = document.createElement('div'); box.className = 'pcbox'
+    // ONE STAGE, wherever a page rides in a frame (extracted phase 7): the camera box, the page at
+    // the app's own viewport, the scaler that fits that page to the cell, and the sandboxed frame
+    // itself. Both the replica cell and the borrowed-chrome sketch cell mount exactly this — a
+    // second hand-built stage is how two frames of one board end up at two different scales.
+    const repStage = function (box, vp, label) {
       // the PAGE: the app's own viewport, at 100% of the cell, so the camera transform that frames
       // the photograph frames this identically (cameraView's maths assumes exactly this — the media
       // rendered at cell width, at the frame's own aspect)
@@ -2156,14 +2205,21 @@ const B = window.__BOARD__ || {}
       const ifr = document.createElement('iframe'); ifr.className = 'repframe'
       ifr.setAttribute('sandbox', '')                 // no allow-* token at all: no script, no network, no origin
       ifr.setAttribute('title', 'Expected')
-      ifr.setAttribute('aria-label', 'the requirement, in the app’s own component')
-      scaler.appendChild(ifr); page.appendChild(scaler); box.appendChild(page); fr.appendChild(box)
+      ifr.setAttribute('aria-label', label)
+      scaler.appendChild(ifr); page.appendChild(scaler); box.appendChild(page)
       const fit = function () {
         const w = page.clientWidth
         if (w > 0 && vp.vw > 0) scaler.style.transform = 'scale(' + (w / vp.vw) + ')'
       }
       fit()
       if (window.ResizeObserver) new ResizeObserver(fit).observe(page)
+      return ifr
+    }
+    const replicaCell = function (shots, focus, vp, facesPath, layPath, momentCam) {
+      const fr = document.createElement('div'); fr.className = 'sbframe sbrep'
+      const box = document.createElement('div'); box.className = 'pcbox'
+      const ifr = repStage(box, vp, 'the requirement, in the app’s own component')
+      fr.appendChild(box)
       // ONE CAMERA, ONE RULE, BOTH CELLS (phase 4b): the Expected cell takes the moment camera
       // wherever its Actual does — same maths, same page coordinates, same chip box — and the older
       // beat camera on the context row, which frames the whole page on both sides.
@@ -2320,7 +2376,53 @@ const B = window.__BOARD__ || {}
     // left is the archetype — a house diagram chosen from the SHAPE of the sentence, true to the
     // idea and not to the screen — so the cell captions it rather than letting it pass for the app's
     // own component beside a photograph of the real thing.
+    // …AND IT STANDS IN THE PRODUCT'S OWN PAGE WHERE THERE IS ONE TO BORROW (phase 7, 2026-09-04).
+    // A sketch on bare paper says nothing about whose product it belongs to; the same sketch inside a
+    // SIBLING screen's captured page — the app's own header and rail around it, washed, with the
+    // drawing in the hole the shell leaves — reads as this product's screen, not built yet. The
+    // borrowed page is a real committed replica, so it rides in the same sandboxed frame every other
+    // picture does; the caption says WHOSE chrome it is, because a page that quietly showed another
+    // screen's shell as this screen's would be exactly the guessed picture R18 forbids. The camera is
+    // whole: nothing here rang, so there is nothing to zoom to.
+    // WHERE THIS ROW'S SKETCH IS PARKED. The drawing publishes one park point per row (given, then
+    // one per beat) as negative seconds — the same numbers the board's own sheet feeds a drawn cell's
+    // paused animation-delay — so a borrowed page shows this row's scene, not scene one on every row.
+    // A drawing with no park points at all (or fewer than the rows) stays at its opening frame.
+    const parkAt = function (i) {
+      const p = phases && phases.length > i ? Number(phases[i]) : 0
+      return isFinite(p) ? p : 0
+    }
+    const chromeCell = function (ch, park) {
+      const cell = document.createElement('div'); cell.className = 'sbframe whole sbsketch sbchrome'
+      cell.dataset.chrome = ch.screen
+      const box = document.createElement('div'); box.className = 'pcbox'
+      const ifr = repStage(box, ch, 'a sketch of this requirement, in ' + ch.screen + '’s own page')
+      cell.appendChild(box)
+      const cap = document.createElement('div'); cap.className = 'sbprov'
+      cap.textContent = '◇ sketch · no UI yet · in ' + (ch.title || ch.screen) + '’s chrome'
+      cell.appendChild(cap)
+      repFetch(ch.replica).then(function (text) {
+        if (!cell.isConnected) return
+        const body = repBody(text)
+        ifr.srcdoc = repSrcdoc({
+          body: body,
+          faces: '',
+          plates: [],
+          region: body ? repRect(text, 'data-replica-region') : null,
+          ring: null,
+          ok: true,
+          vw: ch.vw,
+          vh: ch.vh,
+          // no borrowed page arrived (a pruned harvest, an unreadable file): the sketch still shows,
+          // on this page's own paper, rather than the row losing its picture over missing chrome
+          sketch: { svg: v.svg, rect: ch.content, park: park }
+        })
+      })
+      return cell
+    }
     const wholeCell = function () {
+      const ch = chrome
+      if (ch) return chromeCell(ch, parkAt(0))     // the prose-only row: the drawing's opening frame
       const cell = document.createElement('div'); cell.className = 'sbframe whole sbsketch'
       const viz = document.createElement('div'); viz.className = 'viz'; viz.innerHTML = v.svg
       const cap = document.createElement('div'); cap.className = 'sbprov'
@@ -2426,7 +2528,8 @@ const B = window.__BOARD__ || {}
       const gpc = proofCell(r, 0, nbeats)
       const givenFrame = hasReps
         ? expectedCell(gpc, 0)
-        : (canPair ? frameCell(phases[0], null, beatFocus(r, 0, nbeats)) : (v && v.svg ? wholeCell() : noCell(noDraw)))
+        : (chrome ? chromeCell(chrome, parkAt(0))
+          : (canPair ? frameCell(phases[0], null, beatFocus(r, 0, nbeats)) : (v && v.svg ? wholeCell() : noCell(noDraw))))
       body.appendChild(row('bgiven', givenFrame,
         textCell(markCol(0), sentence('sbgiven', beh.given ? beh.given.lab : 'Given', beh.given ? beh.given.txt : '', false)),
         gpc, null))
@@ -2463,10 +2566,12 @@ const B = window.__BOARD__ || {}
         // path below is what a requirement with no UI harvested yet still gets.
         const fc = hasReps
           ? expectedCell(pc, i + 1, true)
-          : (canPair
-            ? frameCell(driveDraw ? grp[0] : phases[i + 1], freeRun ? [phases[i], phases[i + 1]] : null,
-              beatFocus(r, i + 1, nbeats), driveDraw)
-            : noCell(noDraw))
+          : (chrome
+            ? chromeCell(chrome, parkAt(i + 1))
+            : (canPair
+              ? frameCell(driveDraw ? grp[0] : phases[i + 1], freeRun ? [phases[i], phases[i + 1]] : null,
+                beatFocus(r, i + 1, nbeats), driveDraw)
+              : noCell(noDraw)))
         if (behind) drawnBehind = true          // …and the banner says so, rather than the row lying quietly
         let rowStep = null
         let rowDriver = null            // the row's stepper as the strip's small interface

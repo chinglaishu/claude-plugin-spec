@@ -8,7 +8,9 @@ import { join, resolve, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync, existsSync } from 'node:fs'
 import {
-  ROOT, SPEC, esc, designCss, allScreens, sortedAreas, writeText, shotHash, readConfig, readRuns, ciGate
+  ROOT, SPEC, esc, designCss, allScreens, sortedAreas, writeText, shotHash, readConfig, readRuns, ciGate,
+  // phase 7: whose captured page a screen with no UI of its own borrows, and which page that is
+  chromeFrom, chromeSource, hasAnyReplica
 } from './spec-store.mjs'
 import { journey } from './journey.mjs'
 import { stripBehaviorLead } from './behavior.mjs'
@@ -63,7 +65,16 @@ export const paperCssOf = css => ({
   veil: WASH.veil,
   halo: WASH.halo,
   tintOk: parseToken(css, 'koke'),          // a claim the app got right
-  tintFixed: parseToken(css, 'bengara')     // a claim the Expected had to correct, restore or add
+  tintFixed: parseToken(css, 'bengara'),    // a claim the Expected had to correct, restore or add
+  // …and the three the SKETCH is drawn in (phase 7). A no-UI row's picture is the archetype drawing,
+  // and inside a borrowed page it is in a document of its own — where the design system's variables
+  // do not exist, so every one of its `var(--ink)` strokes fell back to black. The drawing declares
+  // exactly these five (--ink · --ink-3 · --line · --paper · --wash), and the sketch's own wrapper
+  // re-declares them there from THIS one reading of spec/_design.css: no second palette, no hex in
+  // the client.
+  ink: parseToken(css, 'ink'),
+  line: parseToken(css, 'line'),
+  wash: parseToken(css, 'wash')
 })
 
 // A status chip. Hue names the state; a redundant square mark carries it too, so status survives
@@ -613,6 +624,30 @@ const evAttrs = (s, r) => {
   if (out && e.at) out += ` data-ev-at="${esc(String(e.at).slice(0, 10))}"`
   return out
 }
+// THE CHROME A NO-UI SCREEN BORROWS (phase 7, 2026-09-04), decided once per build and keyed by
+// screen name — `chromeFrom` is the pure choice and `chromeSource` the disk read (spec-store), this
+// only carries the answer to the rows. A screen that has captured markup of its own is never in
+// here: it has its own picture, and a borrowed page beside it would be a second answer to "what does
+// this look like".
+const CHROME = new Map()
+// …baked onto the requirement row exactly on the frames' own terms: only a file that is really on
+// disk rides, content-hash-busted because a re-harvest of the LENDING screen overwrites it in place.
+// Only a row that actually has a sketch to put in the chrome gets one — the same sketch the builder
+// would bake, asked through renderSchematic so a refused drawing cannot leave a chrome behind it.
+const chromeAttr = (s, r) => {
+  const c = CHROME.get(s.name)
+  if (!c || !renderSchematic(r)) return ''
+  const abs = join(ROOT, c.replica)
+  if (!existsSync(abs)) return ''
+  return ` data-ev-chrome="${esc(JSON.stringify({
+    screen: c.screen,
+    title: c.title,
+    replica: c.replica + '?h=' + shotHash(abs),
+    vw: c.vw,
+    vh: c.vh,
+    content: c.content
+  }))}"`
+}
 const reqRow = (r, s) => {
   // A proven requirement names NO tests here — the E2E column already shows the flow that proves it,
   // so a "proven by …" line would just repeat it. An UNPROVEN one still says so plainly (board R6):
@@ -630,7 +665,7 @@ const reqRow = (r, s) => {
   // data-fam: the requirement's family NAME (board R17) — the Focus counter reads `<family> · n of N`
   // off the baked row; absent on a screen with no families, so the counter reads as before
   const fam = (s.families || []).find(f => f.ids.includes(r.id))
-  return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}" data-beats="${beats}"${fam ? ` data-fam="${esc(fam.name)}" data-famn="${esc(fam.n == null ? '' : fam.n)}"` : ''}${evAttrs(s, r)}>
+  return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}" data-beats="${beats}"${fam ? ` data-fam="${esc(fam.name)}" data-famn="${esc(fam.n == null ? '' : fam.n)}"` : ''}${evAttrs(s, r)}${chromeAttr(s, r)}>
     <div class="h">${reqChip(r.status)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
     <div class="body">${renderBehavior(r.behavior)}${renderSchematic(r, layoutStaleOf(r, s.name))}${renderBody(prose)}${covers}</div>
   </div>`
@@ -1723,6 +1758,16 @@ export const islandJson = data => JSON.stringify(data)
 export function build () {
   FACES.clear()                    // gathered per build, keyed by the harvest's own content hash
   const screens = allScreens()
+  // WHOSE CHROME (phase 7): read every screen's lendable Before page once, then decide per screen
+  // that has none of its own. Derived at every build, never stored — a screen that gains its own
+  // harvest loses the borrowed page on the next build, with nothing to clean up.
+  CHROME.clear()
+  const lenders = screens.map(s => ({ name: s.name, area: s.area, title: s.title, reqs: s.reqs, chrome: chromeSource(s.name) }))
+  for (const s of screens) {
+    if (hasAnyReplica(s.name)) continue
+    const c = chromeFrom(s, lenders)
+    if (c) CHROME.set(s.name, c)
+  }
   const areas = sortedAreas(screens)
   // The getting-started journey, derived once for this build (board R12) — read from the tree, so a
   // step cannot claim a fact that is not in spec/. It no longer draws a rail (cut at the human's

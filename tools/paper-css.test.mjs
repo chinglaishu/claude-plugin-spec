@@ -31,7 +31,7 @@ test('paperCssOf is the replica page\'s whole palette, and every colour of it co
   const css = designCss()
   const p = paperCssOf(css)
   assert.deepEqual(Object.keys(p).sort(),
-    ['hair', 'halo', 'ink3', 'paper', 'plate', 'ring', 'ringFail', 'tintFixed', 'tintOk', 'veil'])
+    ['hair', 'halo', 'ink', 'ink3', 'line', 'paper', 'plate', 'ring', 'ringFail', 'tintFixed', 'tintOk', 'veil', 'wash'])
   for (const [k, v] of Object.entries(p)) {
     assert.ok(v, k + ' resolved to nothing — the token was renamed or removed')
     assert.ok(/^#[0-9a-f]{3,8}$/i.test(v) || /^rgba?\(/.test(v), k + ' is not a colour: ' + v)
@@ -48,4 +48,11 @@ test('paperCssOf is the replica page\'s whole palette, and every colour of it co
   assert.equal(p.tintFixed, parseToken(css, 'bengara'))
   // …and the ink a no-picture page says its one line in — a measured grey, never the hairline colour
   assert.equal(p.ink3, parseToken(css, 'ink-3'))
+  // …and the three the SKETCH is drawn in inside a borrowed page (phase 7): the archetype drawing
+  // declares --ink / --ink-3 / --line / --paper / --wash and lives in a document of its own, so
+  // these five must reach it from HERE. A renamed token fails this rather than shipping a black
+  // drawing (which is exactly what a missing var falls back to).
+  assert.equal(p.ink, parseToken(css, 'ink'))
+  assert.equal(p.line, parseToken(css, 'line'))
+  assert.equal(p.wash, parseToken(css, 'wash'))
 })

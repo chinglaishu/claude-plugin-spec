@@ -308,14 +308,18 @@ export function checkReplicas (spec = 'spec') {
 //
 // Pure, like everything above it: (prdText, specSource) in, rows out, unit-tested directly.
 
-// THE FACT-SPLITTING RULE, deliberately blunt and written down (the brief: "keep it simple and
-// documented; when in doubt a Then is one fact"). A Then is cut at ` — `, `; `, `, and ` or ` and `
-// — but ONLY where both sides carry a verb-ish token, because "one card appears — its name, its
-// titles and its cover" is one fact stated with its parts, while "the row stays listed — the count
-// reads 4" is two. Under-splitting costs a claim that could have been demanded; over-splitting
-// demands a claim for half a sentence, which is worse: it teaches the author to write filler.
-const VERB = /\b(is|are|shows|reads|stays|becomes|lists|carries|says|counts|remains|appears|gone)\b/i
-const SEP = /( — |; |, and | and )/g
+// THE FACT-SPLITTING RULE, deliberately blunt and written down. A Then is cut at ` — `, `; `,
+// `, and `, ` and ` and a bare `, ` — every seam whose TWO SIDES each carry three words or more.
+// There is no verb test (fix round 2, 2026-09-04, the controller): the old list
+// (is/are/shows/reads/stays/…) missed the base forms and the verbs these PRDs actually use
+// (opens, scrolls, hides, moves, frames, plays, holds, sits, names, refuses, unfolds), so 47 of 65
+// beats carried a seam that never split and "every fact a Then names is a claim" was not what the
+// gate enforced. OVER-SPLITTING IS SAFE — a fragment is then either claimed or declared, and both
+// are visible — while UNDER-SPLITTING hides a fact behind a green row, which is the failure this
+// lint exists to prevent. The three-word floor is what keeps an apposition ("a name, route, or
+// requirement") from becoming a fact of its own.
+const MIN_WORDS = 3
+const SEP = /( — |; |, and | and |, )/g
 // …and never inside an ASIDE. A parenthetical (`*(removed 2026-09-02, the human: "…")*`), a
 // backticked token or a quoted phrase carries its own punctuation, and a `; ` inside one is not a
 // seam between two facts. Masked to same-length filler so the separator scan reads positions that
@@ -326,6 +330,11 @@ function maskAsides (text) {
   let m = text
   for (let pass = 0; pass < 3; pass++) m = m.replace(ASIDE, s => MASK.repeat(s.length))
   return m
+}
+// a side's weight is its WORDS — a masked aside counts as nothing, so "the banner is shown *(…)*"
+// is four words, not forty.
+function wordCount (side) {
+  return maskAsides(String(side || '')).replace(/[\u0001]+/g, ' ').trim().split(/\s+/).filter(Boolean).length
 }
 export function splitFacts (then) {
   const text = String(then || '').trim()
@@ -340,30 +349,47 @@ export function splitFacts (then) {
     pos = m.index + m[0].length
   }
   segs.push(text.slice(pos))
-  // fold left: a seam is a real split only when what we have SO FAR reads as a fact and what comes
-  // next does too; otherwise the seam is inside one fact and the two sides are re-joined verbatim.
+  // Each seam is weighed on its OWN two sides — the segment before it and the segment after —
+  // never on everything accumulated so far, or an apposition would split at its second comma:
+  // "only cards matching a name, route, or requirement stay" is one fact, and reading the left as
+  // the whole run up to "route" makes its last seam look like a seam between two facts.
   const facts = []
   let cur = segs[0]
   for (let i = 1; i < segs.length; i += 2) {
     const sep = segs[i]
+    const left = segs[i - 1]
     const right = segs[i + 1] || ''
-    if (VERB.test(cur) && VERB.test(right)) { facts.push(cur.trim()); cur = right }
+    if (wordCount(left) >= MIN_WORDS && wordCount(right) >= MIN_WORDS) { facts.push(cur.trim()); cur = right }
     else cur = cur + sep + right
   }
   if (cur.trim()) facts.push(cur.trim())
   return facts.length ? facts : [text]
 }
 
-// AN ABSENCE FACT — one a `proveVisible(locator, MISSING, …)` claim can close (fix round 1,
-// 2026-09-04). The controller's vocabulary is gone/absent/no longer/never/not shown/disappears/
-// removed; it is matched HERE as the fact's own SUBJECT rather than as any use of the word, because
-// a bare word list reads "accepted, never refused or queued" (a fact about a decision, on a beat
-// with no page at all) as a claimable absence and refuses the very declaration this exists for.
-// So: a fact that OPENS with no/none/nothing/never, or says of a thing that it is gone, absent, no
-// longer there, not shown, removed, nowhere — or that something carries/shows/has NO x.
-const ABSENCE = /(^\s*(no|none|nothing|never)\b)|\b(there (is|are) no|carries no|shows no|has no|holds no|with no|is gone|are gone|is absent|are absent|no longer|not shown|disappears?|is removed|are removed|nowhere)\b/i
+// AN ABSENCE FACT — one a `proveVisible(locator, MISSING, …)` claim can close. A fact is an
+// absence when its SUBJECT or its PREDICATE says something is not there: no/none/nothing/never/not/
+// without/no longer/gone/missing/absent/removed/hidden/cleared/empty/closed/dismissed/disappears/
+// vanishes (fix round 2, 2026-09-04, the controller — the narrow first list read "gone from the
+// slot", "not a full-screen scrim" and "never refused or queued" as ordinary facts, so an absence
+// the splitter had just isolated could be declared away instead of claimed).
+// Because the vocabulary is wide, the REFUSAL it drives is narrow: see lintIntent — a beat that
+// photographs nothing at all has no page open, and an absence there has no more surface to ring
+// than a presence does.
+const ABSENCE = /\b(no|none|nothing|never|not|without|gone|missing|absent|removed|hidden|cleared|empty|closed|dismissed|disappears?|vanishes?|nowhere|nobody)\b/i
 export function isAbsenceFact (fact) {
   return ABSENCE.test(String(fact || ''))
+}
+// …and the REFUSAL below asks a NARROWER question than the vocabulary does. `isAbsenceFact` says
+// whether a fact speaks of an absence at all — which is what tells an author that a MISSING claim is
+// available. What may REFUSE a declaration is a fact that names a THING whose absence can be
+// photographed: "there is no control", "carries no chip", "the card is gone from Open", "no rows
+// show". A fragment like "not a truncated snippet" or "never a gap" says the app shows nothing OF A
+// KIND — and a `proveVisible(page.locator('.truncated'), MISSING, …)` on a selector the app has
+// never had is an assertion that cannot fail, which is the one thing rule 2 refuses. Those are
+// declarable, with their reason.
+const ABSENT_SUBJECT = /(^\s*(no|none|nothing)\b(?!\s+(longer|more)\b))|\b(there (is|are) no|carries no|shows no|has no|holds no|with no|is gone|are gone|is absent|are absent|is removed|are removed|is hidden|are hidden|is cleared|are cleared|is dismissed|is closed|disappears?|vanishes?|nowhere)\b/i
+export function absenceTarget (fact) {
+  return ABSENT_SUBJECT.test(String(fact || ''))
 }
 
 // THE BEAT'S CLAIMS. The beat-function convention (kg-e2e) keeps the checkReq AROUND a call into
@@ -371,7 +397,63 @@ export function isAbsenceFact (fact) {
 // are in the step function it calls. Counting only what the block literally contains would flag the
 // very convention the skills teach, so the block is EXPANDED: every function it calls that is
 // defined in the spec or in a steps file is appended, two levels deep, each name once.
-const DECL = /(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*[(<]|(?:export\s+)?const\s+([A-Za-z_$][\w$]*)\s*(?::[^=\n]*)?=\s*(?:async\s*)?\(/g
+// A tiny tolerant reader — not a JS parser, and it does not need to be: it has to find where each
+// named function's body starts and ends well enough that the claims inside it are the claims of
+// THAT function. Three shapes appear in these specs: `function f (…) { … }`, `const f = (…) => { … }`
+// and the CONCISE arrow `const f = l => l.evaluate(…)`, which has no body brace at all.
+//
+// C1 (fix round 2, 2026-09-04): the first version took `text.indexOf('{', …)` as the body's opening
+// brace, so a concise arrow captured the next `{` ANYWHERE in the file and every claim in that
+// unrelated block was credited to callers of the arrow. On spec/board/test.spec.ts that gave board
+// R11's beat 2 — a block containing no proveVisible at all — "2 claims · ok", the one false green
+// this phase exists to make impossible. A body is now either the brace block that IMMEDIATELY
+// follows the parameter list, or, for a concise arrow, the expression after `=>` up to the end of
+// the statement.
+const DECL = /(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*[(<]|(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=\n]*)?=\s*(?:async\s+)?(?=[(<A-Za-z_$])/g
+// skip whitespace and comments from `i`
+function skipWs (text, i) {
+  for (;;) {
+    while (i < text.length && /\s/.test(text[i])) i++
+    if (text.startsWith('//', i)) { const nl = text.indexOf('\n', i); i = nl === -1 ? text.length : nl + 1; continue }
+    if (text.startsWith('/*', i)) { const e = text.indexOf('*/', i); i = e === -1 ? text.length : e + 2; continue }
+    return i
+  }
+}
+// walk from an opening bracket to its match, stepping over strings and template literals
+function matchBracket (text, start) {
+  const OPEN = { '(': ')', '[': ']', '{': '}' }
+  const stack = [OPEN[text[start]]]
+  for (let i = start + 1; i < text.length; i++) {
+    const c = text[i]
+    if (c === '\\') { i++; continue }
+    if (c === "'" || c === '"' || c === '`') { i = endOfString(text, i); continue }
+    if (OPEN[c]) { stack.push(OPEN[c]); continue }
+    if (c === stack[stack.length - 1]) { stack.pop(); if (!stack.length) return i }
+  }
+  return -1
+}
+function endOfString (text, start) {
+  const q = text[start]
+  for (let i = start + 1; i < text.length; i++) {
+    if (text[i] === '\\') { i++; continue }
+    if (text[i] === q) return i
+  }
+  return text.length
+}
+// a concise arrow's body: the expression after `=>`, ending at the `;` or the line end that closes
+// the statement, or at the bracket that closes whatever the arrow was passed to.
+function expressionEnd (text, start) {
+  let depth = 0
+  for (let i = start; i < text.length; i++) {
+    const c = text[i]
+    if (c === '\\') { i++; continue }
+    if (c === "'" || c === '"' || c === '`') { i = endOfString(text, i); continue }
+    if (c === '(' || c === '[' || c === '{') { depth++; continue }
+    if (c === ')' || c === ']' || c === '}') { if (depth === 0) return i; depth--; continue }
+    if (depth === 0 && (c === ';' || c === '\n' || c === ',')) return i
+  }
+  return text.length
+}
 export function functionBodies (src) {
   const text = String(src || '')
   const out = new Map()
@@ -379,16 +461,41 @@ export function functionBodies (src) {
   let m
   while ((m = DECL.exec(text))) {
     const name = m[1] || m[2]
-    const braceStart = text.indexOf('{', m.index + m[0].length - 1)
-    if (braceStart === -1) continue
-    let depth = 0
-    let end = -1
-    for (let i = braceStart; i < text.length; i++) {
-      if (text[i] === '{') depth++
-      else if (text[i] === '}') { depth--; if (depth === 0) { end = i; break } }
+    let i = m.index + m[0].length
+    let body = null
+    if (m[1]) {
+      // function f (…) {   — the params start at the char the match ended on
+      const open = text.lastIndexOf(text[i - 1] === '(' ? '(' : '<', i)
+      const close = matchBracket(text, text[i - 1] === '(' ? i - 1 : open)
+      if (close === -1) continue
+      let j = skipWs(text, close + 1)
+      if (text[j] === ':') { j = skipWs(text, text.indexOf('{', j)) }   // a return-type annotation
+      if (text[j] !== '{') continue
+      const end = matchBracket(text, j)
+      if (end === -1) continue
+      body = text.slice(j + 1, end)
+    } else {
+      // const f = (…) => … | const f = x => …
+      if (text[i] === '(' || text[i] === '<') {
+        const close = matchBracket(text, i)
+        if (close === -1) continue
+        i = close + 1
+      } else {
+        while (i < text.length && /[\w$]/.test(text[i])) i++
+      }
+      i = skipWs(text, i)
+      if (text[i] === ':') { const arrow = text.indexOf('=>', i); if (arrow === -1) continue; i = arrow }  // a return-type annotation
+      if (!text.startsWith('=>', i)) continue          // not an arrow at all — a plain value
+      i = skipWs(text, i + 2)
+      if (text[i] === '{') {
+        const end = matchBracket(text, i)
+        if (end === -1) continue
+        body = text.slice(i + 1, end)
+      } else {
+        body = text.slice(i, expressionEnd(text, i))
+      }
     }
-    if (end === -1) continue
-    if (!out.has(name)) out.set(name, text.slice(braceStart + 1, end))
+    if (body != null && !out.has(name)) out.set(name, body)
   }
   return out
 }
@@ -415,20 +522,45 @@ export function expandBody (body, bodies, depth = 2, seen = new Set()) {
 export function stripComments (src) {
   return String(src || '').replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, '')
 }
-const countOf = (text, re) => (String(text).match(re) || []).length
-// the DECLARED reason a beat carries, if any: `intentGap('…')` (spec/_base.ts, a run-time no-op).
-// Read out of the code the same way the claims are, comments stripped first.
-const DECLARED = /intentGap\s*\(\s*(['"`])([\s\S]*?)\1\s*\)/
-export function declaredIn (body) {
-  const m = DECLARED.exec(stripComments(body))
-  return m ? String(m[2]).replace(/\s+/g, ' ').trim() : ''
+// the DECLARED reasons a beat carries: `intentGap('…')` (spec/_base.ts, a run-time no-op). Read out
+// of the code the same way the claims are, comments stripped first. A declaration covers ONE FACT,
+// exactly as a claim does (fix round 2) — a Then that names five facts, four of them on screen and
+// one only in a file, is four claims and one declaration, never one declaration waving the beat
+// through.
+const DECLARED = /intentGap\s*\(\s*(['"`])([\s\S]*?)\1\s*\)/g
+export function declarationsIn (body) {
+  const code = stripComments(body)
+  const out = []
+  DECLARED.lastIndex = 0
+  let m
+  while ((m = DECLARED.exec(code))) out.push(readable(m[2]))
+  return out
 }
+// …and it prints READABLY. A declaration long enough to need concatenating (`'a ' + 'b'`) came out
+// with its glue and its escapes verbatim — the readable half of a debt, made unreadable (M1).
+function readable (raw) {
+  return String(raw)
+    .replace(/\\(['"`])/g, '$1')
+    .replace(/['"`]\s*\+\s*['"`]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+export function declaredIn (body) {
+  return declarationsIn(body)[0] || ''
+}
+const countOf = (text, re) => (String(text).match(re) || []).length
 export function claimsIn (body) {
   const code = stripComments(body)
+  const decls = declarationsIn(code)
   return {
     claims: countOf(code, /proveVisible\s*\(/g),
     soft: countOf(code, /soft\s*:\s*true/g),
-    declared: declaredIn(code)
+    // an ABSENCE claim: `proveVisible(locator, MISSING, label, { soft: true })`, which passes
+    // exactly while the thing is gone. Counted so a beat that HAS claimed its absences is not
+    // refused its declaration for the facts that genuinely have no surface.
+    missing: countOf(code, /,\s*MISSING\s*,/g),
+    decls,
+    declared: decls[0] || ''
   }
 }
 
@@ -449,19 +581,27 @@ export function blockBeats (specSource, id, beats, screen = '') {
     const t = testOf(b.line)
     const cursor = cursors.get(t) || 0
     cursors.set(t, cursor + 1)
-    out.push({ ...b, beat: beats ? Math.min(cursor + 1, beats) : cursor + 1 })
+    out.push({ ...b, test: t, walk: cursor + 1, beat: beats ? Math.min(cursor + 1, beats) : cursor + 1 })
   }
   return out
 }
 
-// the three ways a beat's claims fall short of its Then, in ONE place so the row's verdict and the
+// the ways a beat's claims fall short of its Then, in ONE place so the row's verdict and the
 // message it prints can never disagree: too few claims for the facts, a multi-fact beat that would
-// stop at its first red, and a beat that photographs no value at all.
-function gapWhy (facts, claims, soft) {
+// stop at its first red, and a beat that photographs no value at all. A DECLARATION covers one fact
+// exactly as a claim does (fix round 2) — it is a visible debt in the fact's place, not a pass.
+function gapWhy (facts, claims, soft, decls = 0) {
   const why = []
-  if (facts >= 2 && claims < facts) why.push(`the Then names ${facts} facts, the beat claims ${claims}`)
+  // …and a beat that photographs NOTHING has no page open at all (dispatch drives /api/run with no
+  // browser): one declaration answers for every fact it names, because none of them has a surface.
+  // The moment a beat photographs something, a declaration covers ONE fact and the rest still need
+  // their claims — otherwise a single line would wave through the facts the screen does show.
+  const covered = claims + (claims === 0 && decls ? facts : decls)
+  if (facts >= 2 && covered < facts) {
+    why.push(`the Then names ${facts} facts, the beat claims ${claims}` + (decls ? ` and declares ${decls}` : ''))
+  }
   if (facts >= 2 && soft < claims) why.push(`${claims - soft} of its claims ${claims - soft === 1 ? 'is' : 'are'} not soft — a multi-fact beat stops at its first red instead of photographing the rest`)
-  if (facts === 1 && claims === 0) why.push('the Then names a fact and no claim covers it — nothing photographs the value')
+  if (facts === 1 && covered === 0) why.push('the Then names a fact and no claim covers it — nothing photographs the value')
   return why.join('; ')
 }
 
@@ -481,6 +621,38 @@ export function lintIntent (prdText, specSource, opts = {}) {
     }
     const blocks = blockBeats(specSource, r.id, beh.beats.length, screen)
       .map(b => ({ ...b, ...claimsIn(expandBody(b.body, bodies)) }))
+    // THE LINT MIRRORS THE HARNESS EXACTLY (fix round 2, 2026-09-04, the controller). BEAT_CURSOR
+    // files each block's harvest under the beat its POSITION names — block k IS beat k, clamped to
+    // the last, the cursor resetting per test. So a requirement whose blocks do not WALK its beats
+    // hands a beat's pictures to a sentence they are not about: board R20 carried seven blocks for
+    // six beats, and its beat-1 row showed the harvest of a block in another test entirely.
+    // Two shapes are a mismatch, and both fail:
+    //   · a test with MORE blocks than the requirement has beats — the extras clamp onto the last
+    //     beat and photograph it while being about something else;
+    //   · two tests that walk DIFFERENT numbers of its beats — the shorter walk's blocks land on
+    //     beats the longer one proves in full, and which pictures survive is decided by which test
+    //     ran last.
+    // Two tests that each walk the SAME beats are NOT a mismatch: that is the many-to-many coverage
+    // the board is built on (a unit and a flow proving the same sentence), and both agree about
+    // what beat k is.
+    if (blocks.length) {
+      const walks = new Map()
+      for (const b of blocks) walks.set(b.test, (walks.get(b.test) || 0) + 1)
+      const lens = [...walks.values()]
+      const over = lens.some(n => n > beh.beats.length)
+      const uneven = new Set(lens).size > 1
+      if (over || uneven) {
+        rows.push({
+          screen, id: r.id, beat: 0, facts: 0, claims: 0, soft: 0, ok: false, state: 'beat-mismatch',
+          line: blocks[0].line,
+          why: `beat-mismatch (${blocks.length} blocks, ${beh.beats.length} beats) — ` +
+            (over
+              ? 'a test makes more checkReq calls for this requirement than it has beats, so the extra blocks clamp onto the last beat and harvest it while being about something else'
+              : 'its tests walk different numbers of its beats, so a partial walk files its pictures under beats another test proves in full') +
+            `; blocks at ${blocks.map(b => `line ${b.line}→beat ${b.beat}`).join(', ')}`
+        })
+      }
+    }
     beh.beats.forEach((beat, i) => {
       const n = i + 1
       const facts = splitFacts(beat.then)
@@ -489,37 +661,45 @@ export function lintIntent (prdText, specSource, opts = {}) {
         rows.push({ screen, id: r.id, beat: n, facts: facts.length, claims: 0, soft: 0, ok: true, state: 'no-beat', why: 'no checkReq maps to this beat — coverage already reads it unproven' })
         return
       }
-      // a beat proven in two places (a unit test and a flow) is covered when EITHER proof claims
-      // every fact; the row reports the one that does, else the fullest of them
-      const scored = here.map(b => ({ ...b, gap: gapWhy(facts.length, b.claims, b.soft) }))
-      const best = scored.find(b => !b.gap) || scored.slice().sort((a, b) => b.claims - a.claims)[0]
-      // A DECLARED GAP (fix round 1): the beat says IN ITSELF why the fact has no screen surface.
-      // Printed as its own row with the reason and NOT counted against the exit code — a visible
-      // debt, never a pass. Refused where the Then names an ABSENCE: that one is claimable with
-      // `proveVisible(locator, MISSING, …)`, and a declaration there would be a way of not writing
-      // the claim.
-      const declared = scored.map(b => b.declared).find(Boolean) || ''
-      const absent = facts.filter(isAbsenceFact)
-      if (best.gap && declared && absent.length) {
+      // EVERY block that harvests this beat must cover it — the row is scored on the one that covers
+      // it LEAST, never the best of several (fix round 2, the controller's I2). A beat that reads ok
+      // from one block while the picture on the board comes from another is the false green in
+      // another dress, and each of these blocks writes the same <id>.b<n> evidence files.
+      const scored = here.map(b => ({ ...b, gap: gapWhy(facts.length, b.claims, b.soft, b.decls.length) }))
+      const worst = scored.find(b => b.gap) || scored[0]
+      const decls = worst.decls
+      // A DECLARED GAP: the beat says IN ITSELF why a fact has no screen surface. Printed as its own
+      // row with the reason and NOT counted against the exit code — a visible debt, never a pass.
+      //
+      // It is REFUSED where the Then names an ABSENCE the beat has not claimed: an absence is
+      // claimable with `proveVisible(locator, MISSING, …)`, which passes exactly while the thing is
+      // gone, and a declaration there would be a way of not writing the claim. The refusal asks two
+      // things first, because the absence vocabulary is deliberately wide (I4): the beat must
+      // photograph SOMETHING — a beat with no claim at all has no page open (dispatch drives
+      // /api/run with no browser), and an absence there has no more surface to ring than a presence
+      // does — and it must not already carry a MISSING claim for each absence the Then names.
+      const absent = facts.filter(absenceTarget)
+      const unclaimedAbsence = absent.length > worst.missing
+      if (decls.length && absent.length && worst.claims > 0 && unclaimedAbsence) {
         rows.push({
-          screen, id: r.id, beat: n, facts: facts.length, claims: best.claims, soft: best.soft,
-          ok: false, state: 'gap', declared, line: best.line,
-          why: best.gap + `; and its declaration is refused — "${absent[0].slice(0, 60)}" names an ` +
+          screen, id: r.id, beat: n, facts: facts.length, claims: worst.claims, soft: worst.soft,
+          ok: false, state: 'gap', declared: decls.join(' · '), line: worst.line,
+          why: (worst.gap ? worst.gap + '; and' : 'its') + ` declaration is refused — "${absent[0].slice(0, 60)}" names an ` +
             'absence, which is claimable: proveVisible(locator, MISSING, label, { soft: true }) passes ' +
             'exactly while the thing is gone'
         })
         return
       }
-      if (best.gap && declared) {
+      if (!worst.gap && decls.length) {
         rows.push({
-          screen, id: r.id, beat: n, facts: facts.length, claims: best.claims, soft: best.soft,
-          ok: true, state: 'declared', why: declared, declared, line: best.line
+          screen, id: r.id, beat: n, facts: facts.length, claims: worst.claims, soft: worst.soft,
+          ok: true, state: 'declared', why: decls.join(' · '), declared: decls.join(' · '), line: worst.line
         })
         return
       }
       rows.push({
-        screen, id: r.id, beat: n, facts: facts.length, claims: best.claims, soft: best.soft,
-        ok: !best.gap, state: best.gap ? 'gap' : 'ok', why: best.gap || '', line: best.line
+        screen, id: r.id, beat: n, facts: facts.length, claims: worst.claims, soft: worst.soft,
+        ok: !worst.gap, state: worst.gap ? 'gap' : 'ok', why: worst.gap || '', line: worst.line
       })
     })
   }
@@ -573,6 +753,13 @@ function runLint () {
     for (const row of lintIntent(readFileSync(prd, 'utf8'), readFileSync(spec, 'utf8'), { screen, helpers })) {
       if (row.state === 'no-beat') {
         console.log(`${screen} · ${row.id}${row.beat ? ' · beat ' + row.beat : ''} · no-beat · ${row.why}`)
+        continue
+      }
+      // the requirement-level row: its checkReq blocks do not walk its beats (fix round 2)
+      if (row.state === 'beat-mismatch') {
+        anyGap = true
+        console.log(`${screen} · ${row.id} · BEAT-MISMATCH`)
+        console.log(`    ${row.why}`)
         continue
       }
       if (!row.ok) anyGap = true
