@@ -430,7 +430,7 @@ test('the CLI\'s node text gate never demands text back from a style/script/etc-
 // fact the picture can never show. So every fact a Then names must be a SOFT claim (proveVisible
 // `soft: true`): the beat reaches and photographs each of them and fails once at its end with the
 // whole list, instead of stopping at the first red with the rest of the requirement unshown.
-import { splitFacts, lintIntent, isAbsenceFact, absenceTarget } from './proof-integrity.mjs'
+import { splitFacts, lintIntent, isAbsenceFact, absenceTarget, opensPage, claimsIn } from './proof-integrity.mjs'
 
 test('splitFacts splits a Then only where BOTH sides carry a verb-ish token', () => {
   // both sides carry one — two facts
@@ -723,6 +723,54 @@ test('dispatch', async ({ request }) => {
   const row = lintIntent(prd, closed)[0]
   assert.equal(row.state, 'declared')
   assert.equal(row.ok, true)
+})
+
+// …AND THE QUESTION IS ASKED OF THE WHOLE BLOCK, HELPERS INCLUDED (final re-review's I3 residual,
+// 2026-09-04). `opensPage` read the block's own bytes, and this project's own beat-function
+// convention — the shape skills/kg-e2e actively promotes — keeps every `page.` inside an exported
+// step function: `await draftedRowBecomesCard(page, state)` matches no token at all, so a composed
+// flow block read as HEADLESS and could take the whole-beat waiver on a page that is wide open.
+// lintIntent already hands `claimsIn` an EXPANDED body, so the CLI's own answer was right; the
+// predicate itself was not, and it is exported. It now takes the same functionBodies map the claim
+// count is read through, so no caller can ask the narrow question by accident.
+const STEPS = 'export async function draftedRowBecomesCard (page, state) {\n' +
+  '  await page.locator(".dr").click()\n}\n' +
+  'export async function countRows (state) { return state.rows.length }\n'
+
+test('a block whose page work lives in a step function opens a page — helpers included', () => {
+  const bodies = functionBodies(STEPS)
+  const body = 'await draftedRowBecomesCard(page, state)'
+  assert.equal(opensPage(body), false, 'its own bytes say nothing — `page` as an argument is not `page.`')
+  assert.equal(opensPage(body, bodies), true, 'read through the helper it calls, the page is wide open')
+  assert.equal(claimsIn(body, bodies).open, true, 'and claimsIn asks the same expanded question')
+  // a genuinely headless beat is still headless through the same expansion — the waiver dispatch
+  // depends on is not taken away by reading further
+  assert.equal(claimsIn('const n = await countRows(state)', bodies).open, false)
+})
+
+test('a zero-claim declaration cannot waive a beat whose page work is one call away', () => {
+  const prd = `---
+screen: init
+---
+
+## R3 — the drafted row becomes a card
+
+- **Given** a crawled row
+- **When** the depth pass drafts it
+- **Then** the row becomes a card; the crumb names the screen
+`
+  const spec = `
+test('init', async ({ page }) => {
+  await checkReq('R3', async () => {
+    intentGap('these are geometry, not values')
+    await draftedRowBecomesCard(page, state)
+  })
+})
+`
+  const row = lintIntent(prd, spec, { screen: 'init', helpers: [STEPS] })[0]
+  assert.equal(row.state, 'gap', 'the declaration is refused: the helper opens the page')
+  assert.equal(row.ok, false)
+  assert.match(row.why, /declared-on-an-open-page/)
 })
 
 test('a declaration is REFUSED on a fact that names an absence — that one is claimable', () => {

@@ -672,16 +672,26 @@ const countOf = (text, re) => (String(text).match(re) || []).length
 // at all, which its own source says plainly. Deliberately generous — any of these tokens means a
 // page is open, so the waiver is only ever granted to a block that is provably headless (dispatch
 // driving /api/run through `request`).
+// …AND THE WHOLE BLOCK IS THE BLOCK, HELPERS INCLUDED (final re-review's I3 residual, 2026-09-04).
+// This read the block's own bytes, and this project's own beat-function convention — the shape
+// skills/kg-e2e promotes — keeps every `page.` one call away in an exported step function:
+// `await draftedRowBecomesCard(page, state)` matches no token here at all (`page` as an ARGUMENT is
+// not `page.`), so a composed-flow block read as headless and could take the whole-beat waiver on a
+// page that is wide open. `bodies` is the same functionBodies map the claim count is already read
+// through (lintIntent expands before it asks, which is why the CLI's own answer was right and only
+// this exported predicate was narrow) — pass it and the question is asked of everything the block
+// calls, two levels deep. Called with no map it answers exactly as it did.
 const PAGE_TOKENS = /\bpage\s*\.|\blocator\s*\(|\bgetBy[A-Z]|\bproveVisible\s*\(|\breveal\s*\(|\bclick\s*\(/
-export function opensPage (body) {
-  return PAGE_TOKENS.test(stripComments(String(body || '')))
+export function opensPage (body, bodies) {
+  const src = String(body || '')
+  return PAGE_TOKENS.test(stripComments(bodies ? expandBody(src, bodies) : src))
 }
 
-export function claimsIn (body) {
+export function claimsIn (body, bodies) {
   const code = stripComments(body)
   const decls = declarationsIn(code)
   return {
-    open: opensPage(code),
+    open: opensPage(code, bodies),
     claims: countOf(code, /proveVisible\s*\(/g),
     soft: countOf(code, /soft\s*:\s*true/g),
     // an ABSENCE claim: `proveVisible(locator, MISSING, label, { soft: true })`, which passes
@@ -755,7 +765,9 @@ export function lintIntent (prdText, specSource, opts = {}) {
       continue
     }
     const blocks = blockBeats(specSource, r.id, beh.beats.length, screen)
-      .map(b => ({ ...b, ...claimsIn(expandBody(b.body, bodies)) }))
+      // the map is handed over as well as applied: `claimsIn` counts claims in the expanded text and
+      // asks `opensPage` the same expanded question, so neither half can be read narrowly by accident
+      .map(b => ({ ...b, ...claimsIn(expandBody(b.body, bodies), bodies) }))
     // THE LINT MIRRORS THE HARNESS EXACTLY (fix round 2, 2026-09-04, the controller). BEAT_CURSOR
     // files each block's harvest under the beat its POSITION names — block k IS beat k, clamped to
     // the last, the cursor resetting per test. So a requirement whose blocks do not WALK its beats
