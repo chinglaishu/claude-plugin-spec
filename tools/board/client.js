@@ -1344,10 +1344,29 @@ const B = window.__BOARD__ || {}
   // sanitised at capture and the sandbox forbids script anyway, but a committed file that has become
   // executable content never reaches a srcdoc from here. Its html comment header is dropped too.
   function repBody (text) {
-    const t = String(text || '')
-    if (!t) return ''
-    if (/<script\b/i.test(t) || /\son\w+\s*=\s*["']/i.test(t) || /javascript:/i.test(t)) return ''
-    return t.replace(/<!--[\s\S]*?-->/g, '').trim()
+    const t0 = String(text || '')
+    if (!t0) return ''
+    // THE COMMENT HEADER GOES FIRST (final review R6, 2026-09-04). Every replica file opens with an
+    // html comment saying what it is; stripping it AFTER the test meant a file whose header (or any
+    // other comment) happened to contain `<script` or an `on…=` was refused wholesale and the row
+    // went blank with no reason given — a false negative on an honest file.
+    const t = t0.replace(/<!--[\s\S]*?-->/g, '')
+    // …and the handler test now matches an UNQUOTED handler too: `<img src=x onerror=alert(1)>`
+    // walked straight past `\son\w+\s*=\s*["']`. Contained by `sandbox=''` either way, so this is
+    // the second wall, not the first — but a wall with a hole in it is not a wall.
+    if (/<script\b/i.test(t) || /\son\w+\s*=/i.test(t) || /javascript:/i.test(t)) return ''
+    // …AND NO EXTERNAL FETCH, WHATEVER THE FILE SAYS (final review I1, second wall). The capture
+    // refuses an external url on the way in (spec/_replica.mjs) and a computed value can no longer
+    // close the sheet — but this frame is the thing that would actually make the request, from the
+    // reviewer's own browser, so it asks the question itself rather than trusting the file it was
+    // handed. A `src`/`href` with a scheme or a protocol-relative `//` is neutralised in place; the
+    // element stays (an <img> with no src is an empty box, which is what a plate already is) so the
+    // rest of the picture is not thrown away for it.
+    // `data:` is the one scheme that stays: the capture keeps a small data: image because those
+    // pixels ARE the app's own picture, and they fetch nothing.
+    return t.replace(/\s(?:src|href|srcset)\s*=\s*(["'])\s*(?!data:)(?:[a-z][a-z0-9+.-]*:|\/\/)[^"']*\1/gi, ' data-external-src-removed="1"')
+      .replace(/\s(?:src|href|srcset)\s*=\s*(?!["']|data:)(?:[a-z][a-z0-9+.-]*:|\/\/)[^\s>]*/gi, ' data-external-src-removed="1"')
+      .trim()
   }
   const repAttr = function (text, name) {
     const m = new RegExp(name + '="([^"]*)"').exec(String(text || ''))
@@ -1372,6 +1391,7 @@ const B = window.__BOARD__ || {}
     for (let i = 0; i < els.length && out.length < PLATE_MAX; i++) {
       const e = els[i]
       if (!e || !e.bg || !(e.w > 0 && e.h > 0)) continue
+      if (!isFinite(Number(e.x)) || !isFinite(Number(e.y))) continue   // a skeleton is file content: its numbers are checked, not trusted
       if (!(area > 0) || e.w * e.h < area * PLATE_FRAC) continue
       if (reg && !(e.x + e.w <= reg.x || e.x >= reg.x + reg.w || e.y + e.h <= reg.y || e.y >= reg.y + reg.h)) continue
       out.push({ x: e.x, y: e.y, w: e.w, h: e.h })
@@ -1435,8 +1455,14 @@ const B = window.__BOARD__ || {}
       '.sbsk svg *{animation-play-state:paused!important;animation-delay:' +
         (parts.sketch && isFinite(Number(parts.sketch.park)) ? Number(parts.sketch.park) : 0) + 's!important}'
     ].join('\n')
+    // EVERY NUMBER THAT REACHES A STYLE ATTRIBUTE IS ONE (final review R6). A plate's box comes out
+    // of a committed `*.layout.json` — file content, not something this page computed — and `x`/`y`
+    // were interpolated unvalidated while `w`/`h` were checked: a corrupt skeleton carrying a quote
+    // in `x` closes the attribute and writes markup of its own. Sandboxed, so not execution; a
+    // false picture all the same, and the cheapest possible guard.
+    const num = function (v) { return isFinite(Number(v)) ? Number(v) : 0 }
     const plates = (parts.plates || []).map(function (p) {
-      return '<div class="sbplate" style="left:' + p.x + 'px;top:' + p.y + 'px;width:' + p.w + 'px;height:' + p.h + 'px"></div>'
+      return '<div class="sbplate" style="left:' + num(p.x) + 'px;top:' + num(p.y) + 'px;width:' + num(p.w) + 'px;height:' + num(p.h) + 'px"></div>'
     }).join('')
     const reg = parts.region || { x: 0, y: 0, w: parts.vw, h: parts.vh }
     const body = '<div style="position:absolute;left:' + reg.x + 'px;top:' + reg.y + 'px;width:' + reg.w + 'px">' + parts.body + '</div>'

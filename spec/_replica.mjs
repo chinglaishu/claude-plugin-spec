@@ -180,8 +180,44 @@ export function captureReplica (arg) {
   const esc = (s) => String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   const escAttr = (s) => esc(s).replace(/"/g, '&quot;')
+  // A COMPUTED VALUE MAY NOT CLOSE THE SHEET (final review I1, 2026-09-04). Every declaration this
+  // file writes is `prop + ':' + <a value the app chose>`, inside ONE <style> element — and a
+  // <style> is HTML raw text, ended by the literal characters `</style` and by nothing else. An app
+  // whose CSS names a font `x</style><img src=https://evil/…>` therefore closes the sheet and
+  // injects an EXTERNAL IMAGE into a committed replica: this module's own header promise ("no
+  // external URL") broken, and a beacon fired from the browser of whoever opens the row. The escape
+  // is CSS's own — `\/` is a valid escape for `/` inside a value — so the rule still says exactly
+  // what the app said while the tokeniser never sees a closing tag. Entity escaping is NOT usable
+  // here: raw text is not entity-decoded, so `&lt;` would reach the CSS parser as five characters
+  // and corrupt the declaration. Applied at the ONE point every value enters (`gp`), so no later
+  // `out.push` can be added past it. Idempotent: an already-escaped value contains no `</style`,
+  // which is what lets the Expected half re-read a base file's own sheet unharmed.
+  // spec/_base.ts's gateReplica escapes the page's @font-face text the same way, for the same
+  // reason; tools/replica-gate.mjs's `textOf` drops the sheet entirely before reading words.
+  // Two rules, both at the ONE point a value enters, so no `out.push` added later can get past them:
+  //   1. NO MARKUP CHARACTER SURVIVES AS A DECLARATION. None of REPLICA_PROPS can carry `<`, `>` or
+  //      `&` in an honest computed value — `content` and `background-image` are deliberately not on
+  //      that list — so a value that does is not a picture of anything, it is markup wearing a
+  //      declaration's clothes. Refused outright, which is the existing "a value the page will not
+  //      answer for is not a declaration" path; the cost of the pathological case is one fallback
+  //      face, and the file's promise stays literally true rather than true-if-you-trust-the-raw-
+  //      text-rule.
+  //   2. AND WHATEVER STILL ARRIVES CANNOT CLOSE THE SHEET. Belt to that braces, and the rule that
+  //      keeps holding if `content` or `background-image` is ever added to the list: `\/` is CSS's
+  //      own escape for `/`, so the declaration still says what the app said while the tokeniser
+  //      never sees a closing tag. It is idempotent — an escaped value contains no `</style` — which
+  //      is what lets the Expected half re-read a base file's own sheet unharmed.
+  // Entity escaping is NOT usable here: a <style> element is HTML raw text and is never entity-
+  // decoded, so `&lt;` would reach the CSS parser as five literal characters and corrupt the rule.
+  // spec/_base.ts's gateReplica escapes the page's @font-face text by rule 2 for the same reason.
+  const MARKUP = /[<>&]/
+  const cssSafe = (v) => {
+    const s = String(v == null ? '' : v)
+    if (MARKUP.test(s)) return ''
+    return s.replace(/<\/(style)/gi, '<\\/$1')
+  }
   const gp = (cs, p) => {
-    try { return cs && typeof cs.getPropertyValue === 'function' ? String(cs.getPropertyValue(p) || '') : '' } catch { return '' }
+    try { return cs && typeof cs.getPropertyValue === 'function' ? cssSafe(cs.getPropertyValue(p) || '') : '' } catch { return '' }
   }
   const styleOf = (node, pseudo) => {
     if (!getComputedStyle) return null

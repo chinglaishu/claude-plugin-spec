@@ -157,6 +157,32 @@ test('the plan\'s acceptance: a script, an onclick, a javascript: href and an ex
   assert.ok(r.html.includes('click me') && r.html.includes('>go<'), 'the page\'s own words survive')
 })
 
+// A COMPUTED STYLE VALUE MAY NOT CLOSE THE SHEET (final review I1, 2026-09-04). Every declaration
+// in the replica's one <style> is `prop + ':' + getComputedStyle(el, prop)`, and inside a <style>
+// element the HTML tokeniser ends the element at the literal characters `</style` — so an app whose
+// CSS declares a font family named `x</style><img src=https://evil/…>` writes a sheet that closes
+// itself and an EXTERNAL IMAGE into a committed file, breaking this module's own header promise
+// ("no external URL") and making the board's frame fetch from a third party when a reviewer opens
+// the row. Not RCE — all three render sites forbid scripts — but a false picture and a beacon.
+// The escape is CSS's own: `\/` inside a value is a valid escape for `/`, so the sheet still says
+// exactly what the app said while the tokeniser never sees a closing tag. (Entity-escaping is NOT
+// available here: a <style> element is raw text, `&lt;` would reach the CSS parser as five literal
+// characters and corrupt the rule.)
+test('a computed value that closes the sheet cannot: </style is neutralised, and no external url lands', () => {
+  const nasty = 'x</style><img src=https://evil.example/leak.png><style>'
+  const leaf = el('div', [0, 0, 100, 20], { text: 'hello', cs: { 'font-family': '"' + nasty + '", serif', color: 'rgb(1, 2, 3)' } })
+  const root = el('div', [0, 0, 400, 200], { children: [leaf] })
+  const body = el('body', [0, 0, 1440, 900], { children: [root] })
+  const r = cap(body, { target: leaf, ring: { x: 0, y: 0, width: 100, height: 20 } })
+  const sheet = /<style>([\s\S]*?)<\/style>/.exec(r.html)
+  assert.ok(sheet, 'the file still opens and closes exactly one sheet')
+  assert.ok(!/<\/style/i.test(sheet[1]), 'no closing tag inside the sheet: ' + sheet[1])
+  assert.ok(!r.html.includes('https://'), 'no external url reaches the file')
+  assert.ok(!r.html.includes('<img'), 'and no injected element either')
+  assert.ok(!/font-family/.test(sheet[1]), 'the markup-bearing declaration is refused, not smuggled: ' + sheet[1])
+  assert.ok(/color:rgb\(1, 2, 3\)/.test(sheet[1]) && !/leak\.png/.test(sheet[1]), 'the honest declaration beside it is still written: ' + sheet[1])
+})
+
 test('style, link, template, noscript, object, embed, meta, head and title are dropped with their subtrees', () => {
   const kids = ['style', 'link', 'template', 'noscript', 'object', 'embed', 'meta', 'head', 'title']
     .map((t, i) => el(t, [0, i * 10, 50, 10], { text: 'GONE' + t }))
