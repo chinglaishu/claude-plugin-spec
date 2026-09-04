@@ -331,6 +331,48 @@ test('a word a CLAIM moved is exempt from the word gate; a word nothing claimed 
   } finally { rmSync(dropped, { recursive: true, force: true }) }
 })
 
+// …AND THE RING BRANCH IS FILTERED THE SAME WAY THE TEXT BRANCH IS (final re-review, 2026-09-04).
+// The `got` branch already exempts only a claim that actually MOVED the text (`got !== expected`),
+// with the reason written beside it: exempting an exact pass would waive the word rule for every
+// element a beat merely READ, so deleting a text node the beat claimed would stop failing this gate
+// — the plan's own acceptance case. The ring branch is a geometric overlap test and had no such
+// filter, so it granted precisely the waiver its sibling refuses, to every live element touching a
+// passing claim's ring box. Dormant on both trees today (a claim carries a `ring` only where the
+// moment could not carry the ring at all — 0 of 204 committed claim lists have one), which is why
+// this is a fixture and not a repro.
+test('a PASSING claim\'s ring waives nothing — the exemption is what a claim MOVED, on both branches', () => {
+  // an EXACT pass, ringing the row: the app showed the very words the beat asked for, so nothing was
+  // moved and the file must still contain them
+  const exact = '[{&quot;label&quot;:&quot;the row&quot;,&quot;expected&quot;:&quot;Pay the electricity bill&quot;,' +
+    '&quot;got&quot;:&quot;Pay the electricity bill&quot;,&quot;ok&quot;:true,' +
+    '&quot;ring&quot;:{&quot;x&quot;:110,&quot;y&quot;:190,&quot;w&quot;:320,&quot;h&quot;:40}}]'
+  const root = repFixture({
+    expected: h => h.replace(CLAIMS, exact).replace('<div class="r1">Pay the electricity bill</div>', '')
+  })
+  try {
+    const row = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))[0]
+    assert.equal(row.ok, false, 'a word inside a passing claim\'s ring is still demanded: ' + JSON.stringify(row))
+    assert.ok(row.gaps.some(g => g.kind === 'missing-text' && /electricity/.test(g.what)), JSON.stringify(row.gaps))
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('…and a FAILED claim\'s ring still exempts what it moved — the seam rule 5 answers for', () => {
+  // the claim asked for words the app did not show, so the Expected carries the REQUIREMENT's value
+  // and the live one is, correctly, gone: rule 4 must not demand it back, and rule 5 checks the file
+  // really does carry the expected words
+  const moved = '[{&quot;label&quot;:&quot;the row&quot;,&quot;expected&quot;:&quot;Renew passport&quot;,' +
+    '&quot;got&quot;:&quot;Pay the electricity bill&quot;,&quot;ok&quot;:false,' +
+    '&quot;ring&quot;:{&quot;x&quot;:110,&quot;y&quot;:190,&quot;w&quot;:320,&quot;h&quot;:40}}]'
+  const root = repFixture({
+    expected: h => h.replace(CLAIMS, moved)
+      .replace('<div class="r1">Pay the electricity bill</div>', '<div class="r1" data-claim="row">Renew passport</div>')
+  })
+  try {
+    const row = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))[0]
+    assert.equal(row.ok, true, 'the claim put its own value there: ' + row.why + ' ' + JSON.stringify(row.gaps))
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
 test('a gap the IN-PAGE walk already found rides on the file and is reported here', () => {
   const gaps = '[{&quot;kind&quot;:&quot;missing-box&quot;,&quot;what&quot;:&quot;row&quot;,&quot;x&quot;:1,&quot;y&quot;:2,&quot;w&quot;:3,&quot;h&quot;:4}]'
   const root = repFixture({ actual: h => h.replace('data-replica-gaps="[]"', 'data-replica-gaps="' + gaps + '"') })

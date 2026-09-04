@@ -260,10 +260,12 @@ export function checkMirrors (spec = 'spec') {
 //
 // Rules 4 and 5 pull against each other on ONE file, and the seam between them is the claim: rule 5
 // demands the value the requirement asked for, and applying it is exactly what makes the live text
-// rule 4 would demand no longer be there. So rule 4 EXEMPTS what a claim moved — a live element
-// standing inside a claim's own ring, or one whose text is that claim's `got` (the string the
-// Expected replaced with its `expected`). Those are the nodes the capture marks `data-claim`; the
-// exemption is made on the live side because that is the side with boxes on it.
+// rule 4 would demand no longer be there. So rule 4 EXEMPTS what a claim MOVED — and only what it
+// moved (`got !== expected`, on BOTH branches: a live element standing inside such a claim's ring,
+// or one whose text is that claim's `got`, the string the Expected replaced with its `expected`).
+// Those are the nodes the capture marks `data-claim`; the exemption is made on the live side because
+// that is the side with boxes on it. A claim the app answered EXACTLY moved nothing, so it waives
+// nothing — otherwise deleting a text node a beat merely read would stop failing this gate.
 //
 // Since 2026-09-04 there is no `.actual.html` at all: a moment's Actual half is the photograph named
 // beside it (the human: "why does the Expected also need a replica — the Actual is the screenshot").
@@ -334,15 +336,22 @@ export function checkReplicas (spec = 'spec') {
           // correctly, not in it — demanding it back would refuse every Expected that does its job.
           // Two exemptions, both read off the claims the file itself carries: a live element that
           // stands inside a claim's own ring box, and a live text that IS a claim's `got`.
-          const claimRings = a.claims.map(c => (c && c.ring && typeof c.ring === 'object' ? c.ring : null))
-            .filter(r => r && Number.isFinite(Number(r.x)))
-            .map(r => ({ x: Number(r.x), y: Number(r.y), w: Number(r.w != null ? r.w : r.width) || 0, h: Number(r.h != null ? r.h : r.height) || 0 }))
           // …only where the claim actually MOVED the text: an exact pass (got === expected) shows the
           // very words the live element had, so exempting them would waive the word rule for every
           // element a beat happened to read — deleting a text node the beat claimed would stop
           // failing this gate, which is the plan's own acceptance case.
-          const claimGot = a.claims
-            .filter(c => c && String(c.got || '').trim() !== String(c.expected || '').trim())
+          // BOTH BRANCHES TAKE THAT FILTER (corrected 2026-09-04, final re-review). Only the `got`
+          // branch had it. The ring branch is a geometric OVERLAP test, so unfiltered it waived the
+          // word rule for every live element merely TOUCHING a passing claim's ring box — which is
+          // exactly the waiver the sibling branch refuses, and for a wider set of elements. It is
+          // dormant on both trees (a claim carries a `ring` only where the moment could not carry
+          // the ring at all: 0 of 204 committed claim lists have one), so this closes the seam on
+          // paper as well as in practice rather than fixing a live gap.
+          const moved = a.claims.filter(c => c && String(c.got || '').trim() !== String(c.expected || '').trim())
+          const claimRings = moved.map(c => (c.ring && typeof c.ring === 'object' ? c.ring : null))
+            .filter(r => r && Number.isFinite(Number(r.x)))
+            .map(r => ({ x: Number(r.x), y: Number(r.y), w: Number(r.w != null ? r.w : r.width) || 0, h: Number(r.h != null ? r.h : r.height) || 0 }))
+          const claimGot = moved
             .map(c => String(c.got || '').replace(/\s+/g, ' ').trim()).filter(Boolean)
           const claimed = (e, t) => claimGot.some(g => g === t || containsRun(g, t)) ||
             claimRings.some(r => e.x + e.w > r.x - GATE_TOL && e.x < r.x + r.w + GATE_TOL &&
