@@ -140,8 +140,13 @@ test('the mirror gate ignores an archetype drawing — only a wireframe claims t
 // silently. checkReplicas refuses a replica that was never gated in the page, one the harvest has
 // moved past, one the in-page walk found a gap in, one whose words are not the skeleton's beside it,
 // and an Expected that does not carry a failed claim's own value.
+import { execFileSync } from 'node:child_process'
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { layoutHash } from './viz.mjs'
 import { checkReplicas } from './proof-integrity.mjs'
+
+const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 const RLAY = {
   w: 1440,
@@ -201,16 +206,48 @@ test('the replica gate passes a gated moment whose pin, words and claims all sti
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
 
-test('a leftover .actual.html from the old two-file shape is refused, never passed unseen', () => {
-  // The fold sweeps them (tools/evidence.mjs legacyActualReplicas), but a tree someone updated
-  // without re-harvesting still has them: ungated by anything this release runs, so refused.
+// A REAL one, out of this repo's own history (final re-review, new breakage 1, 2026-09-04). The
+// test that stood here wrote `<div class="rep r0">stale</div>` — a file with no pin at all — and so
+// only proved that an UNGATED file is refused, which was never in doubt. The file the release
+// actually leaves behind is the one the OLD harness gated: `b2538c8`'s own
+// spec/board/evidence/R1.b1.v1.actual.html, whose pin still hashes the skeleton committed beside it.
+// Run against that, `checkReplicas` returned `ok: true` — a retired half of the two-file shape,
+// reported healthy, on a tree `kg-update` brought forward without re-harvesting. So the KIND is what
+// is refused now, before any rule reads a byte: there is no `.actual.html` in this release at all
+// (the Actual half of a moment is the photograph named beside it), and a file of that name is a
+// leftover whose only honest answer is to harvest the screen again.
+const legacyActual = () => {
+  const root = join(tmpdir(), 'replica-legacy-' + Math.random().toString(36).slice(2))
+  const dir = join(root, 'board', 'evidence')
+  mkdirSync(dir, { recursive: true })
+  const show = (p) => execFileSync('git', ['show', 'b2538c8:' + p], { cwd: REPO, maxBuffer: 32 * 1024 * 1024 })
+  writeFileSync(join(dir, 'R1.b1.v1.actual.html'), show('spec/board/evidence/R1.b1.v1.actual.html'))
+  writeFileSync(join(dir, 'R1.b1.v1.layout.json'), show('spec/board/evidence/R1.b1.v1.layout.json'))
+  return root
+}
+
+test('a leftover .actual.html the OLD harness gated is refused — the retired kind, not a verdict on its bytes', () => {
+  const root = legacyActual()
+  try {
+    const row = checkReplicas(root).find(r => r.file.endsWith('.actual.html'))
+    assert.ok(row, 'the stale file is still seen')
+    assert.equal(row.side, 'actual')
+    // it is NOT refused as ungated — this one carries a valid pin over the skeleton beside it, which
+    // is exactly why the old fixture proved nothing
+    assert.doesNotMatch(row.why, /not gated/)
+    assert.equal(row.ok, false, 'a gated legacy Actual still fails: ' + JSON.stringify(row))
+    assert.match(row.why, /retired file — re-harvest the screen/)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('a leftover .actual.html with no pin at all is refused too — the kind is enough', () => {
   const root = repFixture()
   try {
     writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.actual.html'), '<div class="rep r0">stale</div>')
     const row = checkReplicas(root).find(r => r.file.endsWith('.actual.html'))
     assert.ok(row, 'the stale file is still seen')
     assert.equal(row.ok, false)
-    assert.match(row.why, /not gated/)
+    assert.match(row.why, /retired file — re-harvest the screen/)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
 

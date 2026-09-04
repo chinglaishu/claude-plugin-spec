@@ -267,8 +267,14 @@ export function checkMirrors (spec = 'spec') {
 //
 // Since 2026-09-04 there is no `.actual.html` at all: a moment's Actual half is the photograph named
 // beside it (the human: "why does the Expected also need a replica — the Actual is the screenshot").
-// The pattern still MATCHES one, so a stale file left by an older harness is refused as ungated
-// rather than passing unseen; the fold sweeps them (tools/evidence.mjs legacyActualReplicas).
+// The pattern still MATCHES one, and the KIND is refused before any rule reads a byte (corrected
+// 2026-09-04, final re-review, rule 6 — this paragraph said "refused as ungated", and that was
+// FALSE: an `.actual.html` the OLD harness gated carries a valid pin over the skeleton still
+// committed beside it, so every rule below passed it and `checkReplicas` reported it healthy. A tree
+// `kg-update` brought forward without a re-harvest keeps every one of them — the fold only sweeps
+// the screens it touches (tools/evidence.mjs legacyActualReplicas) — and serve-board still serves
+// them.) There is no verdict this release can honestly give such a file's bytes: it is the retired
+// half of a shape that no longer exists, and the only answer is to harvest the screen again.
 const REPLICA_FILE = /^(.+)\.b(\d+)\.(before|after|v\d+)\.(actual|expected)\.html$/
 export function checkReplicas (spec = 'spec') {
   const rows = []
@@ -283,6 +289,14 @@ export function checkReplicas (spec = 'spec') {
       const file = join(dir, f)
       const row = { screen, id: m[1], file, side: m[4], ok: true, why: '', gaps: [] }
       rows.push(row)
+      // the RETIRED KIND, refused on its name alone (see the header) — never graded, because a
+      // verdict on it would be a verdict about a shape this release does not produce
+      if (row.side === 'actual') {
+        row.ok = false
+        row.why = 'retired file — re-harvest the screen: there is no .actual.html in this release ' +
+          '(a moment’s Actual half is the photograph beside it)'
+        continue
+      }
       let html = ''
       try { html = readFileSync(file, 'utf8') } catch { html = '' }
       const a = replicaAttrs(html)
