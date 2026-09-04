@@ -913,3 +913,25 @@ test('a checkReq named in a COMMENT is not a block (fix round 2)', () => {
   assert.equal(blocks.length, 2, 'two real calls: ' + blocks.map(b => b.line).join(', '))
   assert.deepEqual(blocks.map(b => b.line), [2, 5], 'and their lines are unchanged by the masking')
 })
+
+// …AND THE CLI'S OWN WORD GATE ASKS THE SAME QUESTION THE IN-PAGE ONE DOES (fix round 2, I6 —
+// completed 2026-09-04 after the census: the mark was read by `replicaGaps` and NOT by the loop
+// here, so a toast, a dismiss control or any body-level overlay whose box happens to fall inside
+// the region was still demanded back out of a file that can never contain it — board R16's ✕,
+// measured at 1359,146 with `inRoot: 0`, reported as a missing word on a replica that was right).
+test('the CLI word gate skips an element the skeleton marks OUTSIDE the scene root (I6)', () => {
+  const root = repFixture({
+    repin: true,
+    layout: l => {
+      l.rootMarked = 1
+      l.els = l.els.map(e => ({ ...e, inRoot: 1 }))
+      l.els[3] = { ...l.els[3], x: 120, y: 260, inRoot: 0 }   // moved INTO the region, outside the subtree
+      return l
+    }
+  })
+  try {
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    assert.deepEqual(rows[0].gaps, [], 'an element outside the picture is not the picture\'s to show')
+    assert.equal(rows[0].ok, true)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})

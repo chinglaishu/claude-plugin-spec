@@ -304,6 +304,13 @@ export function checkReplicas (spec = 'spec') {
             const t = String(e.text == null ? '' : e.text).replace(/\s+/g, ' ').trim()
             if (!t) continue
             if (e.w < GATE_MIN || e.h < GATE_MIN) continue      // the walk's own floor, from the module that owns it
+            // …and the PICTURE IS A SUBTREE, not a rectangle (fix round 2, I6 — the same question
+            // `replicaGaps` asks, completed here after the census caught it): a toast, a dismiss
+            // control, any body-level overlay whose box falls inside the region hangs off the body
+            // beside the scene root, and no honest replica of that root can contain it. Board R16's
+            // ✕ — measured at 1359,146 with `inRoot: 0` — was reported here as a missing word on a
+            // file that was right. An unmarked skeleton is read exactly as before.
+            if (lay.rootMarked && e.inRoot === 0) continue
             if (reg && !(e.x >= reg.x - GATE_TOL && e.y >= reg.y - GATE_TOL &&
               e.x + e.w <= reg.x + reg.w + GATE_TOL && e.y + e.h <= reg.y + reg.h + GATE_TOL)) continue
             // …as its own word run, never as a bare substring (fix round 1, I1): here the haystack is
