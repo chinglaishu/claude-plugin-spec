@@ -69,10 +69,22 @@ export function momentSource (walkSrc, capSrc) {
     'var rc = { rootEl: null };' +
     'var skel = null, rep = null;' +
     'try { skel = __walk({ ring: a.ring, target: a.target, env: a.env || null, report: rp }) } catch (e) { skel = null }' +
+    // …AND NO PICTURE OF SOMETHING THE WALK REFUSED TO MEASURE (final review C1, 2026-09-04). The
+    // capture is handed the element the WALK measured under the ring, falling back to the raw target
+    // — and that fallback re-opened the very disagreement this file exists to close. When the walk
+    // DROPS the handed-over element (a card sitting behind an opened dialog: occluded, so the walk
+    // measures the dialog instead) it reports no `ringEl`, the fallback rooted the scene on the card
+    // anyway, and the replica pictured the page BEHIND the modal while the skeleton described the
+    // modal: board R22.b2, 45 measured elements and not one of them inside the scene root, and an
+    // extra box on a file nothing could ever gate. A picture of what a reader cannot see is worse
+    // than no picture, so a moment whose ringed element the walk refused simply has none — the row
+    // says so out loud, exactly as it does when nothing was measured at all.
+    'var __tgt = a.target ? rp.ringEl : (rp.ringEl || null);' +
     'try {' +
-      'rep = __cap({ ring: a.ring, target: rp.ringEl || a.target || null, props: a.props, claim: a.claim,' +
+      'if (a.target && !rp.ringEl) { rep = null } else {' +
+      'rep = __cap({ ring: a.ring, target: __tgt, props: a.props, claim: a.claim,' +
       ' claims: a.claims, base: a.base, minRegion: a.minRegion, caps: a.caps, env: a.env || null,' +
-      ' occluded: rp.occluded, report: rc })' +
+      ' occluded: rp.occluded, report: rc }) }' +
     '} catch (e) { rep = null }' +
     // WHAT IS IN THE PICTURE (fix round 2, I6). The replica is a picture of the scene ROOT'S
     // SUBTREE; `region` is only that root's rectangle. An element that overlaps the rectangle from
@@ -92,6 +104,93 @@ export function momentSource (walkSrc, capSrc) {
         'skel.rootMarked = 1' +
       '}' +
     '} catch (e) { /* an unmarked skeleton still gates, by its rectangle */ }' +
-    'return { skel: skel, rep: rep }' +
+    // ── AND THE GATE, IN THE SAME PASS (final review C1, 2026-09-04) ─────────────────────────────
+    // `gateInPage` below, stringified exactly the way the walk and the capture are. See its own
+    // header for why the gate belongs here rather than in a third `page.evaluate`.
+    'var __gate = ' + String(gateInPage) + ';' +
+    'var tidy = function () { try { var el = document.getElementById(a.gateHost); if (el) el.remove() } catch (e) {} };' +
+    'var done = function (sk) { tidy(); return { skel: skel, rep: rep, repSkel: sk || null } };' +
+    'try {' +
+      'var g = __gate({ walk: __walk, rep: rep, ring: a.ring, skel: skel, host: a.gateHost });' +
+      'if (g && typeof g.then === "function") return g.then(done, function () { return done(null) });' +
+      'return done(g)' +
+    '} catch (e) { return done(null) }' +
   '}'
+}
+
+/**
+ * gateInPage({ walk, rep, ring, skel, host }) → Promise<skeleton | null>  — THE GATE, IN THE PAGE.
+ *
+ * (final review C1, 2026-09-04.) The replica used to be walked back in a THIRD `page.evaluate`,
+ * fired from Node after the screenshot and after the moment pass had already returned — a third
+ * reading of a page that had been given three chances to settle between them. It runs here now, in
+ * the same pass, on the html this pass has just built and against the skeleton this same pass
+ * measured: the two things a likeness gate compares can no longer come from two different instants
+ * of the app. The `await` is AFTER both readings are in hand, so the "no await between the walk and
+ * the capture" property spec/_moment.mjs exists for is untouched — the page may run its own code
+ * while the frame loads, and neither `skel` nor `rep` can change any more when it does.
+ *
+ * SELF-CONTAINED, like the walk and the capture: it is serialised by its source into the page, so it
+ * may not reference a single thing outside its own body — the walk arrives as `walk`.
+ *
+ * The frame is `sandbox="allow-same-origin"` with NO allow-scripts (the replica's own sanitiser is
+ * the second wall), pinned to the viewport origin so its coordinates ARE the page's, and carries the
+ * page's own @font-face rules — a frame set in a fallback stack lays every word out at a different
+ * width and every text box would drift. `</style` in a serialised font family is neutralised with
+ * CSS's own `\/` escape, or the sheet would close early and the frame would set its type in nothing.
+ * Every failure resolves to null: an ungated replica is honest, and the CLI refuses it as "not
+ * gated" rather than passing it unseen.
+ */
+export function gateInPage (arg) {
+  var walk = arg && arg.walk
+  var rep = arg && arg.rep
+  var skel = arg && arg.skel
+  if (!walk || !rep || !rep.html || !rep.region) return null
+  var reg = rep.region
+  var faces = ''
+  try {
+    var ff = rep.fontFaces
+    if (ff && ff.length) {
+      for (var i = 0; i < ff.length; i++) faces += String((ff[i] && ff[i].cssText) || '') + '\n'
+      faces = faces.slice(0, 64000).replace(/<\/style/gi, '<\\/style')
+    }
+  } catch (e) { faces = '' }
+  var doc = '<!doctype html><html><head><style>html,body{margin:0;overflow:hidden}</style><style>' +
+    faces + '</style></head><body><div style="position:absolute;left:' + reg.x + 'px;top:' + reg.y +
+    'px;width:' + reg.w + 'px">' + rep.html + '</div></body></html>'
+  var prev = document.getElementById(arg.host)
+  if (prev) prev.remove()
+  var f = document.createElement('iframe')
+  f.id = arg.host
+  f.setAttribute('sandbox', 'allow-same-origin')
+  f.setAttribute('style', 'position:fixed;left:0;top:0;width:' + (window.innerWidth || 0) +
+    'px;height:' + (window.innerHeight || 0) + 'px;border:0;opacity:0;pointer-events:none;z-index:-1')
+  f.srcdoc = doc
+  return new Promise(function (resolve) {
+    var settled = false
+    var finish = function (ok) { if (!settled) { settled = true; resolve(ok) } }
+    f.addEventListener('load', function () { finish(true) })
+    setTimeout(function () { finish(false) }, 1200)
+    document.body.appendChild(f)
+  }).then(function (up) {
+    if (!up) return null
+    var d = f.contentDocument
+    var w = f.contentWindow
+    if (!d || !w || !d.body) return null
+    // THE SAME FORCED TARGET AND THE SAME RING AS THE LIVE SIDE. `focus` is geometric, so a walk
+    // given a different ring flags a different set of elements (board R22 came back `missing-focus
+    // 15` on a replica that was otherwise gap-free). The capture marks the ringed element
+    // `data-ring="1"` so the replica is never left to rediscover it, and `ringFixed` keeps the ring
+    // the live skeleton was measured with.
+    var ringed = d.querySelector('[data-ring]')
+    var lr = (skel && skel.ring)
+      ? { x: skel.ring.x, y: skel.ring.y, width: skel.ring.w, height: skel.ring.h }
+      : (arg.ring || null)
+    return walk({
+      ring: lr,
+      target: ringed,
+      ringFixed: true,
+      env: { window: w, document: d, getComputedStyle: w.getComputedStyle.bind(w) }
+    })
+  })
 }
