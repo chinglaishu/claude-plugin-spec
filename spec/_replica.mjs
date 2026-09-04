@@ -816,6 +816,48 @@ export function captureReplica (arg) {
       const sTop = Math.round(Number(node.scrollTop) || 0)
       const sLeft = Math.round(Number(node.scrollLeft) || 0)
       let toShift = (sTop || sLeft) ? { top: sTop, left: sLeft } : null
+      // …AND THE ROOT'S FIRST CHILD SITS WHERE IT WAS MEASURED (final review C1, 2026-09-04 — the
+      // `<ol>` collapse family the census has carried since phase 3). A first child's top margin
+      // COLLAPSES THROUGH a parent that has no border and no top padding: live it escapes the root
+      // entirely, so the root's own rect starts exactly at the child. The file is mounted inside an
+      // absolutely positioned wrapper, which establishes its own formatting context — the margin
+      // cannot escape THAT, so it pushes the whole scene down inside it instead. Board R10's story
+      // list came back 8–9 px low, every row of it, on a file that was otherwise perfect.
+      // Both rects are in hand here, so the answer is MEASURED, never a guess: the first in-flow
+      // child's top margin is pinned to the offset the browser actually rendered
+      // (`child.top - root.top`), which is 0 wherever the margin collapsed out. It subsumes a
+      // scrolled root's own shift for that one child, because the child's rect already includes it.
+      let pinNode = null
+      let pinShift = null
+      if (isRoot && r) {
+        for (let pi = 0; pi < src.length; pi++) {
+          const pk = src[pi]
+          if (!pk || pk.nodeType !== 1) continue
+          const pcs = styleOf(pk)
+          const ppos = pcs ? gp(pcs, 'position') : ''
+          if (ppos === 'absolute' || ppos === 'fixed') continue
+          const pr = rectOf(pk)
+          if (pr) {
+            // measured against the root's CONTENT box, not its border box: a root's own border and
+            // top padding legitimately put its first child lower, and pinning that away would move
+            // every scene down by it
+            const bt = (cs && parseFloat(gp(cs, 'border-top-width'))) || 0
+            const pt = (cs && parseFloat(gp(cs, 'padding-top'))) || 0
+            const mt = (pcs && parseFloat(gp(pcs, 'margin-top'))) || 0
+            // ONLY the collapse signature, and nothing else: the child DECLARES a top margin and the
+            // browser rendered it at the root's content top anyway — which is what a margin escaping
+            // through a border-less, padding-less parent looks like and nothing else does. Narrow on
+            // purpose: a first child that merely sits lower (a float, an inline baseline, a preceding
+            // text node) is honest layout the replica reproduces on its own, and pinning a margin
+            // there would move the scene rather than hold it still.
+            if (mt > 0.5 && Math.abs(pr.top - (r.top + bt + pt)) < 0.5) {
+              pinNode = pk
+              pinShift = { top: mt, left: (toShift && toShift.left) || 0 }
+            }
+          }
+          break
+        }
+      }
       // a materialised ::before is always inline content, so a whitespace node right after it can
       // still separate it from the first real child (see `isInlineFlow` above)
       let prevWasInline = !!before
@@ -856,7 +898,7 @@ export function captureReplica (arg) {
         const kcs = styleOf(k)
         const kpos = kcs ? gp(kcs, 'position') : ''
         const outOfFlow = kpos === 'absolute' || kpos === 'fixed'
-        const child = serialise(k, false, cs, toShift)
+        const child = serialise(k, false, cs, (pinNode && k === pinNode) ? pinShift : toShift)
         if (child) { out.push(child); if (child.tag && !outOfFlow) toShift = null }
         prevWasInline = inlineNow
       }

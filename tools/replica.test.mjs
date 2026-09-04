@@ -1635,6 +1635,38 @@ test('a scrolled box shifts EVERY out-of-flow child, and the first in-flow one f
     JSON.stringify(rules))
 })
 
+// A MARGIN THAT COLLAPSED OUT OF THE ROOT MUST NOT COME BACK (final review C1, 2026-09-04). A first
+// child's top margin collapses THROUGH a parent with no border and no top padding: live it escapes
+// the root entirely, so the root's own rect starts exactly at the child. The file is mounted inside
+// an absolutely positioned wrapper, which is its own formatting context — the margin cannot escape
+// that, so it pushes the whole scene down instead. Board R10's story list (an `<ol>` whose `<li>`
+// carries a margin) came back 8–9 px low, every row of it, on a file that was otherwise perfect.
+// The signature is exact and measured: the child DECLARES a top margin and the browser rendered it
+// at the root's content top anyway.
+test('a first child whose top margin collapsed OUT of the root is pinned back to where it rendered', () => {
+  const first = el('li', [0, 0, 300, 20], { text: 'step one', cs: { 'margin-top': '9px' } })
+  const second = el('li', [0, 20, 300, 20], { text: 'step two', cs: { 'margin-top': '9px' } })
+  const list = el('ol', [0, 0, 300, 400], { children: [first, second] })
+  const body = el('body', [0, 0, 1440, 900], { children: [list] })
+  const r = cap(body, { target: first, ring: { x: 0, y: 0, width: 20, height: 10 } })
+  const rules = r.html.replace('<style>', '').split('\n').filter(l => l.startsWith('.rep'))
+  assert.ok(rules.some(l => /margin-top:0px/.test(l)),
+    'the collapsed margin is pinned to the offset the browser rendered: ' + JSON.stringify(rules))
+  // …and only ONE element wears it — the first child; nothing else gains a margin it did not have
+  const cls = /\.rep \.(r\d+)\{margin-top:0px\}/.exec(rules.join('\n'))
+  assert.ok(cls, 'the pin is its own class: ' + JSON.stringify(rules))
+  assert.equal((r.html.match(new RegExp('class="' + cls[1] + '"', 'g')) || []).length, 1)
+})
+
+test('…and a first child that merely sits lower is left exactly as it is', () => {
+  // honest layout — a padded root — must not be pinned: the replica reproduces it on its own
+  const first = el('div', [0, 12, 300, 20], { text: 'inside the padding', cs: { 'margin-top': '0px' } })
+  const box = el('div', [0, 0, 300, 400], { children: [first], cs: { padding: '12px 0', 'padding-top': '12px' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [box] })
+  const r = cap(body, { target: first, ring: { x: 0, y: 12, width: 20, height: 10 } })
+  assert.ok(!/margin-top:/.test(r.html), 'no synthetic margin where nothing collapsed: ' + r.html)
+})
+
 test('a container that is NOT scrolled gains nothing', () => {
   const a = el('div', [10, 46, 380, 100], { text: 'first' })
   const pane = el('div', [10, 40, 400, 300], { children: [a], cs: { overflow: 'auto' } })
