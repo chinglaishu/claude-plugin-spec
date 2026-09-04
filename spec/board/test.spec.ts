@@ -1604,7 +1604,12 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
         .evaluate(f => String((f as HTMLIFrameElement).srcdoc || ''), undefined, { timeout: 8000 })
       // BOTH halves in ONE page: the sibling's own committed replica root …
       expect(sdoc, 'the lender\'s captured page is the chrome').toContain('data-replica-kit=')
-      expect(sdoc, 'and it is the ACTUAL side — what that screen really renders').toContain('data-replica-side="actual"')
+      // …and it is that screen's BEFORE moment — the one moment of a beat where nothing has been
+      // claimed yet, so the file IS what the screen really renders. (Corrected 2026-09-04, rule 4:
+      // this read `data-replica-side="actual"`, and there is no Actual replica any more — a moment's
+      // Actual half is its photograph. The FACT is unchanged: the borrowed chrome must be a real
+      // committed capture of a sibling screen's page, not a drawing of one.)
+      expect(sdoc, 'and it is a committed capture of that screen\'s own page').toContain('data-replica-side="expected"')
       // … and the sketch drawn from THIS requirement's sentence, standing in it
       expect(/<svg[^>]*data-viz-archetype="/.test(sdoc), 'the sketch is in the page').toBe(true)
       expect(sdoc, 'and it stands in the hole the shell leaves, not over the whole page').toContain('class="sbsk"')
@@ -2211,10 +2216,17 @@ test('A failed moment names its difference', async ({ page }) => {
       expect(said, '…and what the app actually gave').toContain(plain(wrote!.got))
       // the fact, CLAIMED (the authored-intent lint, phase 6): ONE marker, naming BOTH values — the
       // expected comes from the fold's own record and the got from the fixture that failed it
-      await proveVisible(marks.first(), plain(wrote!.expected) + ' · ' + plain(wrote!.got),
-        'The one marker, naming both values',
-        { match: (shown: string) => plain(shown).includes(plain(wrote!.expected)) && plain(shown).includes(plain(wrote!.got)),
-          soft: true })
+      // TWO claims, each on the app's OWN word (corrected 2026-09-04, final review I2): this claimed
+      // `expected + ' · ' + got` — a string the test ASSEMBLED, which the marker never renders (it
+      // reads `expected“Board”·actual“not this”`), so the board printed an EXPECTED the app has no
+      // way of showing. The fact is unchanged — ONE marker naming BOTH values — and it is now
+      // claimed as the two values the marker must carry, each of them the app's own text.
+      await proveVisible(marks.first(), plain(wrote!.expected),
+        'The one marker names what was expected',
+        { match: (shown: string) => plain(shown).includes(plain(wrote!.expected)), soft: true })
+      await proveVisible(marks.first(), plain(wrote!.got),
+        '…and, on the same marker, what the app gave',
+        { match: (shown: string) => plain(shown).includes(plain(wrote!.got)), soft: true })
       // it spans the SEAM — one label about a relation, not one per cell
       const seam = await row.evaluate(el => {
         const p = el.querySelector('.pics') as HTMLElement

@@ -1603,6 +1603,38 @@ test('a SCROLLED container keeps its scroll — its content starts where the pag
   assert.ok(!r.html.includes('scrolled out of view above'), 'a placeholder carries no words')
 })
 
+// AN OUT-OF-FLOW CHILD CARRIES THE SCROLL ITSELF (final review C1(b), 2026-09-04). The scroll is
+// baked into the FLOW by shifting the first child it serialises — and an absolutely positioned first
+// child is not in the flow, so shifting it moved only IT while every in-flow sibling stayed at the
+// top, and the next absolute sibling got no shift at all. That is the paired
+// `missing-box 486,606` / `extra-box 486,620` family the mirror gate carried on board R20: the
+// camera's `.camsub` (absolute, first) came back 14 px off its own chip layer (absolute, second),
+// which had not been shifted. In the browser a scrolled box scrolls ALL its children, in flow or
+// not — so every out-of-flow child takes the shift, and the first IN-FLOW child takes it and
+// consumes it for the flow that follows.
+test('a scrolled box shifts EVERY out-of-flow child, and the first in-flow one for the rest', () => {
+  const cam = el('div', [10, 26, 400, 300], { text: 'the picture', cs: { position: 'absolute', top: '0px', left: '0px' } })
+  const chips = el('div', [10, 26, 400, 300], { text: 'the chip', cs: { position: 'absolute', top: '0px', left: '0px' } })
+  const flow1 = el('div', [10, 26, 380, 100], { text: 'first in flow' })
+  const flow2 = el('div', [10, 132, 380, 100], { text: 'second in flow' })
+  const pane = el('div', [10, 40, 400, 300], { children: [cam, chips, flow1, flow2], cs: { overflow: 'hidden' } })
+  pane.scrollTop = 14
+  const shell = el('main', [0, 0, 900, 600], { children: [pane] })
+  const body = el('body', [0, 0, 1440, 900], { children: [shell] })
+  const r = cap(body, { target: pane, ring: { x: 10, y: 40, width: 400, height: 300 } })
+  const rules = r.html.replace('<style>', '').split('\n').filter(l => l.startsWith('.rep'))
+  const shifted = rules.filter(l => /margin-top:-14px|margin:-14px /.test(l))
+  assert.ok(shifted.length > 0, 'the scroll is baked in somewhere: ' + JSON.stringify(rules))
+  // exactly THREE of the four children wear a shifted class — both absolutes and the first in-flow
+  // one; the last in-flow child follows the one before it and must not be shifted a second time
+  const worn = shifted.reduce((n, l) => {
+    const cls = /\.rep \.(r\d+)\{/.exec(l)[1]
+    return n + (r.html.match(new RegExp('class="' + cls + '"', 'g')) || []).length
+  }, 0)
+  assert.equal(worn, 3, 'both absolute children and the first in-flow child are shifted, the last is not: ' +
+    JSON.stringify(rules))
+})
+
 test('a container that is NOT scrolled gains nothing', () => {
   const a = el('div', [10, 46, 380, 100], { text: 'first' })
   const pane = el('div', [10, 40, 400, 300], { children: [a], cs: { overflow: 'auto' } })

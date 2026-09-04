@@ -1198,6 +1198,16 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase,
     // "not gated" rather than passing unseen. And a beat's own Expected is gated TEXTUALLY on top of
     // that (rule 5): every FAILED claim's value must actually be in it, which is what it is for.
     const walked: any = LAST_PIN ? repSkel : null
+    // …AND A REPLICA THE GATE COULD SEE NOTHING IN IS NOT A PICTURE (final review C1(c), 2026-09-04).
+    // The gate WALKED this file and found no element at all: the scene root's whole content was
+    // something no replica can carry (an <iframe>, an oversized canvas — the capture plates those),
+    // so what landed was an empty plate the size of the region. That is not a likeness of anything,
+    // it can never be gated, and a committed one is a row `npm run proof mirror` is permanently red
+    // about through no fault of any harvest — board R21's after moment, one 1.9 KB file holding a
+    // single `data-plate="space"`. Nothing measured, so no picture: the beat's row says "no Expected
+    // for this moment" out loud instead. A gate that could not RUN (`walked === null` — a timeout, a
+    // frame that would not mount) still writes the file unpinned, which is honest and refused.
+    if (walked && Array.isArray(walked.els) && !walked.els.length) return
     const aPin = walked && Array.isArray(walked.els) && walked.els.length ? LAST_PIN : ''
     const aGaps = aPin ? replicaGaps(LAST_LAYOUT, walked, rep.region) : []
     const gate = (body: string, pin: string, gaps: any[]) => pin ? withReplicaAttrs(body, { layout: pin, gaps }) : body

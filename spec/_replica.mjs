@@ -843,8 +843,21 @@ export function captureReplica (arg) {
         const inlineNow = isInlineFlow(k)
         if (pendingSpace && inlineNow) { bytes += 1; out.push(T(' ')) }
         pendingSpace = false
+        // …AND AN OUT-OF-FLOW CHILD CARRIES THE SCROLL ITSELF (final review C1(b), 2026-09-04).
+        // The shift is baked into the FLOW by giving it to the first child serialised — and an
+        // absolutely positioned first child is not in the flow, so it moved alone while every
+        // in-flow sibling stayed at the top, and the next absolute sibling got nothing. In the
+        // browser a scrolled box scrolls ALL its children, in flow or not. That mismatch is the
+        // paired missing-box/extra-box family the gate carried on board R20 for two releases: the
+        // camera's `.camsub` (absolute, first) came back 14 px away from its own chip layer
+        // (absolute, second, unshifted) — two boxes of one size, one offset apart.
+        // So: every out-of-flow child takes the shift, and the first IN-FLOW child takes it and
+        // consumes it for the flow that follows.
+        const kcs = styleOf(k)
+        const kpos = kcs ? gp(kcs, 'position') : ''
+        const outOfFlow = kpos === 'absolute' || kpos === 'fixed'
         const child = serialise(k, false, cs, toShift)
-        if (child) { out.push(child); if (child.tag) toShift = null }
+        if (child) { out.push(child); if (child.tag && !outOfFlow) toShift = null }
         prevWasInline = inlineNow
       }
       const after = pseudo(node, 'after', cs)
