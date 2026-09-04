@@ -105,7 +105,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2318,
+                  "duration": 2274,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -117,11 +117,11 @@
                     },
                     {
                       "title": "proves R1",
-                      "duration": 97
+                      "duration": 89
                     },
                     {
                       "title": "proves R1",
-                      "duration": 466,
+                      "duration": 467,
                       "steps": [
                         {
                           "title": "note: The crumb names this project, derived from package.json — got specboard · dogfooding itself · expected specboard · dogfooding itself",
@@ -130,7 +130,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:13.334Z",
+                  "startTime": "2026-09-04T00:58:32.256Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -295,7 +295,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1382,
+                  "duration": 1394,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -303,7 +303,7 @@
                   "steps": [
                     {
                       "title": "proves R2",
-                      "duration": 712,
+                      "duration": 726,
                       "steps": [
                         {
                           "title": "note: The card header, still pinned with the story scrolled — got R1 · expected R1",
@@ -312,7 +312,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:15.780Z",
+                  "startTime": "2026-09-04T00:58:34.639Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -407,7 +407,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1258,
+                  "duration": 1248,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -415,7 +415,7 @@
                   "steps": [
                     {
                       "title": "proves R3",
-                      "duration": 569,
+                      "duration": 581,
                       "steps": [
                         {
                           "title": "note: The row, unfolded into the Focus body in place — got R1 · expected R1",
@@ -424,7 +424,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:17.169Z",
+                  "startTime": "2026-09-04T00:58:36.040Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -519,7 +519,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2250,
+                  "duration": 2209,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -527,7 +527,7 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 1198,
+                      "duration": 1160,
                       "steps": [
                         {
                           "title": "note: first check — got 1 · expected 1",
@@ -544,7 +544,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:18.433Z",
+                  "startTime": "2026-09-04T00:58:37.294Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -639,7 +639,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 735,
+                  "duration": 709,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -647,15 +647,15 @@
                   "steps": [
                     {
                       "title": "Open the board detail — the reader is there",
-                      "duration": 584,
+                      "duration": 550,
                       "steps": [
                         {
                           "title": "note: ▸ proving R10 — A test opens to its full evidence, and can be run — watchably or in the background",
-                          "duration": 1
+                          "duration": 0
                         },
                         {
                           "title": "proves R10",
-                          "duration": 6
+                          "duration": 8
                         }
                       ]
                     },
@@ -671,10 +671,10 @@
                     },
                     {
                       "title": "Confirm the baked test rows are present",
-                      "duration": 3
+                      "duration": 4
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:20.691Z",
+                  "startTime": "2026-09-04T00:58:39.510Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -749,7 +749,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 868,
+                  "duration": 840,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -757,10 +757,10 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 123
+                      "duration": 148
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:21.433Z",
+                  "startTime": "2026-09-04T00:58:40.226Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -835,7 +835,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1173,
+                  "duration": 1203,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -843,7 +843,7 @@
                   "steps": [
                     {
                       "title": "proves R4",
-                      "duration": 493,
+                      "duration": 503,
                       "steps": [
                         {
                           "title": "note: The card's count — the Passed rows of its own detail — got 23 / 23 proven · expected 23 / 23 proven",
@@ -852,7 +852,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:22.309Z",
+                  "startTime": "2026-09-04T00:58:41.075Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -947,7 +947,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1782,
+                  "duration": 1778,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -955,7 +955,7 @@
                   "steps": [
                     {
                       "title": "proves R5",
-                      "duration": 1066,
+                      "duration": 1095,
                       "steps": [
                         {
                           "title": "note: The requirement the test's tag resolves to — got R2 · expected R2",
@@ -968,7 +968,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:23.489Z",
+                  "startTime": "2026-09-04T00:58:42.285Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1083,7 +1083,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 710,
+                  "duration": 708,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1091,10 +1091,10 @@
                   "steps": [
                     {
                       "title": "proves R6",
-                      "duration": 13
+                      "duration": 12
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:25.278Z",
+                  "startTime": "2026-09-04T00:58:44.070Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1169,7 +1169,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1105,
+                  "duration": 1113,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1177,7 +1177,7 @@
                   "steps": [
                     {
                       "title": "proves R7",
-                      "duration": 423,
+                      "duration": 421,
                       "steps": [
                         {
                           "title": "note: What the detail deals: the requirement's words, then its two pictures — got behavior · expected behavior",
@@ -1186,7 +1186,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:25.995Z",
+                  "startTime": "2026-09-04T00:58:44.784Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1257,7 +1257,7 @@
           ],
           "id": "a4d8056b74ea4749de01-266b98182da7f0f05e78",
           "file": "board/test.spec.ts",
-          "line": 664,
+          "line": 668,
           "column": 1
         },
         {
@@ -1281,7 +1281,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1161,
+                  "duration": 1115,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1289,7 +1289,7 @@
                   "steps": [
                     {
                       "title": "proves R8",
-                      "duration": 460,
+                      "duration": 441,
                       "steps": [
                         {
                           "title": "note: Straight from the header into the reader — the first requirement — got R1 · expected R1",
@@ -1298,7 +1298,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:27.107Z",
+                  "startTime": "2026-09-04T00:58:45.904Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1369,7 +1369,7 @@
           ],
           "id": "a4d8056b74ea4749de01-8ce9ff4b64c30c3fb496",
           "file": "board/test.spec.ts",
-          "line": 696,
+          "line": 700,
           "column": 1
         },
         {
@@ -1393,7 +1393,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3530,
+                  "duration": 3469,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1401,7 +1401,7 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 2825,
+                      "duration": 2770,
                       "steps": [
                         {
                           "title": "note: The same requirement, rendered in the List — got One card per screen, not a row of cells · expected One card per screen, not a row of cells",
@@ -1410,7 +1410,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:28.274Z",
+                  "startTime": "2026-09-04T00:58:47.025Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1481,7 +1481,7 @@
           ],
           "id": "a4d8056b74ea4749de01-e01614e01c9da2980330",
           "file": "board/test.spec.ts",
-          "line": 720,
+          "line": 724,
           "column": 1
         },
         {
@@ -1505,7 +1505,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 7802,
+                  "duration": 8178,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1513,7 +1513,7 @@
                   "steps": [
                     {
                       "title": "proves R18",
-                      "duration": 1174,
+                      "duration": 1172,
                       "steps": [
                         {
                           "title": "note: the picture wears the ring the run painted — got 43 111 14 14 · expected 43 111 14 14",
@@ -1531,7 +1531,7 @@
                     },
                     {
                       "title": "proves R18",
-                      "duration": 1744,
+                      "duration": 1711,
                       "steps": [
                         {
                           "title": "note: The honest blank where nothing was captured — got no Expected yet — re-harvest this screen (a sketch derives from the behavior text where there is no UI) · expected no Expected yet",
@@ -1549,8 +1549,12 @@
                     },
                     {
                       "title": "proves R18",
-                      "duration": 807,
+                      "duration": 1220,
                       "steps": [
+                        {
+                          "title": "note: No per-cell provenance caption — got (missing) · expected (missing)",
+                          "duration": 0
+                        },
                         {
                           "title": "note: The R15-pattern escape for a picture that is wrong — got The Expected picture doesn’t match my app · expected The Expected picture doesn’t match my app",
                           "duration": 0
@@ -1563,7 +1567,7 @@
                     },
                     {
                       "title": "proves R18",
-                      "duration": 1589,
+                      "duration": 1613,
                       "steps": [
                         {
                           "title": "note: every committed Expected was measured against its own harvest — got 23 gated · expected 23 gated",
@@ -1584,7 +1588,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:31.810Z",
+                  "startTime": "2026-09-04T00:58:50.501Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1738,6 +1742,26 @@
                       "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-Expected-pi-2e327-oxed-or-honestly-no-picture/replica-expected-R18-b3-c3-v1.html"
                     },
                     {
+                      "name": "evidence R18#3 v2",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-Expected-pi-2e327-oxed-or-honestly-no-picture/evidence-R18-b3-c3-v2.png"
+                    },
+                    {
+                      "name": "layout R18#3 v2",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-Expected-pi-2e327-oxed-or-honestly-no-picture/layout-R18-b3-c3-v2.json"
+                    },
+                    {
+                      "name": "replica R18#3 v2",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-Expected-pi-2e327-oxed-or-honestly-no-picture/replica-R18-b3-c3-v2.html"
+                    },
+                    {
+                      "name": "replica-expected R18#3 v2",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-Expected-pi-2e327-oxed-or-honestly-no-picture/replica-expected-R18-b3-c3-v2.html"
+                    },
+                    {
                       "name": "evidence R18#3 after",
                       "contentType": "image/png",
                       "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-Expected-pi-2e327-oxed-or-honestly-no-picture/evidence-R18-b3-c3-after.png"
@@ -1820,7 +1844,7 @@
           ],
           "id": "a4d8056b74ea4749de01-1277064c663785cd74f3",
           "file": "board/test.spec.ts",
-          "line": 1252,
+          "line": 1256,
           "column": 1
         },
         {
@@ -1844,7 +1868,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3785,
+                  "duration": 3750,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1852,7 +1876,7 @@
                   "steps": [
                     {
                       "title": "proves R19",
-                      "duration": 353,
+                      "duration": 356,
                       "steps": [
                         {
                           "title": "note: one camera, one region — got same region · expected same region",
@@ -1862,7 +1886,7 @@
                     },
                     {
                       "title": "proves R19",
-                      "duration": 1326,
+                      "duration": 1309,
                       "steps": [
                         {
                           "title": "note: The sentence both pictures are of — got When you scroll the card's story · expected you scroll the card's story",
@@ -1884,7 +1908,7 @@
                     },
                     {
                       "title": "proves R19",
-                      "duration": 351,
+                      "duration": 360,
                       "steps": [
                         {
                           "title": "note: the moment camera is capped at 1.25× — got within the cap · expected within the cap",
@@ -1893,7 +1917,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:39.620Z",
+                  "startTime": "2026-09-04T00:58:58.685Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2054,7 +2078,7 @@
           ],
           "id": "a4d8056b74ea4749de01-1dec9d9e18fc89a0652b",
           "file": "board/test.spec.ts",
-          "line": 1653,
+          "line": 1665,
           "column": 1
         },
         {
@@ -2078,7 +2102,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 7013,
+                  "duration": 3772,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2086,7 +2110,7 @@
                   "steps": [
                     {
                       "title": "proves R20",
-                      "duration": 3113,
+                      "duration": 3076,
                       "steps": [
                         {
                           "title": "note: The beat's position, read on the one strip over both pictures — got 1 / 2 · expected 1 / 2",
@@ -2097,35 +2121,9 @@
                           "duration": 0
                         }
                       ]
-                    },
-                    {
-                      "title": "proves R20",
-                      "duration": 251
-                    },
-                    {
-                      "title": "proves R20",
-                      "duration": 1968,
-                      "steps": [
-                        {
-                          "title": "note: The Expected cell's one chip — got expected · expected expected",
-                          "duration": 0
-                        },
-                        {
-                          "title": "note: The Actual cell's one chip — got actual · expected actual",
-                          "duration": 0
-                        },
-                        {
-                          "title": "note: The mark beside the hue — the state, in a greyscale reader too — got ✕ · expected ✕",
-                          "duration": 0
-                        },
-                        {
-                          "title": "note: the beat’s result is a checklist — got 1 fact(s) · expected 1 fact(s)",
-                          "duration": 0
-                        }
-                      ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:43.413Z",
+                  "startTime": "2026-09-04T00:59:02.443Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2187,136 +2185,6 @@
                       "name": "replica-expected R20#1 after",
                       "contentType": "text/html",
                       "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/replica-expected-R20-b1-c1-after.html"
-                    },
-                    {
-                      "name": "evidence R20#2 before",
-                      "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/evidence-R20-b2-c2-before.png"
-                    },
-                    {
-                      "name": "layout R20#2 before",
-                      "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/layout-R20-b2-c2-before.json"
-                    },
-                    {
-                      "name": "replica R20#2 before",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/replica-R20-b2-c2-before.html"
-                    },
-                    {
-                      "name": "evidence R20#2 after",
-                      "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/evidence-R20-b2-c2-after.png"
-                    },
-                    {
-                      "name": "layout R20#2 after",
-                      "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/layout-R20-b2-c2-after.json"
-                    },
-                    {
-                      "name": "replica R20#2 after",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/replica-R20-b2-c2-after.html"
-                    },
-                    {
-                      "name": "replica-expected R20#2 after",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/replica-expected-R20-b2-c2-after.html"
-                    },
-                    {
-                      "name": "evidence R20#3 before",
-                      "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/evidence-R20-b3-c3-before.png"
-                    },
-                    {
-                      "name": "layout R20#3 before",
-                      "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/layout-R20-b3-c3-before.json"
-                    },
-                    {
-                      "name": "replica R20#3 before",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/replica-R20-b3-c3-before.html"
-                    },
-                    {
-                      "name": "evidence R20#3 v1",
-                      "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/evidence-R20-b3-c3-v1.png"
-                    },
-                    {
-                      "name": "layout R20#3 v1",
-                      "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/layout-R20-b3-c3-v1.json"
-                    },
-                    {
-                      "name": "replica R20#3 v1",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/replica-R20-b3-c3-v1.html"
-                    },
-                    {
-                      "name": "replica-expected R20#3 v1",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/replica-expected-R20-b3-c3-v1.html"
-                    },
-                    {
-                      "name": "evidence R20#3 v2",
-                      "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/evidence-R20-b3-c3-v2.png"
-                    },
-                    {
-                      "name": "layout R20#3 v2",
-                      "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/layout-R20-b3-c3-v2.json"
-                    },
-                    {
-                      "name": "replica R20#3 v2",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/replica-R20-b3-c3-v2.html"
-                    },
-                    {
-                      "name": "replica-expected R20#3 v2",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/replica-expected-R20-b3-c3-v2.html"
-                    },
-                    {
-                      "name": "evidence R20#3 v3",
-                      "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/evidence-R20-b3-c3-v3.png"
-                    },
-                    {
-                      "name": "layout R20#3 v3",
-                      "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/layout-R20-b3-c3-v3.json"
-                    },
-                    {
-                      "name": "replica R20#3 v3",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/replica-R20-b3-c3-v3.html"
-                    },
-                    {
-                      "name": "replica-expected R20#3 v3",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/replica-expected-R20-b3-c3-v3.html"
-                    },
-                    {
-                      "name": "evidence R20#3 after",
-                      "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/evidence-R20-b3-c3-after.png"
-                    },
-                    {
-                      "name": "layout R20#3 after",
-                      "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/layout-R20-b3-c3-after.json"
-                    },
-                    {
-                      "name": "replica R20#3 after",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/replica-R20-b3-c3-after.html"
-                    },
-                    {
-                      "name": "replica-expected R20#3 after",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-e56fe-whole-frame-in-the-lightbox/replica-expected-R20-b3-c3-after.html"
                     }
                   ]
                 }
@@ -2326,7 +2194,7 @@
           ],
           "id": "a4d8056b74ea4749de01-6e7514dbebd372110fae",
           "file": "board/test.spec.ts",
-          "line": 1840,
+          "line": 1855,
           "column": 1
         },
         {
@@ -2350,7 +2218,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1463,
+                  "duration": 1462,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2371,7 +2239,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:50.433Z",
+                  "startTime": "2026-09-04T00:59:06.221Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2442,7 +2310,7 @@
           ],
           "id": "a4d8056b74ea4749de01-b79e39565330b6318eb0",
           "file": "board/test.spec.ts",
-          "line": 2102,
+          "line": 1997,
           "column": 1
         },
         {
@@ -2451,7 +2319,7 @@
           "tags": [],
           "tests": [
             {
-              "timeout": 60000,
+              "timeout": 180000,
               "annotations": [
                 {
                   "type": "covers",
@@ -2466,7 +2334,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8421,
+                  "duration": 11734,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2474,11 +2342,7 @@
                   "steps": [
                     {
                       "title": "proves R20",
-                      "duration": 345
-                    },
-                    {
-                      "title": "proves R20",
-                      "duration": 20,
+                      "duration": 370,
                       "steps": [
                         {
                           "title": "note: the rejected bead rail is gone — got 0 .scenerail · expected 0 .scenerail",
@@ -2488,12 +2352,44 @@
                     },
                     {
                       "title": "proves R20",
-                      "duration": 3563,
+                      "duration": 2377,
+                      "steps": [
+                        {
+                          "title": "note: The Expected cell's one chip — got expected · expected expected",
+                          "duration": 0
+                        },
+                        {
+                          "title": "note: The Actual cell's one chip — got actual · expected actual",
+                          "duration": 0
+                        },
+                        {
+                          "title": "note: The mark beside the hue — the state, in a greyscale reader too — got ✕ · expected ✕",
+                          "duration": 0
+                        },
+                        {
+                          "title": "note: the beat’s result is a checklist — got 1 fact(s) · expected 1 fact(s)",
+                          "duration": 0
+                        },
+                        {
+                          "title": "note: A moment that claimed nothing carries no chip at all — got (missing) · expected (missing)",
+                          "duration": 0
+                        }
+                      ]
+                    },
+                    {
+                      "title": "proves R20",
+                      "duration": 718,
                       "steps": [
                         {
                           "title": "note: The reader, opened in step — every beat held on its first scene — got step · expected step",
                           "duration": 0
-                        },
+                        }
+                      ]
+                    },
+                    {
+                      "title": "proves R20",
+                      "duration": 3706,
+                      "steps": [
                         {
                           "title": "note: The next chevron, become a restart at the last moment — got ↺ · expected ↺",
                           "duration": 0
@@ -2501,22 +2397,16 @@
                         {
                           "title": "note: the tour restarts at the end — got scene 1 · expected scene 1",
                           "duration": 0
-                        }
-                      ]
-                    },
-                    {
-                      "title": "proves R20",
-                      "duration": 521,
-                      "steps": [
+                        },
                         {
                           "title": "note: a proof click opens the lightbox — got lightbox open · expected lightbox open",
-                          "duration": 0
+                          "duration": 1
                         }
                       ]
                     },
                     {
                       "title": "proves R20",
-                      "duration": 867,
+                      "duration": 871,
                       "steps": [
                         {
                           "title": "note: The reader's one speed, live in auto — got 4 · expected 4",
@@ -2526,10 +2416,16 @@
                     },
                     {
                       "title": "proves R20",
-                      "duration": 52
+                      "duration": 627,
+                      "steps": [
+                        {
+                          "title": "note: The context row's one frame, uncaptioned — got (missing) · expected (missing)",
+                          "duration": 0
+                        }
+                      ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:08:51.901Z",
+                  "startTime": "2026-09-04T00:59:07.690Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2588,6 +2484,86 @@
                       "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-R20-b2-c2-before.html"
                     },
                     {
+                      "name": "evidence R20#2 v1",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b2-c2-v1.png"
+                    },
+                    {
+                      "name": "layout R20#2 v1",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b2-c2-v1.json"
+                    },
+                    {
+                      "name": "replica R20#2 v1",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-R20-b2-c2-v1.html"
+                    },
+                    {
+                      "name": "replica-expected R20#2 v1",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-expected-R20-b2-c2-v1.html"
+                    },
+                    {
+                      "name": "evidence R20#2 v2",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b2-c2-v2.png"
+                    },
+                    {
+                      "name": "layout R20#2 v2",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b2-c2-v2.json"
+                    },
+                    {
+                      "name": "replica R20#2 v2",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-R20-b2-c2-v2.html"
+                    },
+                    {
+                      "name": "replica-expected R20#2 v2",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-expected-R20-b2-c2-v2.html"
+                    },
+                    {
+                      "name": "evidence R20#2 v3",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b2-c2-v3.png"
+                    },
+                    {
+                      "name": "layout R20#2 v3",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b2-c2-v3.json"
+                    },
+                    {
+                      "name": "replica R20#2 v3",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-R20-b2-c2-v3.html"
+                    },
+                    {
+                      "name": "replica-expected R20#2 v3",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-expected-R20-b2-c2-v3.html"
+                    },
+                    {
+                      "name": "evidence R20#2 v4",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b2-c2-v4.png"
+                    },
+                    {
+                      "name": "layout R20#2 v4",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b2-c2-v4.json"
+                    },
+                    {
+                      "name": "replica R20#2 v4",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-R20-b2-c2-v4.html"
+                    },
+                    {
+                      "name": "replica-expected R20#2 v4",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-expected-R20-b2-c2-v4.html"
+                    },
+                    {
                       "name": "evidence R20#2 after",
                       "contentType": "image/png",
                       "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b2-c2-after.png"
@@ -2643,26 +2619,6 @@
                       "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-expected-R20-b3-c3-v1.html"
                     },
                     {
-                      "name": "evidence R20#3 v2",
-                      "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b3-c3-v2.png"
-                    },
-                    {
-                      "name": "layout R20#3 v2",
-                      "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b3-c3-v2.json"
-                    },
-                    {
-                      "name": "replica R20#3 v2",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-R20-b3-c3-v2.html"
-                    },
-                    {
-                      "name": "replica-expected R20#3 v2",
-                      "contentType": "text/html",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-expected-R20-b3-c3-v2.html"
-                    },
-                    {
                       "name": "evidence R20#3 after",
                       "contentType": "image/png",
                       "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b3-c3-after.png"
@@ -2696,6 +2652,26 @@
                       "name": "replica R20#4 before",
                       "contentType": "text/html",
                       "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-R20-b4-c4-before.html"
+                    },
+                    {
+                      "name": "evidence R20#4 v1",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b4-c4-v1.png"
+                    },
+                    {
+                      "name": "layout R20#4 v1",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b4-c4-v1.json"
+                    },
+                    {
+                      "name": "replica R20#4 v1",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-R20-b4-c4-v1.html"
+                    },
+                    {
+                      "name": "replica-expected R20#4 v1",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-expected-R20-b4-c4-v1.html"
                     },
                     {
                       "name": "evidence R20#4 after",
@@ -2788,6 +2764,26 @@
                       "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-R20-b6-c6-before.html"
                     },
                     {
+                      "name": "evidence R20#6 v1",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b6-c6-v1.png"
+                    },
+                    {
+                      "name": "layout R20#6 v1",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b6-c6-v1.json"
+                    },
+                    {
+                      "name": "replica R20#6 v1",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-R20-b6-c6-v1.html"
+                    },
+                    {
+                      "name": "replica-expected R20#6 v1",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/replica-expected-R20-b6-c6-v1.html"
+                    },
+                    {
                       "name": "evidence R20#6 after",
                       "contentType": "image/png",
                       "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b6-c6-after.png"
@@ -2815,7 +2811,7 @@
           ],
           "id": "a4d8056b74ea4749de01-bc8254144ebb0905d0c7",
           "file": "board/test.spec.ts",
-          "line": 2175,
+          "line": 2070,
           "column": 1
         },
         {
@@ -2839,7 +2835,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2551,
+                  "duration": 3029,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2847,7 +2843,7 @@
                   "steps": [
                     {
                       "title": "proves R21",
-                      "duration": 699,
+                      "duration": 714,
                       "steps": [
                         {
                           "title": "note: The cell the row deals first — the behaviour's words — got behavior · expected behavior",
@@ -2861,8 +2857,12 @@
                     },
                     {
                       "title": "proves R21",
-                      "duration": 684,
+                      "duration": 1076,
                       "steps": [
+                        {
+                          "title": "note: No control to change the order — got (missing) · expected (missing)",
+                          "duration": 0
+                        },
                         {
                           "title": "note: The next requirement, dealing the same first cell — got behavior · expected behavior",
                           "duration": 0
@@ -2870,7 +2870,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:00.328Z",
+                  "startTime": "2026-09-04T00:59:19.430Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2969,6 +2969,26 @@
                       "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/replica-expected-R21-b2-c2-v1.html"
                     },
                     {
+                      "name": "evidence R21#2 v2",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/evidence-R21-b2-c2-v2.png"
+                    },
+                    {
+                      "name": "layout R21#2 v2",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/layout-R21-b2-c2-v2.json"
+                    },
+                    {
+                      "name": "replica R21#2 v2",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/replica-R21-b2-c2-v2.html"
+                    },
+                    {
+                      "name": "replica-expected R21#2 v2",
+                      "contentType": "text/html",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/replica-expected-R21-b2-c2-v2.html"
+                    },
+                    {
                       "name": "evidence R21#2 after",
                       "contentType": "image/png",
                       "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/evidence-R21-b2-c2-after.png"
@@ -2996,7 +3016,7 @@
           ],
           "id": "a4d8056b74ea4749de01-327d1f3bd75d43e23ff0",
           "file": "board/test.spec.ts",
-          "line": 2468,
+          "line": 2510,
           "column": 1
         },
         {
@@ -3020,7 +3040,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1567,
+                  "duration": 1555,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3028,10 +3048,10 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 900
+                      "duration": 881
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:02.886Z",
+                  "startTime": "2026-09-04T00:59:22.466Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3082,7 +3102,7 @@
           ],
           "id": "a4d8056b74ea4749de01-7d02613b62f66ef5a3d7",
           "file": "board/test.spec.ts",
-          "line": 2554,
+          "line": 2601,
           "column": 1
         },
         {
@@ -3106,7 +3126,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2070,
+                  "duration": 2087,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3114,10 +3134,10 @@
                   "steps": [
                     {
                       "title": "proves R14",
-                      "duration": 1381
+                      "duration": 1414
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:04.460Z",
+                  "startTime": "2026-09-04T00:59:24.027Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3168,7 +3188,7 @@
           ],
           "id": "a4d8056b74ea4749de01-22a4cacdc1f59df77235",
           "file": "board/test.spec.ts",
-          "line": 2730,
+          "line": 2777,
           "column": 1
         },
         {
@@ -3192,7 +3212,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4152,
+                  "duration": 4147,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3200,14 +3220,14 @@
                   "steps": [
                     {
                       "title": "proves dispatch:R7",
-                      "duration": 570
+                      "duration": 533
                     },
                     {
                       "title": "proves dispatch:R7",
-                      "duration": 2369
+                      "duration": 2366
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:06.536Z",
+                  "startTime": "2026-09-04T00:59:26.120Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3293,7 +3313,7 @@
           ],
           "id": "a4d8056b74ea4749de01-2068f535bfd07492d91a",
           "file": "board/test.spec.ts",
-          "line": 3012,
+          "line": 3063,
           "column": 1
         },
         {
@@ -3312,7 +3332,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 162,
+                  "duration": 163,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3327,7 +3347,7 @@
                       "duration": 0
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:10.695Z",
+                  "startTime": "2026-09-04T00:59:30.273Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -3337,7 +3357,7 @@
           ],
           "id": "a4d8056b74ea4749de01-89998ca822d3716515a6",
           "file": "board/test.spec.ts",
-          "line": 3027,
+          "line": 3078,
           "column": 1
         },
         {
@@ -3361,7 +3381,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1093,
+                  "duration": 1085,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3369,7 +3389,7 @@
                   "steps": [
                     {
                       "title": "proves R9",
-                      "duration": 439,
+                      "duration": 429,
                       "steps": [
                         {
                           "title": "note: The only card the search leaves standing — got Conflicts · expected Conflicts",
@@ -3378,7 +3398,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:10.863Z",
+                  "startTime": "2026-09-04T00:59:30.442Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3449,7 +3469,7 @@
           ],
           "id": "a4d8056b74ea4749de01-a65565fa8517263db880",
           "file": "board/test.spec.ts",
-          "line": 3035,
+          "line": 3086,
           "column": 1
         },
         {
@@ -3473,7 +3493,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1585,
+                  "duration": 1611,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3481,7 +3501,7 @@
                   "steps": [
                     {
                       "title": "proves R16",
-                      "duration": 990,
+                      "duration": 1006,
                       "steps": [
                         {
                           "title": "note: A feature card, naming the live example it opens — got open the List · expected open the List",
@@ -3490,7 +3510,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:11.963Z",
+                  "startTime": "2026-09-04T00:59:31.532Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3561,7 +3581,7 @@
           ],
           "id": "a4d8056b74ea4749de01-5c6599a9ca01b2b7c1ce",
           "file": "board/test.spec.ts",
-          "line": 3046,
+          "line": 3097,
           "column": 1
         },
         {
@@ -3585,7 +3605,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 788,
+                  "duration": 804,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3593,10 +3613,10 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 98
+                      "duration": 95
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:13.554Z",
+                  "startTime": "2026-09-04T00:59:33.150Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3647,7 +3667,7 @@
           ],
           "id": "a4d8056b74ea4749de01-987e4a2f9c8286335f0d",
           "file": "board/test.spec.ts",
-          "line": 3108,
+          "line": 3159,
           "column": 1
         },
         {
@@ -3671,7 +3691,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1033,
+                  "duration": 1044,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3679,7 +3699,7 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 459,
+                      "duration": 482,
                       "steps": [
                         {
                           "title": "note: Reviewing it, without the tool — one green badge over a wall of code — got 40 tests passing · expected 40 tests passing",
@@ -3688,7 +3708,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:14.349Z",
+                  "startTime": "2026-09-04T00:59:33.960Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3759,7 +3779,7 @@
           ],
           "id": "a4d8056b74ea4749de01-64c0c7988b49a148fa65",
           "file": "board/test.spec.ts",
-          "line": 3135,
+          "line": 3186,
           "column": 1
         },
         {
@@ -3783,7 +3803,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4731,
+                  "duration": 4712,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3791,7 +3811,7 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 3650,
+                      "duration": 3621,
                       "steps": [
                         {
                           "title": "note: The scene it stepped to, held — nothing advances on its own — got unproven · expected unproven",
@@ -3801,10 +3821,10 @@
                     },
                     {
                       "title": "proves R11",
-                      "duration": 85
+                      "duration": 83
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:15.389Z",
+                  "startTime": "2026-09-04T00:59:35.011Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3910,7 +3930,7 @@
           ],
           "id": "a4d8056b74ea4749de01-86bd19acd4bf40e51cd9",
           "file": "board/test.spec.ts",
-          "line": 3226,
+          "line": 3277,
           "column": 1
         },
         {
@@ -3934,7 +3954,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1888,
+                  "duration": 1883,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3942,10 +3962,10 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 1299
+                      "duration": 1322
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:20.126Z",
+                  "startTime": "2026-09-04T00:59:39.729Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3996,7 +4016,7 @@
           ],
           "id": "a4d8056b74ea4749de01-584a8f6bb8a7369c1d41",
           "file": "board/test.spec.ts",
-          "line": 3275,
+          "line": 3326,
           "column": 1
         },
         {
@@ -4020,7 +4040,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 552,
+                  "duration": 565,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4028,10 +4048,10 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 10
+                      "duration": 9
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:22.019Z",
+                  "startTime": "2026-09-04T00:59:41.617Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4082,7 +4102,7 @@
           ],
           "id": "a4d8056b74ea4749de01-89c79fff911eead41b7f",
           "file": "board/test.spec.ts",
-          "line": 3300,
+          "line": 3351,
           "column": 1
         },
         {
@@ -4106,7 +4126,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1169,
+                  "duration": 1347,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4123,7 +4143,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:22.578Z",
+                  "startTime": "2026-09-04T00:59:42.188Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4194,7 +4214,7 @@
           ],
           "id": "a4d8056b74ea4749de01-a5859e92b6efee0ece72",
           "file": "board/test.spec.ts",
-          "line": 3314,
+          "line": 3365,
           "column": 1
         },
         {
@@ -4218,7 +4238,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3357,
+                  "duration": 3427,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4226,7 +4246,7 @@
                   "steps": [
                     {
                       "title": "proves R22",
-                      "duration": 712,
+                      "duration": 724,
                       "steps": [
                         {
                           "title": "note: the CI mark derives from the chooser — got board conflicts init · expected board conflicts init",
@@ -4240,11 +4260,11 @@
                     },
                     {
                       "title": "proves R22",
-                      "duration": 1522,
+                      "duration": 1513,
                       "steps": [
                         {
                           "title": "note: The mark, moved to the screen the new chooser names — got CI gate · expected CI gate",
-                          "duration": 1
+                          "duration": 0
                         },
                         {
                           "title": "note: a different chooser moves the mark — got conflicts · expected conflicts",
@@ -4253,7 +4273,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:23.753Z",
+                  "startTime": "2026-09-04T00:59:43.541Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4379,7 +4399,7 @@
           ],
           "id": "a4d8056b74ea4749de01-6e90f53a031a40447bc4",
           "file": "board/test.spec.ts",
-          "line": 3398,
+          "line": 3449,
           "column": 1
         },
         {
@@ -4403,7 +4423,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1862,
+                  "duration": 1839,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4411,7 +4431,7 @@
                   "steps": [
                     {
                       "title": "proves R15",
-                      "duration": 989,
+                      "duration": 975,
                       "steps": [
                         {
                           "title": "note: The prompt the ⋯ hands you, ready to paste — got Reword this requirement · expected Reword this requirement",
@@ -4424,7 +4444,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:27.115Z",
+                  "startTime": "2026-09-04T00:59:46.978Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4495,7 +4515,7 @@
           ],
           "id": "a4d8056b74ea4749de01-b19be08d9243cbcb5133",
           "file": "board/test.spec.ts",
-          "line": 3473,
+          "line": 3524,
           "column": 1
         },
         {
@@ -4519,7 +4539,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1727,
+                  "duration": 1778,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4527,14 +4547,14 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 537
+                      "duration": 533
                     },
                     {
                       "title": "proves R15",
-                      "duration": 71
+                      "duration": 68
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:28.984Z",
+                  "startTime": "2026-09-04T00:59:48.827Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4620,7 +4640,7 @@
           ],
           "id": "a4d8056b74ea4749de01-a52fad2ff18ed31edbc8",
           "file": "board/test.spec.ts",
-          "line": 3655,
+          "line": 3706,
           "column": 1
         },
         {
@@ -4644,7 +4664,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1376,
+                  "duration": 1440,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4652,10 +4672,10 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 685
+                      "duration": 705
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:30.718Z",
+                  "startTime": "2026-09-04T00:59:50.611Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4706,7 +4726,7 @@
           ],
           "id": "a4d8056b74ea4749de01-b8facd5ebd2db36c1faa",
           "file": "board/test.spec.ts",
-          "line": 3767,
+          "line": 3818,
           "column": 1
         },
         {
@@ -4730,7 +4750,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2604,
+                  "duration": 2586,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4738,7 +4758,7 @@
                   "steps": [
                     {
                       "title": "count the home cards — one per screen, titles and a cover",
-                      "duration": 518,
+                      "duration": 540,
                       "steps": [
                         {
                           "title": "note: ▸ proving R1 — One card per screen, not a row of cells",
@@ -4746,13 +4766,13 @@
                         },
                         {
                           "title": "proves R1",
-                          "duration": 41
+                          "duration": 42
                         }
                       ]
                     },
                     {
                       "title": "open the board detail — reading and proof side by side",
-                      "duration": 1180,
+                      "duration": 1146,
                       "steps": [
                         {
                           "title": "note: ▸ proving R2 — A requirement and the tests that prove it are read side by side, in one card that scrolls inside itself",
@@ -4760,7 +4780,7 @@
                         },
                         {
                           "title": "proves R2",
-                          "duration": 713,
+                          "duration": 708,
                           "steps": [
                             {
                               "title": "note: The card header, still pinned with the story scrolled — got R1 · expected R1",
@@ -4772,7 +4792,7 @@
                     },
                     {
                       "title": "a finished run refreshes the board in place — no reload",
-                      "duration": 711,
+                      "duration": 709,
                       "steps": [
                         {
                           "title": "note: ▸ proving dispatch:R7 — The panel stays open when the job ends, and the board updates behind it",
@@ -4780,12 +4800,12 @@
                         },
                         {
                           "title": "proves dispatch:R7",
-                          "duration": 220
+                          "duration": 216
                         }
                       ]
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:32.101Z",
+                  "startTime": "2026-09-04T00:59:52.057Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4926,7 +4946,7 @@
           ],
           "id": "a4d8056b74ea4749de01-52747d88d06c363c0189",
           "file": "board/test.spec.ts",
-          "line": 3868,
+          "line": 3919,
           "column": 1
         },
         {
@@ -4950,7 +4970,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3629,
+                  "duration": 3610,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4958,7 +4978,7 @@
                   "steps": [
                     {
                       "title": "proves R17",
-                      "duration": 442,
+                      "duration": 407,
                       "steps": [
                         {
                           "title": "note: The family every requirement under it sits in — got 1 · The board's shape — one page, every screen · expected 1 · The board's shape — one page, every screen",
@@ -4968,18 +4988,18 @@
                     },
                     {
                       "title": "proves R17",
-                      "duration": 37
+                      "duration": 36
                     },
                     {
                       "title": "proves R17",
-                      "duration": 601
+                      "duration": 590
                     },
                     {
                       "title": "proves R17",
-                      "duration": 649
+                      "duration": 667
                     }
                   ],
-                  "startTime": "2026-09-04T00:09:34.712Z",
+                  "startTime": "2026-09-04T00:59:54.649Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -5155,7 +5175,7 @@
           ],
           "id": "a4d8056b74ea4749de01-ea35761a75f346e0a282",
           "file": "board/test.spec.ts",
-          "line": 3912,
+          "line": 3963,
           "column": 1
         }
       ]
@@ -5163,8 +5183,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-09-04T00:08:12.180Z",
-    "duration": 86199.714,
+    "startTime": "2026-09-04T00:58:31.109Z",
+    "duration": 87192.28,
     "expected": 36,
     "skipped": 0,
     "unexpected": 0,

@@ -6,7 +6,7 @@
       {
         "title": "Tsumiki — the full flow (R1–R8)",
         "ok": true,
-        "ms": 15571,
+        "ms": 15424,
         "error": null,
         "line": 23,
         "reqs": {
@@ -23,7 +23,7 @@
       {
         "title": "Container roll-up — composed (R1–R4, R8)",
         "ok": true,
-        "ms": 9370,
+        "ms": 9475,
         "error": null,
         "line": 94,
         "reqs": {
@@ -38,7 +38,7 @@
       {
         "title": "R9 (demo) — a deleted task should be reversible, keeping the count — INTENTIONALLY FAILING",
         "ok": false,
-        "ms": 6148,
+        "ms": 6201,
         "error": "Error: 1 step(s) failed:\n  ✗ \"R9 — A deleted task is reversible: the count holds until you confirm\": proves R9 — 3 claims failed: Pay the electricity bill — still listed, only archived: expected \"Pay the electricity bill\", got \"(missing)\" · An Undo appears on the archived task: expected \"Undo\", got \"(missing)\" · To do should still read 5 — a delete is only an archive: expected \"5\", got \"4\"",
         "line": 137,
         "reqs": {
@@ -46,7 +46,7 @@
         }
       }
     ],
-    "ranAt": 1788480688793,
+    "ranAt": 1788483670175,
     "srcHashes": {
       "todo": "ee11afd4f296"
     },
@@ -65,8 +65,8 @@
         "before": "spec/todo/evidence/R1.before.png",
         "after": "spec/todo/evidence/R1.after.png",
         "window": {
-          "from": 262,
-          "to": 1787
+          "from": 258,
+          "to": 1772
         },
         "beats": [
           {
@@ -79,8 +79,8 @@
             "replicaAfter": "spec/todo/evidence/R1.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R1.b1.after.expected.html",
             "window": {
-              "from": 262,
-              "to": 1787
+              "from": 258,
+              "to": 1772
             },
             "values": [
               {
@@ -89,7 +89,7 @@
                 "layout": "spec/todo/evidence/R1.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R1.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R1.b1.v1.expected.html",
-                "at": 549,
+                "at": 542,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -109,7 +109,7 @@
                 "layout": "spec/todo/evidence/R1.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R1.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R1.b1.v2.expected.html",
-                "at": 929,
+                "at": 917,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -129,7 +129,7 @@
                 "layout": "spec/todo/evidence/R1.b1.v3.layout.json",
                 "replica": "spec/todo/evidence/R1.b1.v3.actual.html",
                 "replicaExpected": "spec/todo/evidence/R1.b1.v3.expected.html",
-                "at": 1386,
+                "at": 1368,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -160,8 +160,8 @@
             }
           }
         ],
-        "runId": "1788480688793",
-        "at": "2026-09-04T00:11:28.793Z",
+        "runId": "1788483670175",
+        "at": "2026-09-04T01:01:10.175Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 268,
@@ -172,8 +172,8 @@
         "before": "spec/todo/evidence/R2.before.png",
         "after": "spec/todo/evidence/R2.after.png",
         "window": {
-          "from": 2234,
-          "to": 2994
+          "from": 2219,
+          "to": 2997
         },
         "beats": [
           {
@@ -186,8 +186,8 @@
             "replicaAfter": "spec/todo/evidence/R2.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R2.b1.after.expected.html",
             "window": {
-              "from": 2234,
-              "to": 2994
+              "from": 2219,
+              "to": 2997
             },
             "values": [
               {
@@ -196,7 +196,7 @@
                 "layout": "spec/todo/evidence/R2.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R2.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R2.b1.v1.expected.html",
-                "at": 290,
+                "at": 297,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -216,7 +216,7 @@
                 "layout": "spec/todo/evidence/R2.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R2.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R2.b1.v2.expected.html",
-                "at": 667,
+                "at": 658,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -247,8 +247,8 @@
             }
           }
         ],
-        "runId": "1788480688793",
-        "at": "2026-09-04T00:11:28.793Z",
+        "runId": "1788483670175",
+        "at": "2026-09-04T01:01:10.175Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 7304,
@@ -259,7 +259,7 @@
         "before": "spec/todo/evidence/R3.before.png",
         "after": "spec/todo/evidence/R3.after.png",
         "window": {
-          "from": 3430,
+          "from": 3436,
           "to": 4192
         },
         "beats": [
@@ -273,7 +273,7 @@
             "replicaAfter": "spec/todo/evidence/R3.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R3.b1.after.expected.html",
             "window": {
-              "from": 3430,
+              "from": 3436,
               "to": 4192
             },
             "values": [
@@ -303,7 +303,7 @@
                 "layout": "spec/todo/evidence/R3.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R3.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R3.b1.v2.expected.html",
-                "at": 642,
+                "at": 646,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -334,8 +334,8 @@
             }
           }
         ],
-        "runId": "1788480688793",
-        "at": "2026-09-04T00:11:28.793Z",
+        "runId": "1788483670175",
+        "at": "2026-09-04T01:01:10.175Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 11151,
@@ -346,8 +346,8 @@
         "before": "spec/todo/evidence/R5.before.png",
         "after": "spec/todo/evidence/R5.after.png",
         "window": {
-          "from": 4632,
-          "to": 7480
+          "from": 4638,
+          "to": 7469
         },
         "beats": [
           {
@@ -360,8 +360,8 @@
             "replicaAfter": "spec/todo/evidence/R5.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R5.b1.after.expected.html",
             "window": {
-              "from": 4632,
-              "to": 5427
+              "from": 4638,
+              "to": 5380
             },
             "values": [
               {
@@ -370,7 +370,7 @@
                 "layout": "spec/todo/evidence/R5.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R5.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R5.b1.v1.expected.html",
-                "at": 251,
+                "at": 250,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -390,7 +390,7 @@
                 "layout": "spec/todo/evidence/R5.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R5.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R5.b1.v2.expected.html",
-                "at": 677,
+                "at": 622,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -430,8 +430,8 @@
             "replicaAfter": "spec/todo/evidence/R5.b2.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R5.b2.after.expected.html",
             "window": {
-              "from": 6767,
-              "to": 7480
+              "from": 6722,
+              "to": 7469
             },
             "values": [
               {
@@ -460,7 +460,7 @@
                 "layout": "spec/todo/evidence/R5.b2.v2.layout.json",
                 "replica": "spec/todo/evidence/R5.b2.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R5.b2.v2.expected.html",
-                "at": 602,
+                "at": 622,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -491,8 +491,8 @@
             }
           }
         ],
-        "runId": "1788480688793",
-        "at": "2026-09-04T00:11:28.793Z",
+        "runId": "1788483670175",
+        "at": "2026-09-04T01:01:10.175Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 14985,
@@ -503,8 +503,8 @@
         "before": "spec/todo/evidence/R4.before.png",
         "after": "spec/todo/evidence/R4.after.png",
         "window": {
-          "from": 5885,
-          "to": 8356
+          "from": 5825,
+          "to": 8352
         },
         "beats": [
           {
@@ -517,8 +517,8 @@
             "replicaAfter": "spec/todo/evidence/R4.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R4.b1.after.expected.html",
             "window": {
-              "from": 5885,
-              "to": 6330
+              "from": 5825,
+              "to": 6289
             },
             "values": [
               {
@@ -527,7 +527,7 @@
                 "layout": "spec/todo/evidence/R4.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R4.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R4.b1.v1.expected.html",
-                "at": 318,
+                "at": 339,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -567,8 +567,8 @@
             "replicaAfter": "spec/todo/evidence/R4.b2.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R4.b2.after.expected.html",
             "window": {
-              "from": 7933,
-              "to": 8356
+              "from": 7928,
+              "to": 8352
             },
             "values": [
               {
@@ -577,7 +577,7 @@
                 "layout": "spec/todo/evidence/R4.b2.v1.layout.json",
                 "replica": "spec/todo/evidence/R4.b2.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R4.b2.v1.expected.html",
-                "at": 299,
+                "at": 306,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -608,8 +608,8 @@
             }
           }
         ],
-        "runId": "1788480688793",
-        "at": "2026-09-04T00:11:28.793Z",
+        "runId": "1788483670175",
+        "at": "2026-09-04T01:01:10.175Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 18803,
@@ -620,8 +620,8 @@
         "before": "spec/todo/evidence/R6.before.png",
         "after": "spec/todo/evidence/R6.after.png",
         "window": {
-          "from": 9620,
-          "to": 12327
+          "from": 9628,
+          "to": 12248
         },
         "beats": [
           {
@@ -634,8 +634,8 @@
             "replicaAfter": "spec/todo/evidence/R6.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R6.b1.after.expected.html",
             "window": {
-              "from": 9620,
-              "to": 12327
+              "from": 9628,
+              "to": 12248
             },
             "values": [
               {
@@ -644,7 +644,7 @@
                 "layout": "spec/todo/evidence/R6.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R6.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R6.b1.v1.expected.html",
-                "at": 556,
+                "at": 521,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -664,7 +664,7 @@
                 "layout": "spec/todo/evidence/R6.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R6.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R6.b1.v2.expected.html",
-                "at": 1221,
+                "at": 1148,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -684,7 +684,7 @@
                 "layout": "spec/todo/evidence/R6.b1.v3.layout.json",
                 "replica": "spec/todo/evidence/R6.b1.v3.actual.html",
                 "replicaExpected": "spec/todo/evidence/R6.b1.v3.expected.html",
-                "at": 1886,
+                "at": 1816,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -704,7 +704,7 @@
                 "layout": "spec/todo/evidence/R6.b1.v4.layout.json",
                 "replica": "spec/todo/evidence/R6.b1.v4.actual.html",
                 "replicaExpected": "spec/todo/evidence/R6.b1.v4.expected.html",
-                "at": 2548,
+                "at": 2477,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -735,8 +735,8 @@
             }
           }
         ],
-        "runId": "1788480688793",
-        "at": "2026-09-04T00:11:28.793Z",
+        "runId": "1788483670175",
+        "at": "2026-09-04T01:01:10.175Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 27153,
@@ -747,8 +747,8 @@
         "before": "spec/todo/evidence/R7.before.png",
         "after": "spec/todo/evidence/R7.after.png",
         "window": {
-          "from": 12767,
-          "to": 13551
+          "from": 12687,
+          "to": 13473
         },
         "beats": [
           {
@@ -761,8 +761,8 @@
             "replicaAfter": "spec/todo/evidence/R7.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R7.b1.after.expected.html",
             "window": {
-              "from": 12767,
-              "to": 13551
+              "from": 12687,
+              "to": 13473
             },
             "values": [
               {
@@ -771,7 +771,7 @@
                 "layout": "spec/todo/evidence/R7.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R7.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R7.b1.v1.expected.html",
-                "at": 290,
+                "at": 291,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -791,7 +791,7 @@
                 "layout": "spec/todo/evidence/R7.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R7.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R7.b1.v2.expected.html",
-                "at": 661,
+                "at": 664,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -822,8 +822,8 @@
             }
           }
         ],
-        "runId": "1788480688793",
-        "at": "2026-09-04T00:11:28.793Z",
+        "runId": "1788483670175",
+        "at": "2026-09-04T01:01:10.175Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 39088,
@@ -834,8 +834,8 @@
         "before": "spec/todo/evidence/R8.before.png",
         "after": "spec/todo/evidence/R8.after.png",
         "window": {
-          "from": 14002,
-          "to": 15204
+          "from": 13917,
+          "to": 15067
         },
         "beats": [
           {
@@ -848,8 +848,8 @@
             "replicaAfter": "spec/todo/evidence/R8.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R8.b1.after.expected.html",
             "window": {
-              "from": 14002,
-              "to": 15204
+              "from": 13917,
+              "to": 15067
             },
             "values": [
               {
@@ -858,7 +858,7 @@
                 "layout": "spec/todo/evidence/R8.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R8.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R8.b1.v1.expected.html",
-                "at": 283,
+                "at": 286,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -878,7 +878,7 @@
                 "layout": "spec/todo/evidence/R8.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R8.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R8.b1.v2.expected.html",
-                "at": 675,
+                "at": 665,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -898,7 +898,7 @@
                 "layout": "spec/todo/evidence/R8.b1.v3.layout.json",
                 "replica": "spec/todo/evidence/R8.b1.v3.actual.html",
                 "replicaExpected": "spec/todo/evidence/R8.b1.v3.expected.html",
-                "at": 1092,
+                "at": 1074,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -929,8 +929,8 @@
             }
           }
         ],
-        "runId": "1788480688793",
-        "at": "2026-09-04T00:11:28.793Z",
+        "runId": "1788483670175",
+        "at": "2026-09-04T01:01:10.175Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 42970,
@@ -941,8 +941,8 @@
         "before": "spec/todo/evidence/R9.before.png",
         "after": "spec/todo/evidence/R9.after.png",
         "window": {
-          "from": 181,
-          "to": 3557
+          "from": 198,
+          "to": 3621
         },
         "beats": [
           {
@@ -955,8 +955,8 @@
             "replicaAfter": "spec/todo/evidence/R9.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R9.b1.after.expected.html",
             "window": {
-              "from": 181,
-              "to": 3557
+              "from": 198,
+              "to": 3621
             },
             "values": [
               {
@@ -965,7 +965,7 @@
                 "layout": "spec/todo/evidence/R9.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R9.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R9.b1.v1.expected.html",
-                "at": 262,
+                "at": 267,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -985,7 +985,7 @@
                 "layout": "spec/todo/evidence/R9.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R9.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R9.b1.v2.expected.html",
-                "at": 635,
+                "at": 633,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -1005,7 +1005,7 @@
                 "layout": "spec/todo/evidence/R9.b1.v3.layout.json",
                 "replica": "spec/todo/evidence/R9.b1.v3.actual.html",
                 "replicaExpected": "spec/todo/evidence/R9.b1.v3.expected.html",
-                "at": 1455,
+                "at": 1463,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -1026,7 +1026,7 @@
                 "layout": "spec/todo/evidence/R9.b1.v4.layout.json",
                 "replica": "spec/todo/evidence/R9.b1.v4.actual.html",
                 "replicaExpected": "spec/todo/evidence/R9.b1.v4.expected.html",
-                "at": 2564,
+                "at": 2572,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -1047,7 +1047,7 @@
                 "layout": "spec/todo/evidence/R9.b1.v5.layout.json",
                 "replica": "spec/todo/evidence/R9.b1.v5.actual.html",
                 "replicaExpected": "spec/todo/evidence/R9.b1.v5.expected.html",
-                "at": 3256,
+                "at": 3287,
                 "gate": {
                   "gaps": 0,
                   "gated": true,
@@ -1078,8 +1078,8 @@
             }
           }
         ],
-        "runId": "1788480688793",
-        "at": "2026-09-04T00:11:28.793Z"
+        "runId": "1788483670175",
+        "at": "2026-09-04T01:01:10.175Z"
       }
     }
   }

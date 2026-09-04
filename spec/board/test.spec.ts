@@ -2068,6 +2068,10 @@ test('A failed moment names its difference', async ({ page }) => {
 // and a proof click is a proof again (opens the lightbox in every mode). The old rail is gone: no
 // .scenerail, no .srbeads. The loop stays the DEFAULT (the first R20 test proves it runs untouched).
 test('The proof is walked by a per-beat guided-tour stepper and the keys — and a proof click zooms again', async ({ page }) => {
+  // SIX beats now (2026-09-04, the fix round's reorder): each rings, photographs and replicates its
+  // own moments, and two of them carry a pair of legs merged into one beat. Patience, never an
+  // assertion — nothing this test proves changes with the number.
+  test.setTimeout(180000)
   await coverReqs('R20')
   await openDetail(page)
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
@@ -2119,6 +2123,11 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await expect(keys.locator('.kbd')).toHaveText(['← →', '↑ ↓', 'PgUp / PgDn', 'Esc', 'r'])
     await expect(keys).toContainText('walk')
     await expect(keys).toContainText('change requirement')
+    // …and the beat leaves the READER where it found it (2026-09-04, the reorder): this leg ends on
+    // the guide, and the beat after it opens on the reader's own controls. A beat that navigates
+    // away puts the reading surface back, or the next one waits on a page that is not there.
+    await page.goto('/#/board/' + spec.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
   })
 
   // THE CHIPS — one per cell, the value only (design C, the human 2026-09-02/03: "every text once").
