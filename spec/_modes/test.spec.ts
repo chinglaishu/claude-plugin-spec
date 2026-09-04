@@ -576,6 +576,53 @@ test('renders — the Expected picture fills the Focus slot: loop, stills per be
   await expect(stale).toHaveAttribute('data-vizhash', vizat)      // the derived hash still rides the slot for traceability
 })
 
+// ── REDUCED MOTION PARKS THE STORYLINE (restored 2026-09-04, final re-review, rules 3 and 6) ──────
+// The storyline's rows move: a drawn beat cell LOOPS its own scenes (tools/board/client.js
+// `frameCell` — `data-loop`), and under `prefers-reduced-motion: reduce` every one of them parks on
+// its result instead. That accessibility fact had exactly one test, in the leg above, and the
+// storyline redesign deleted it under a comment saying nothing was lost: `data-loop` was then
+// asserted NOWHERE in the tree while client.js:2182,2185 still gated on `reduced`.
+//
+// It could not simply be put back where it was, and that is worth writing down: the fixture above is
+// a screen with NO captured markup at all, so it BORROWS a sibling's page (board R18) and its cells
+// are documents in sandboxed frames with a parked sketch inside them — nothing there loops, under
+// any media setting. The loop lives on the INLINE drawn cell, which a row gets when the screen has a
+// picture of its own and therefore no borrowed chrome (tools/spec-store.mjs `hasAnyReplica` →
+// build-board's CHROME map → `canPair`). So this fixture commits one empty replica file: enough to
+// refuse the loan, not enough to be a harvest, which is exactly the shape `frameCell` draws for.
+test('renders — reduced motion parks every drawn row: the beats loop, and under reduce nothing does', async ({ page }) => {
+  const body =
+    '- **Given** a list with two items\n- **When** you press Clear\n- **Then** the list shows zero items\n' +
+    '- **When** you press Undo\n- **Then** the two items return\n'
+  const { name, dir } = makeScreen('probe-motion', body)
+  const d = deriveSchematic(parseBehavior(body))!
+  mkdirSync(join(dir, 'viz'), { recursive: true })
+  writeFileSync(join(dir, 'viz', 'R1.svg'), d.svg)
+  // a screen with captured markup of its own is never lent someone else's page — one file is the
+  // whole of that condition, and it keeps the drawing INLINE in the row (see the note above)
+  mkdirSync(join(dir, 'evidence'), { recursive: true })
+  writeFileSync(join(dir, 'evidence', 'R1.b1.before.expected.html'), '<div class="rep r0"></div>')
+
+  const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
+  await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
+  const schem = dt.locator('.focusov .fread .fstory')
+  await expect(schem.locator('.sbrow')).toHaveCount(3)                       // given + 2 beats
+  await expect(schem.locator('.sbrow .sbframe svg')).toHaveCount(3)          // drawn inline, not borrowed
+  await expect(schem.locator('.sbrow').nth(0).locator('.sbframe[data-loop]')).toHaveCount(0)  // the given is a parked still
+  await expect(schem.locator('.sbframe[data-loop]')).toHaveCount(2)          // both beat rows loop
+
+  // …and under reduce, none of them does. A hash change is a same-document navigation (the
+  // documented trap), so the reader is rebuilt by a real reload with the media emulated.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  try {
+    await page.reload()
+    await expect(dt.locator('.viewseg')).toBeVisible()
+    await expect(schem.locator('.sbrow')).toHaveCount(3)                     // the rows are all still there…
+    await expect(schem.locator('.sbrow .sbframe svg')).toHaveCount(3)        // …and so is every drawing
+    await expect(schem.locator('.sbframe[data-loop]')).toHaveCount(0)        // parked, not looping
+  } finally { await page.emulateMedia({ reducedMotion: null }) }
+})
+
 // ── the board RENDERS Changed (board R4's fifth word) ──────────────────────
 // The board's own requirements are never naturally Changed (a fresh fold re-stamps their pins from
 // the current text), so these tests inject the state: a screen whose R1 is Passed in its folded
