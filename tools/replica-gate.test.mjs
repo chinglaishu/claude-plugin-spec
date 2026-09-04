@@ -476,3 +476,19 @@ test('containsRunLoose ignores manufactured whitespace but keeps the word bounda
   assert.equal(containsRun("you open the board 's home", "you open the board's home"), false,
     'the strict rule is what needed the fallback')
 })
+
+// ── AN EXTRA BOX IS ONE THE APP NEVER HAD (final review C1, 2026-09-04) ─────────────────────────
+// The rule was written for the capture's own probe frame, which shipped as an empty 200×200 plate
+// in eighteen committed replicas with every row reading ok. The live walk is deliberately stricter
+// about which boxes get a SLOT than "is it painted" — it refuses a wrapper whose leaves type its
+// words — so a bordered card it passed over in favour of the leaf inside it came back as an extra
+// box on a file showing exactly what the app showed (board R22's "latest run · …" card).
+test('a replica box WRAPPING measured content is not an extra box; an empty invented one still is', () => {
+  const live = { w: 1440, h: 900, els: [{ x: 110, y: 440, w: 200, h: 20, kind: 'text', text: 'latest run' }] }
+  const wrapper = { els: [{ x: 100, y: 420, w: 264, h: 132, kind: 'container', bd: 1 }] }
+  assert.deepEqual(replicaGaps(live, wrapper, { x: 0, y: 0, w: 1440, h: 900 })
+    .filter(g => g.kind === 'extra-box'), [], 'the card holds a box the harvest measured')
+  const invented = { els: [{ x: 800, y: 700, w: 200, h: 200, kind: 'container', bg: '1,2,3' }] }
+  const gaps = replicaGaps(live, invented, { x: 0, y: 0, w: 1440, h: 900 })
+  assert.equal(gaps.filter(g => g.kind === 'extra-box').length, 1, 'an empty plate the app never had is still caught')
+})

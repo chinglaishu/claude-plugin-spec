@@ -238,6 +238,17 @@ export function replicaGaps (live, replica, region, opts = {}) {
       // every body-rooted replica reported `container at 0,0 1440x1890`, its own root).
       if (region && sameBox(r, region)) continue
       if (liveEls.some(e => sameBox(e, r))) continue
+      // …AND A WRAPPER AROUND MEASURED CONTENT IS NOT AN INVENTION (final review C1, 2026-09-04).
+      // The rule exists for a box THE APP NEVER HAD — the capture's own probe frame, drawn as an
+      // empty 200×200 plate in eighteen committed replicas with every row reading ok. The live walk
+      // is deliberately stricter about which boxes get a SLOT than "is it painted": it refuses a
+      // wrapper whose leaves type its words, and it has a budget. So a bordered card the walk passed
+      // over in favour of the leaf inside it came back here as an extra box on a file that shows
+      // exactly what the app showed (board R22's `latest run · …` card). A box with a live element
+      // INSIDE it is a wrapper around content the harvest did measure; the probe-frame case has
+      // nothing in it at all, and is still caught.
+      if (liveEls.some(e => e.x >= r.x - GATE_TOL && e.y >= r.y - GATE_TOL &&
+        e.x + e.w <= r.x + r.w + GATE_TOL && e.y + e.h <= r.y + r.h + GATE_TOL)) continue
       out.push({ kind: 'extra-box', what: String(r.kind || 'box'), x: r.x, y: r.y, w: r.w, h: r.h })
     }
   }
