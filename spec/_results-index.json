@@ -5124,13 +5124,13 @@
     }
   },
   "_modes": {
-    "total": 17,
+    "total": 18,
     "failed": 0,
     "tests": [
       {
         "title": "unproven — a requirement with no passing test reads unproven",
         "ok": true,
-        "ms": 717,
+        "ms": 469,
         "error": null,
         "line": 88,
         "reqs": {}
@@ -5138,7 +5138,7 @@
       {
         "title": "proven — a current passing proof makes a requirement proven",
         "ok": true,
-        "ms": 374,
+        "ms": 356,
         "error": null,
         "line": 94,
         "reqs": {}
@@ -5154,7 +5154,7 @@
       {
         "title": "a stale-only pass does not read Passed either — status honours the same staleness filter as state",
         "ok": true,
-        "ms": 382,
+        "ms": 352,
         "error": null,
         "line": 113,
         "reqs": {}
@@ -5162,7 +5162,7 @@
       {
         "title": "state is only ever proven or unproven — there is no reworded / accept state",
         "ok": true,
-        "ms": 363,
+        "ms": 354,
         "error": null,
         "line": 121,
         "reqs": {}
@@ -5170,7 +5170,7 @@
       {
         "title": "a leftover guess: frontmatter line is inert — the screen reads exactly like any other",
         "ok": true,
-        "ms": 375,
+        "ms": 353,
         "error": null,
         "line": 136,
         "reqs": {}
@@ -5178,7 +5178,7 @@
       {
         "title": "changed — a current pass whose text-pin no longer matches reads Changed",
         "ok": true,
-        "ms": 360,
+        "ms": 355,
         "error": null,
         "line": 161,
         "reqs": {}
@@ -5186,7 +5186,7 @@
       {
         "title": "changed — a matching pin stays plainly Passed",
         "ok": true,
-        "ms": 355,
+        "ms": 357,
         "error": null,
         "line": 169,
         "reqs": {}
@@ -5194,7 +5194,7 @@
       {
         "title": "changed is a modifier on Passed only — a failing test keeps the requirement Failed",
         "ok": true,
-        "ms": 367,
+        "ms": 360,
         "error": null,
         "line": 178,
         "reqs": {}
@@ -5202,7 +5202,7 @@
       {
         "title": "renders — the detail carries NO gate and no accept button",
         "ok": true,
-        "ms": 1055,
+        "ms": 951,
         "error": null,
         "line": 225,
         "reqs": {}
@@ -5210,7 +5210,7 @@
       {
         "title": "renders — a leftover guess: frontmatter line renders exactly like a normal screen",
         "ok": true,
-        "ms": 892,
+        "ms": 871,
         "error": null,
         "line": 244,
         "reqs": {}
@@ -5218,7 +5218,7 @@
       {
         "title": "renders — a beats block leads the requirement, the List reads it, and the proof rides its rows",
         "ok": true,
-        "ms": 1333,
+        "ms": 1402,
         "error": null,
         "line": 259,
         "reqs": {}
@@ -5226,7 +5226,7 @@
       {
         "title": "renders — Focus fits the viewport: the Expected picture on first sight, the beats scrolling inside the card",
         "ok": true,
-        "ms": 1173,
+        "ms": 1443,
         "error": null,
         "line": 394,
         "reqs": {}
@@ -5234,39 +5234,47 @@
       {
         "title": "renders — the Expected picture fills the Focus slot: loop, stills per beat, grey when the text moves",
         "ok": true,
-        "ms": 1647,
+        "ms": 1805,
         "error": null,
         "line": 488,
         "reqs": {}
       },
       {
+        "title": "renders — reduced motion parks every drawn row: the beats loop, and under reduce nothing does",
+        "ok": true,
+        "ms": 978,
+        "error": null,
+        "line": 593,
+        "reqs": {}
+      },
+      {
         "title": "renders — a Changed requirement wears the indigo changed chip, never a plain Passed",
         "ok": true,
-        "ms": 1169,
+        "ms": 1091,
         "error": null,
-        "line": 609,
+        "line": 656,
         "reqs": {}
       },
       {
         "title": "renders — the home banner counts a Changed requirement as drift",
         "ok": true,
-        "ms": 948,
+        "ms": 1100,
         "error": null,
-        "line": 667,
+        "line": 714,
         "reqs": {}
       },
       {
         "title": "renders — the home strip counts what needs a look and deep-links the first one",
         "ok": true,
-        "ms": 1021,
+        "ms": 999,
         "error": null,
-        "line": 682,
+        "line": 729,
         "reqs": {}
       }
     ],
-    "ranAt": 1788509612067,
+    "ranAt": 1788510381344,
     "srcHashes": {
-      "_modes": "5fa28d18b230",
+      "_modes": "31158f60ef16",
       "board": "a21ada2f64ca",
       "conflicts": "0e5caf31a4e1",
       "dispatch": "1162bc51d157",
