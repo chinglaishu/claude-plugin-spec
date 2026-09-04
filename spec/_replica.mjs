@@ -195,13 +195,21 @@ export function captureReplica (arg) {
   // spec/_base.ts's gateReplica escapes the page's @font-face text the same way, for the same
   // reason; tools/replica-gate.mjs's `textOf` drops the sheet entirely before reading words.
   // Two rules, both at the ONE point a value enters, so no `out.push` added later can get past them:
-  //   1. NO MARKUP CHARACTER SURVIVES AS A DECLARATION. None of REPLICA_PROPS can carry `<`, `>` or
-  //      `&` in an honest computed value — `content` and `background-image` are deliberately not on
-  //      that list — so a value that does is not a picture of anything, it is markup wearing a
+  //   1. NO MARKUP CHARACTER SURVIVES AS A DECLARATION. None of REPLICA_PROPS can carry `<` or `>`
+  //      in an honest computed value — `content` and `background-image` are deliberately not on that
+  //      list — so a value that does is not a picture of anything, it is markup wearing a
   //      declaration's clothes. Refused outright, which is the existing "a value the page will not
   //      answer for is not a declaration" path; the cost of the pathological case is one fallback
   //      face, and the file's promise stays literally true rather than true-if-you-trust-the-raw-
   //      text-rule.
+  //      …BUT `&` IS ESCAPED, NOT REFUSED (corrected 2026-09-04, final re-review's minor 5, rule 6).
+  //      It was on that list, and it was the one with a real cost: "M&S Sans" is an ordinary font
+  //      name, and refusing its declaration renders that app's every word in a system fallback with
+  //      nothing saying so — a picture that is not the app's, which is the one thing a replica may
+  //      not be. Nor is it a hazard: a <style> element is HTML RAW TEXT and is never entity-decoded,
+  //      so `&` reaches the CSS parser as itself. It is written as CSS's own hex escape (`\26 `, the
+  //      trailing space ending the escape) rather than merely allowed through, so the declaration
+  //      says exactly what the app said and no ampersand survives into the file at all.
   //   2. AND WHATEVER STILL ARRIVES CANNOT CLOSE THE SHEET. Belt to that braces, and the rule that
   //      keeps holding if `content` or `background-image` is ever added to the list: `\/` is CSS's
   //      own escape for `/`, so the declaration still says what the app said while the tokeniser
@@ -210,11 +218,13 @@ export function captureReplica (arg) {
   // Entity escaping is NOT usable here: a <style> element is HTML raw text and is never entity-
   // decoded, so `&lt;` would reach the CSS parser as five literal characters and corrupt the rule.
   // spec/_base.ts's gateReplica escapes the page's @font-face text by rule 2 for the same reason.
-  const MARKUP = /[<>&]/
+  const MARKUP = /[<>]/
   const cssSafe = (v) => {
     const s = String(v == null ? '' : v)
     if (MARKUP.test(s)) return ''
-    return s.replace(/<\/(style)/gi, '<\\/$1')
+    // `&` is ESCAPED, not refused (see rule 1's amendment above): CSS's own hex escape, the trailing
+    // space ending it, so `"M&S Sans"` stays that family and no ampersand reaches the file.
+    return s.replace(/&/g, '\\26 ').replace(/<\/(style)/gi, '<\\/$1')
   }
   const gp = (cs, p) => {
     try { return cs && typeof cs.getPropertyValue === 'function' ? cssSafe(cs.getPropertyValue(p) || '') : '' } catch { return '' }

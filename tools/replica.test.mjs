@@ -183,6 +183,25 @@ test('a computed value that closes the sheet cannot: </style is neutralised, and
   assert.ok(/color:rgb\(1, 2, 3\)/.test(sheet[1]) && !/leak\.png/.test(sheet[1]), 'the honest declaration beside it is still written: ' + sheet[1])
 })
 
+// …AND AN AMPERSAND IS A NAME, NOT MARKUP (final re-review's minor 5, 2026-09-04). The rule above
+// refuses any computed value carrying `<`, `>` or `&`, and `&` was the one that cost something real:
+// a family called "M&S Sans" is an ordinary font name, and refusing its declaration silently drops
+// the replica of that app's every word into a system fallback — a picture that is not the app's,
+// with nothing anywhere saying so. It is not a hazard either: a <style> element is HTML RAW TEXT and
+// is never entity-decoded, so an `&` in it reaches the CSS parser as itself. It is escaped rather
+// than merely allowed, with CSS's own hex escape (`\26 `, the trailing space ending the escape), so
+// the declaration says exactly what the app said and no ampersand survives into the file at all.
+// `<` and `>` stay refused: no REPLICA_PROPS value can honestly carry one.
+test('a font family with an ampersand is escaped and kept, never refused into a fallback face', () => {
+  const leaf = el('div', [0, 0, 100, 20], { text: 'hello', cs: { 'font-family': '"M&S Sans", serif' } })
+  const root = el('div', [0, 0, 400, 200], { children: [leaf] })
+  const body = el('body', [0, 0, 1440, 900], { children: [root] })
+  const r = cap(body, { target: leaf, ring: { x: 0, y: 0, width: 100, height: 20 } })
+  const sheet = /<style>([\s\S]*?)<\/style>/.exec(r.html)[1]
+  assert.ok(/font-family:"M\\26 S Sans", serif/.test(sheet), 'the app\'s own family is declared: ' + sheet)
+  assert.ok(!sheet.includes('&'), 'and no raw ampersand survives into the sheet: ' + sheet)
+})
+
 test('style, link, template, noscript, object, embed, meta, head and title are dropped with their subtrees', () => {
   const kids = ['style', 'link', 'template', 'noscript', 'object', 'embed', 'meta', 'head', 'title']
     .map((t, i) => el(t, [0, i * 10, 50, 10], { text: 'GONE' + t }))
