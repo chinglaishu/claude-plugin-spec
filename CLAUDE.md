@@ -33,7 +33,8 @@ not do. Never take control away from the user (no auto-advancing after a verdict
 ## The rules
 
 1. **Write the failing test first** for any new or changed behaviour, **watch it go red**, and **tag
-   the requirement it proves** with `checkReq(id, fn)`. *Exempt:* pure refactors, spikes. A test
+   the requirement it proves** with `checkReq(id, fn)` — or `checkReq(id, { beat: n }, fn)` where the
+   block's position would file it under the wrong sentence (C1, the human 2026-09-06). *Exempt:* pure refactors, spikes. A test
    written after the code can only confirm it. *Addendum (the human, 2026-08-21):* a **composed
    flow** — the deterministic composition of function-shaped beats, each already proven red-first
    in its unit home — is exempt from flow-level watch-it-go-red; its validity is every composed
@@ -121,12 +122,22 @@ spec/<screen>/steps.ts       the screen's COMPOSABLE BEATS (the beat-function co
                              requirement and the borrowed page a sketch stood in all went with it.)
 spec/<screen>/state.json     pre-redesign relic (old accept pin, approvedPrdText) — unused since the gate was removed (board R8, 2026-07-30); still on disk, not yet deleted
 spec/_design.css             ONE design system, inlined into board.html
-spec/_base.ts                checkReq(id, fn) / coverReqs(...) — how a test tags the requirements it proves
+spec/_base.ts                checkReq(id, fn) / coverReqs(...) — how a test tags the requirements it proves.
+                             Since C1 (the human, 2026-09-06) the tag may also name the BEAT it proves —
+                             `checkReq(id, { beat: 3 }, fn)` — for a block whose position would file its
+                             harvest under the wrong sentence; `npm run proof lint` refuses a beat number
+                             the requirement's behavior block does not have (NAMED-BEAT)
 spec/_replica.mjs            the REPLICA's capture (2026-09-03), one self-contained function Playwright serialises into
                              the page: the ringed element's SCENE ROOT as the app's own DOM, computed styles diffed against
                              per-tag defaults into shared classes, sanitised (no script/handler/external URL, live controls
                              become spans carrying the value the assertion read) and capped — REPLICA_PROPS is the one prop
-                             list and travels in through the arg. It returns BOTH halves of the row: `html` the ACTUAL (what
+                             list and travels in through the arg. Its classes are NAMESPACED by the MOMENT KEY the
+                             arg carries (`data-replica-ns`, phase 8 A1, 2026-09-05) so a base and a patch can be
+                             rendered in ONE document without restyling each other — and the root records the
+                             element-child path from body to its scene root (`data-replica-path`, A2), which is where
+                             the reader stands the patch inside the base. The BEFORE moment is keyed `<screen>:before`,
+                             not by the beat: it IS the screen's base, and keying it per beat would give two beats of
+                             one page two class sets and therefore two blobs. It returns BOTH halves of the row: `html` the ACTUAL (what
                              the app rendered) and `expected` the same tree cloned with the beat's `claims` applied — a wrong
                              value taking the requirement's word, a removed element restored from `lastRight`, a never-there
                              one drawn as a marked placeholder; unit-tested in tools/replica.test.mjs on a stub DOM.
@@ -143,7 +154,9 @@ spec/_moment.mjs             ONE MOMENT, ONE INSTANT (2026-09-04): composes the 
                              own walk-back (`gateInPage`) into the single expression the page evaluates, so the three
                              readings a likeness gate compares can never be three different instants of the app — and
                              carries the walk's own answers across (the ringed element it MEASURED, the boxes it dropped
-                             as occluded) so the halves cannot disagree about what they are looking at
+                             as occluded) so the halves cannot disagree about what they are looking at — and the moment
+                             KEY with them (A1): a field this composed source forgets to forward is a field the page
+                             never sees, which is exactly how the namespace shipped inert for one round (2026-09-05)
                              (`spec/_results-index.json`, `spec/_runs.json` and `spec/_results.json` are GONE with the
                              files they named — the fold, the run log and the raw report are rows in `board.db`.)
 spec/_conflict-decisions.json  the human's adjudicated conflicts, keyed by content
@@ -181,6 +194,10 @@ tools/board/stepper.js       pure: the gif-mode frame-stepper's timing math (hol
                              inlined verbatim like client.js, unit-tested via globalThis.SBStepper
 tools/board/words.js         pure: the PROVED PHRASE rule (which words of a beat's sentence the moment on show is
                              proving) — a third file inlined verbatim into board.html, unit-tested via globalThis.SBWords
+tools/board/graft.js         pure: THE GRAFT (phase 8, 2026-09-05) — the Expected of a moment is the beat's whole-page
+                             BASE with that moment's patch standing at its recorded path, everything off that path
+                             marked `data-ctx` and faded. A fourth file inlined verbatim into board.html, unit-tested
+                             via globalThis.SBGraft (tools/graft.test.mjs)
 tools/board/client.js        the board's browser behaviour (routing, run panel, focus reader, …) as a REAL
                              .js file — read verbatim into board.html, fed a JSON island (window.__BOARD__).
                              Edit/lint it like normal JS; no template-literal escaping traps.
@@ -285,7 +302,14 @@ change.
   always recorded — and so, since the D2 evidence harvest (Task 15, 2026-08-21), are each requirement's
   before/after EVIDENCE frames: `checkReq` photographs the page around every assertion body and the
   reporter folds the pair plus the proves-step's WINDOW (its span in the recording) into the DATA
-  HOME — blobs, named by content, and an evidence row keyed by the covering test — from CLI runs too. Since the per-beat storyline redesign
+  HOME — blobs, named by content, and an evidence row keyed by the covering test — from CLI runs too.
+  **The BEFORE moment's picture is the beat's BASE** (phase 8, 2026-09-05): the same body-rooted
+  replica with its header comment stripped (`tools/evidence.mjs baseBody`) and landed by `putBlob`, so
+  every beat that starts from the same page names ONE blob — the blob's name IS the content hash phase
+  8 wanted and the fold's `gcBlobs` is its refcount, so there is no `_base/` directory and no hand-kept
+  count. `beats[].base` is a src in the two shapes every other picture takes (`blob/<sha>.html` or an
+  `https://` url); `replicaExpectedBefore` is no longer set on a new entry and is carried only for a
+  legacy one. Measured on a real harvest: spec/board's 35 beats with a base name 13 distinct blobs. Since the per-beat storyline redesign
   (33049fb/3fbbaec, 2026-08-28) the Focus reader is per-beat ROWS: each beat's proof is a
   `proofCell` (`client.js`) that ALWAYS loops before → each asserted-value frame → after — no
   stills·gif·video toolbar exists any more (board R20 asserts `.pcmodes` is absent), only a
@@ -439,7 +463,12 @@ change.
   each edge). **ONE HTML PER MOMENT** (the human, 2026-09-04: "why does the Expected also need a
   replica — the Actual is the screenshot"): the file that lands is the EXPECTED, and the gate's
   verdict on that unedited tree is stamped on ITS root as `data-replica-layout` /
-  `data-replica-gaps`. The fold prints every gapped moment and sweeps the retired `.actual.html`
+  `data-replica-gaps`. **A BASE IS GRADED ONCE, against every beat that names it** (phase 8 A5,
+  2026-09-05): `checkReplicas` groups the index's `beats[].base` by src, runs the file's own rules a
+  single time and then compares the pin with EACH sharing beat's own before skeleton, so a row says
+  which requirement has been re-harvested past it; a base blob nothing answers is a red row. There is
+  no orphan rule — a blob no record names was collected at the fold, so the index IS the list. The
+  fold prints every gapped moment and sweeps the retired `.actual.html`
   half; `npm run proof mirror` refuses a replica that is gapped, ungated, truncated, whose pin no
   longer hashes the skeleton beside it, whose WORDS are not the skeleton's, or that does not carry a
   failed claim's own value — the word rule exempting what a claim moved (a live element inside a
@@ -495,7 +524,14 @@ change.
   the ring), a removed element is restored from the beat's last all-ok replica, one the app never had
   is a marked placeholder beside the ring. Claims accumulate down the beat here too, and a failed
   beat's after moment writes the beat's LAST Expected rather than deriving one from the scene the app
-  got wrong. **A Then with several facts uses SOFT claims**
+  got wrong. **And since phase 8 (2026-09-05) that markup is TWO files, not one**: the beat's whole-page
+  BASE (its Given, shared by content) with this moment's PATCH standing where its own scene root stands
+  in it — `tools/board/graft.js`, pure and unit-tested, inlined verbatim into board.html — everything
+  off the path from the page to the patch marked `data-ctx` and faded, because the context was captured
+  at the beat's opening and this moment was not, and two instants at equal weight would be a picture
+  claiming to be one. Both cells are page-sized by construction, so ONE camera frames them. A moment
+  with no base, a body-rooted patch (which IS the whole page already) or a refused graft paints alone —
+  exactly what the row showed before, never a blank. **A Then with several facts uses SOFT claims**
   (`proveVisible(…, { soft: true })`): the beat reaches and photographs every fact and the `proves` step
   fails once at its end with the whole list — never a green, never a beat cut off at its first red.
 - **The state guard snapshots per process** (`_state-snapshot.<pid>.json`) and also records the set

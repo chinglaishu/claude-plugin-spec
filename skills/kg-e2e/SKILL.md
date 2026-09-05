@@ -43,6 +43,11 @@ covers. Two helpers, both imported from `'../_base'`:
 - **`checkReq(id, fn)`** runs `fn` inside a `proves <id>` step. The step's pass/fail **is** the
   requirement's proof — and it doubles as human-readable evidence in the test's step list. Put an
   assertion inside `fn` that would fail if that requirement were deleted from the app.
+  **Which BEAT a block proves is its POSITION** — the Nth `checkReq(id)` of a test shows the Nth
+  When→Then, clamped to the last — and where that would file a block's harvest under the wrong
+  sentence, name the beat: **`checkReq(id, { beat: 3 }, fn)`** *(C1, the human 2026-09-06)*. The
+  argument is optional and `npm run proof lint` refuses a beat number the requirement's behavior
+  block does not have, so a stale number is an error rather than a picture under no sentence at all.
 - **`coverReqs(...ids)`** declares, up front, the full set of requirements the flow *intends* to
   reach. A flow that fails partway leaves the ids it never got to recorded **not-reached** — neither
   green nor red — instead of silently absent. `"0 of 0 passing"` reads green; not-reached must not.
@@ -136,6 +141,17 @@ way. Read it before writing your first one.
    'Water the plants', 'The task typed into the box')` **before** the click that submits it — and the
    typed string is ringed, held, photographed and drawn. The value you PROVE should be the value a
    reader SEES happening, not only the one it left behind.
+
+   **The Given is captured ONCE per screen state, and shared by content** *(phase 8, 2026-09-05)*. A
+   beat's opening moment is photographed body-rooted — the whole page, no ring — and lands as the
+   beat's **base**: the header stripped, the bytes content-addressed, so every beat that starts from
+   the same page names one blob. Each later moment of the beat lands only its own **patch** — the
+   scene root the ring is in — and the board's Expected cell stands that patch back where it belongs
+   in the base, with everything off that path faded as context. Two things follow for an author.
+   Open your beats from the SAME settled state where you can (three beats that each start from the
+   task list share one base instead of writing the page out three times), and never assume the
+   Expected shows only your component: it shows the page it lives on, so a beat whose ring lands on
+   an element the base never had is a picture a reader will notice.
 
    **A watchable beat: every named control on screen, every named state visible, no scene wasted**
    *(2026-08-30 — the human, on the Tsumiki demo's R1)*. The row's one camera frames the **union of the

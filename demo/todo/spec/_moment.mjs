@@ -43,7 +43,10 @@
  * be interpolated by this file instead of shipped verbatim.
  *
  * `a` carries what the two calls carried between them: `{ ring, target, props, claim, claims, base,
- * minRegion, caps, env? }` — one `target`, one `ring`, resolved once by the caller. Each half is
+ * key, minRegion, caps, env? }` — one `target`, one `ring`, resolved once by the caller. (`key`
+ * names the moment, phase 8 A1: the capture hashes it into its class prefix so a base and a patch
+ * can be rendered in one document. It travels through this arg like everything else — a field the
+ * composed source forgets to forward is a field the page never sees.) Each half is
  * wrapped in its own try, so the cheaper artefact survives the failure of the other (the skeleton
  * is what the drawing and the gate are derived from; a capture that dies must not take it with it).
  */
@@ -82,7 +85,7 @@ export function momentSource (walkSrc, capSrc) {
     'var __tgt = a.target ? rp.ringEl : (rp.ringEl || null);' +
     'try {' +
       'if (a.target && !rp.ringEl) { rep = null } else {' +
-      'rep = __cap({ ring: a.ring, target: __tgt, props: a.props, claim: a.claim,' +
+      'rep = __cap({ ring: a.ring, target: __tgt, props: a.props, claim: a.claim, key: a.key,' +
       ' claims: a.claims, base: a.base, minRegion: a.minRegion, caps: a.caps, env: a.env || null,' +
       ' occluded: rp.occluded, report: rc }) }' +
     '} catch (e) { rep = null }' +
