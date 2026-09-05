@@ -63,10 +63,11 @@ tr:last-child td{border-bottom:0}
 <div class="flow">
   <div class="fbox git"><h3>app repo (git)</h3><p><b>Authored only:</b> <span class="k">prd.md</span>, tests, rulings, the manifest with <span class="k">projectId</span> + the media choice.</p><p>Zero derived bytes — not even ignored ones except the vendored tools and per-machine config.</p></div>
   <div class="arrow">→</div>
-  <div class="fbox home"><h3>the board server (local host)</h3><p>Owns <span class="k">~/.specboard/&lt;projectId&gt;/board.db</span> — the fold, runs, every blob reference.</p><p>The reporter writes through <span class="k">store.mjs</span>; the board reads and serves. One door.</p></div>
+  <div class="fbox home"><h3>the board server (local host) → the db (switch 1)</h3><p>The fold, runs and every blob reference are rows behind ONE async store interface, two drivers: <b><span class="k">sqlite</span></b> — <span class="k">~/.specboard/&lt;projectId&gt;/board.db</span>, the default — or <b><span class="k">pg</span></b> — a remote database URL the whole team shares.</p><p>The reporter writes through <span class="k">store.mjs</span>; the board reads and serves. One door.</p></div>
   <div class="arrow">→</div>
-  <div class="fbox cloud"><h3>the blob store (the switch)</h3><p><b><span class="k">fs</span>:</b> <span class="k">~/.specboard/&lt;id&gt;/blobs/&lt;sha256&gt;.&lt;ext&gt;</span>, served at <span class="k">/blob/…</span></p><p><b><span class="k">s3</span>:</b> the same sha256-named object PUT to an S3-compatible bucket (S3, R2, B2, MinIO); the db stores its URL.</p></div>
+  <div class="fbox cloud"><h3>the blob store (switch 2)</h3><p><b><span class="k">fs</span>:</b> <span class="k">~/.specboard/&lt;id&gt;/blobs/&lt;sha256&gt;.&lt;ext&gt;</span>, served at <span class="k">/blob/…</span></p><p><b><span class="k">s3</span>:</b> the same sha256-named object PUT to an S3-compatible bucket (S3, R2, B2, MinIO); the db stores its URL.</p></div>
 </div>
+<div class="dec"><b>Team enablement is exactly two values (the human's rule, 2026-09-05):</b> a <b>remote db url</b> + a <b>cloud blob url</b>. Set both and every teammate's ordinary local board — and CI — reads and writes the same record and the same media. No hosted board is required for a team; hosting one read-only later is an optional extra for people who don't run the tool.</div>
 <p>The one trick that makes the switch cheap: <b>a db row's picture reference is a single column with two shapes</b> — <span class="k">blob/&lt;sha&gt;.png</span> (the local board serves it) or <span class="k">https://…</span> (the browser fetches it straight from the bucket). The client already treats a src as opaque; nothing in the board cares which it got. Content-addressing survives the switch: the object's key IS the sha256 either way, so dedupe (an unchanged frame costs nothing) and gc-by-reference (delete what no record names — <span class="k">fs unlink</span> or <span class="k">s3 delete</span>) are the same logic behind a two-method driver: <span class="k">put(bytes, ext) → src</span>, <span class="k">remove(src)</span>.</p>
 
 <h2>3 · The switch, and where each piece of config lives</h2>
@@ -80,28 +81,32 @@ tr:last-child td{border-bottom:0}
 <p><b>Sharing:</b> this is the stepping stone — proof media is already team-visible before any hosted board exists.</p>
 </div></div>
 </div>
-<div class="tree"><b>committed · spec/_specboard.json</b>   <span class="m">— the project's shared policy (a team should agree on where media goes)</span>
+<div class="tree"><b>committed · spec/_specboard.json</b>   <span class="m">— the project's shared policy (modes + non-secret endpoints; a team agrees once)</span>
 "projectId": "tsumiki-3f9a1c",
-"media": "local" | "cloud",
+"db":    "local" | "remote",     <span class="m">— switch 1: board.db, or the team's database</span>
+"media": "local" | "cloud",      <span class="m">— switch 2: blobs/ on disk, or the bucket</span>
 "bucket": { "endpoint": "https://…r2.cloudflarestorage.com", "name": "specboard-tsumiki", "publicBase": "https://media.example.com" }   <span class="m">— cloud only; no secrets here</span>
 
-<b>per machine, never committed · env or spec/_config.json</b>
-SPECBOARD_S3_KEY / SPECBOARD_S3_SECRET      <span class="m">— credentials only ever live here</span>
+<b>per machine, never committed · env (or spec/_config.json)</b>
+SPECBOARD_DB_URL                            <span class="m">— the remote db url (postgres://…; carries its password, so env-only)</span>
+SPECBOARD_S3_KEY / SPECBOARD_S3_SECRET      <span class="m">— the bucket credentials — only ever here</span>
 
 <b>machine-global · ~/.specboard/settings.json</b>   <span class="m">— claude-mem style: defaults (retention N, ports), overridable per project</span></div>
 <p class="note">A run with <span class="k">media: "cloud"</span> and no credentials fails the fold loudly (rule 3 — never a silent local fallback that quietly forks the store). The video and 1280px frames are ~95% of the bytes, so the switch governs the whole blob store — patches, skeletons and fonts ride along, keeping one path instead of two.</p>
 
 <h2>4 · The team path becomes three gentle steps, not one cliff</h2>
 <ol class="steps">
-<li><b>Solo, today: local board + local blobs.</b><p>Everything under <span class="k">~/.specboard/</span>. The claude-mem experience: install, run, it just works, the repo stays pure.</p></li>
-<li><b>Flip <span class="k">media: "cloud"</span> when proof should be showable.</b><p>Same board, same db, but every photograph and video is a URL a teammate (or a PR comment, or a ticket) can open. CI runs with the same bucket, so the canonical run's media is durable and shared before any hosted anything.</p></li>
-<li><b>Team store, when a team asks: host the board.</b><p>The same server on a shared box, Postgres behind the same store interface, blobs already in the bucket from step 2. Teammates point at the URL. This is the Langfuse move — configuration, not a rewrite.</p></li>
+<li><b>Solo, today: local db + local blobs.</b><p>Everything under <span class="k">~/.specboard/</span>. The claude-mem experience: install, run, it just works, the repo stays pure.</p></li>
+<li><b>Flip <span class="k">media: "cloud"</span> when proof should be showable.</b><p>Same board, same local db, but every photograph and video is a URL a teammate (or a PR comment, or a ticket) can open.</p></li>
+<li><b>Flip <span class="k">db: "remote"</span> when the team should share one record.</b><p>Two values total — the remote db url and the bucket — and every teammate's local board, plus CI, reads and writes the same fold and the same run history. Test records land in the shared db from wherever the suite runs. This is the Langfuse move — configuration, not a rewrite.</p></li>
+<li><b>Optional, later: host a read-only board</b><p>for people who never run the tool — the same server pointed at the same two values, on a shared box.</p></li>
 </ol>
+<p class="note">Shared-db semantics, stated plainly: run records are append-only (every teammate's run is kept, with who/when); the per-screen fold is latest-wins, so the current truth is whoever ran that screen last — with CI's run on every push as the steady arbiter; gc's keep-set is computed from the shared db itself, so one teammate's cleanup can never delete what another's retained run still names.</p>
 
 <h2>5 · What this changes in the standing plan (small)</h2>
 <table>
 <tr><th style="width:120px">task</th><th>delta</th></tr>
-<tr><td class="k">T1 store.mjs</td><td>back to the home-dir root (<span class="k">~/.specboard/&lt;projectId&gt;/</span>, claude-mem style; <span class="k">SPECBOARD_HOME</span> still overrides for tests/CI) + the two-method blob driver with <span class="k">fs</span> and <span class="k">s3</span> implementations; SQLite schema as already re-ruled</td></tr>
+<tr><td class="k">T1 store.mjs</td><td>back to the home-dir root (<span class="k">~/.specboard/&lt;projectId&gt;/</span>, claude-mem style; <span class="k">SPECBOARD_HOME</span> still overrides for tests/CI); the store's API is <b>async from day one</b> so the <span class="k">pg</span> driver fits behind it — two db drivers (<span class="k">sqlite</span> via better-sqlite3, <span class="k">pg</span> via a remote URL) and two blob drivers (<span class="k">fs</span>, <span class="k">s3</span>); the new dependencies are better-sqlite3 and pg</td></tr>
 <tr><td class="k">T4 manifest</td><td>also carries <span class="k">media</span> (+ <span class="k">bucket</span> when cloud); scaffold asks nothing and writes <span class="k">"local"</span></td></tr>
 <tr><td class="k">T7 reporter</td><td>unchanged in shape — it calls <span class="k">put()</span> and stores whatever src comes back</td></tr>
 <tr><td class="k">T8 server</td><td><span class="k">/blob/…</span> route serves only the fs driver's files; a URL src never touches the server</td></tr>
@@ -114,7 +119,8 @@ SPECBOARD_S3_KEY / SPECBOARD_S3_SECRET      <span class="m">— credentials only
 <div class="dec warn"><b>Home-dir mode's honest cost:</b> two checkouts of the same project share one store (same projectId) — usually a feature, but two simultaneous harvests from two checkouts must not interleave (already the standing never-run-concurrent-harvests rule; the db adds real transactions, which makes this safer than the file fold, not worse).</div>
 <div class="dec"><b>Recommendation:</b> build it exactly as drawn — home-dir store (claude-mem), board-server ownership with SQLite (Langfuse), one blob driver with the <span class="k">fs</span>/<span class="k">s3</span> switch in the committed manifest, defaulting to local. It adds one small interface to T1 and one manifest field to T4; everything else in the plan stands.</div>
 
-<h2>7 · The two things only you can rule</h2>
-<div class="q"><b>Q1 — scope of the switch.</b> You said "image/video". Drawn above, the switch moves the <i>whole</i> blob store (frames, video, replicas, fonts — one path). If you want strictly images+video in the cloud and the small html/json blobs always local, say so — it is a per-extension filter in the driver, slightly more code, two places for gc to look.</div>
-<div class="q"><b>Q2 — the store's address.</b> Drawn above it is <span class="k">~/.specboard/&lt;projectId&gt;/</span> (claude-mem's home-dir pattern; satisfies "must be out of repo" by construction, survives <span class="k">git clean</span>, shared across checkouts). The alternative kept from the last round was <span class="k">specboard/data/</span> inside the gitignored folder. Home-dir is the recommendation; confirm or overrule.</div>
+<h2>7 · Where the open points landed</h2>
+<div class="q"><b>Team enablement = two values</b> — ruled by the human, 2026-09-05: a remote db url and a cloud blob url are ALL a user sets to make the whole thing team-wide; test records go to the local db or the remote db by the same switch.</div>
+<div class="q"><b>Q1 (scope of the media switch)</b> — proceeding as drawn: the switch moves the whole blob store in one path (frames + video are ~95% of the bytes; replicas/fonts ride along). Overrule any time; it becomes a per-extension filter.</div>
+<div class="q"><b>Q2 (the store's address)</b> — settled by the claude-mem reference + "must be out of repo": <span class="k">~/.specboard/&lt;projectId&gt;/</span>. The earlier <span class="k">specboard/data/</span> idea is withdrawn.</div>
 </body>
