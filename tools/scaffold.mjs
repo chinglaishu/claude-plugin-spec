@@ -14,11 +14,11 @@
 // your screens are yours to crawl or write.
 
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join, resolve, dirname, relative } from 'node:path'
+import { join, resolve, dirname, relative, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 import { createServer } from 'node:net'
-import { FILES, SCRIPTS, DEV, MANIFEST, POINTER, NESTED, SPEC_IGNORE, ROOT_IGNORE, boardIgnoreLines, buildManifest, mergeManifest, resolveProject } from './_skeleton.mjs'
+import { FILES, SCRIPTS, DEV, MANIFEST, POINTER, NESTED, SPEC_IGNORE, ROOT_IGNORE, boardIgnoreLines, buildManifest, mergeManifest, newProjectId, resolveProject } from './_skeleton.mjs'
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
@@ -94,6 +94,14 @@ if (!existsSync(join(DEST, MANIFEST)) || force) {
   try { prev = JSON.parse(readFileSync(join(DEST, MANIFEST), 'utf8')) } catch { prev = null }
   const fresh = mergeManifest(buildManifest(SRC), prev)
   if (DEST !== APP) fresh.app = relative(DEST, APP) || '.'
+  // WHERE THIS PROJECT'S DERIVED DATA LIVES (the data home, 2026-09-06). Written once and committed:
+  // `projectId` names ~/.specboard/<projectId>/ on every machine that checks the project out, and the
+  // two switches start LOCAL — a board.db file and a blobs/ directory, nothing to install, nothing to
+  // sign up for. A team flips `db` to "remote" and `media` to "cloud" (adding `bucket`) later, and
+  // that flip IS the migration; mergeManifest then carries all of it across every update.
+  if (!fresh.projectId) fresh.projectId = newProjectId((fresh.project && fresh.project.name) || basename(APP))
+  if (!fresh.db) fresh.db = 'local'
+  if (!fresh.media) fresh.media = 'local'
   writeFileSync(join(DEST, MANIFEST), JSON.stringify(fresh, null, 2) + '\n')
   copied.push(MANIFEST)
 }

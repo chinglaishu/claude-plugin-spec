@@ -241,3 +241,16 @@ test('a manifest without a project block gains none — nothing invented', () =>
   updateProject({ dest, src, base: { version: '1.0.0', files: { 'a.mjs': h('OLD') } }, files: ['a.mjs'] })
   assert.equal('project' in manifest(dest), false)
 })
+
+// The data home, 2026-09-06: `projectId` NAMES the project's data home, and `db`/`media` say which
+// store it is. An update that dropped or reset any of the three would silently move a team's record
+// to a different place — so they ride across exactly like `project` does.
+test('projectId, db and media survive an update', () => {
+  const { src, dest } = scratch()
+  w(src, 'a.mjs', 'NEW'); w(dest, 'a.mjs', 'OLD')
+  const base = { version: '1.0.0', files: { 'a.mjs': h('OLD') }, projectId: 'tsumiki-3f9a1c', db: 'remote', media: 'cloud' }
+  updateProject({ dest, src, base, files: ['a.mjs'] })
+  assert.equal(manifest(dest).projectId, 'tsumiki-3f9a1c')
+  assert.equal(manifest(dest).db, 'remote')
+  assert.equal(manifest(dest).media, 'cloud')
+})

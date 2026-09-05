@@ -100,3 +100,30 @@ test('the app repo ignores the whole folder; the folder ignores its own scratch,
   assert.ok(boardIgnoreLines().includes('spec/.auth/'))
   assert.ok(boardIgnoreLines().every(l => !/evidence|board\.html|_results-index/.test(l)))
 })
+
+// THE PROJECT'S IDENTITY AND ITS TWO SWITCHES (the data home, 2026-09-06). The manifest is where a
+// team agrees, once, on WHERE this project's derived data lives: `projectId` names its data home on
+// every machine that checks the project out, `db` chooses the local board.db or the team's database,
+// `media` chooses local blobs or the cloud bucket. All three are committed, and all three must
+// survive an update the same way `project` and `app` do — a release that reset them would move a
+// team's whole record without asking.
+import { newProjectId } from './_skeleton.mjs'
+
+test('a project id is a slug of the name plus six hex', () => {
+  assert.match(newProjectId('Tsumiki Demo!'), /^tsumiki-demo-[0-9a-f]{6}$/)
+  assert.match(newProjectId(''), /^project-[0-9a-f]{6}$/)
+  assert.match(newProjectId('a'.repeat(80)), /^a{40}-[0-9a-f]{6}$/)
+  assert.notEqual(newProjectId('app'), newProjectId('app'))
+})
+
+test('mergeManifest carries projectId, db and media across an update, and invents none of them', () => {
+  const id = newProjectId('Tsumiki')
+  const fresh = { version: '0.45.0', files: { 'a.mjs': 'h' } }
+  const prev = { version: '0.44.2', files: {}, projectId: id, db: 'remote', media: 'cloud', bucket: { endpoint: 'https://s3.example.com', name: 'b' } }
+  const merged = mergeManifest(fresh, prev)
+  assert.equal(merged.projectId, id)
+  assert.equal(merged.db, 'remote')
+  assert.equal(merged.media, 'cloud')
+  assert.deepEqual(merged.bucket, { endpoint: 'https://s3.example.com', name: 'b' })
+  assert.deepEqual(mergeManifest(fresh, { version: '0.44.2', files: {} }), fresh)
+})

@@ -4,7 +4,7 @@
 // disagree about what a project is made of. A file added here is seen by both at once.
 
 import { readFileSync, existsSync } from 'node:fs'
-import { createHash } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { join, resolve, isAbsolute } from 'node:path'
 
 // The tools, the shared test harness, the ONE design system, the Playwright config. NOT
@@ -205,7 +205,25 @@ export function mergeManifest (fresh, prev) {
   if (prev && prev.project && typeof prev.project === 'object') out.project = { ...prev.project }
   // …and the sidecar's way back to its app repo (2026-09-04) — a path, never invented, never dropped
   if (prev && typeof prev.app === 'string' && prev.app.trim()) out.app = prev.app
+  // …and WHERE THIS PROJECT'S DERIVED DATA LIVES (the data home, 2026-09-06): `projectId` names its
+  // home on every machine that checks the project out, `db` and `media` choose the local store or the
+  // team's (with `bucket`, the cloud endpoint, when media is cloud — non-secret, so it is committed
+  // here while the credentials stay in the environment). A release that reset any of them would move
+  // a team's whole record without asking, so they ride across an update exactly like `project` does.
+  for (const k of ['projectId', 'db', 'media']) {
+    if (prev && typeof prev[k] === 'string' && prev[k].trim()) out[k] = prev[k].trim()
+  }
+  if (prev && prev.bucket && typeof prev.bucket === 'object') out.bucket = { ...prev.bucket }
   return out
+}
+
+// The project's id: names its data home, ~/.specboard/<projectId>/, on every machine that checks the
+// project out — written once by the scaffold, committed with the manifest, carried across updates. A
+// slug of the name so a person can find the folder, plus six hex so two projects called "app" do not
+// share one.
+export function newProjectId (name) {
+  const slug = String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '')
+  return `${slug || 'project'}-${randomBytes(3).toString('hex')}`
 }
 
 // Content hash of a file, or null if it does not exist — "missing" has to be a first-class state a
