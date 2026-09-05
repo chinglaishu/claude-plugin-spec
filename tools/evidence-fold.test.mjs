@@ -740,14 +740,18 @@ test('legacyActualReplicas never names an Expected, and answers nothing for noth
   assert.deepEqual(legacyActualReplicas(['x.actual.html.bak']), [], 'the name must END there')
 })
 
-// ── THE HOME SCREEN'S FILE OWNS ITS BEATS (final review I5, 2026-09-04) ─────────────────────────
-// Evidence is keyed by REQUIREMENT, so a composed flow that starts on one screen and proves
-// another's requirement writes into the other screen's evidence. spec/init's flow tags board:R1, so
-// `npx playwright test spec/init` alone rewrote spec/board/evidence/R1.b1.* from the init page and
-// PRUNED what the board's own run had put there — and the next board run went red on four tests.
-// Per-screen runs are a documented normal workflow, so the flow fills only what the home file left
-// empty, and never replaces or prunes what the home file put there. Coverage is untouched: the flow
-// still proves the requirement.
+// ── THE I5 PRECEDENCE RULE IS GONE (the human's C2 ruling, 2026-09-06) ──────────────────────────
+// It refereed a COLLISION: evidence was keyed by REQUIREMENT, so a composed flow that starts on one
+// screen and proves another's (spec/init's flow tags board:R1) wrote into the other screen's
+// evidence — and `npx playwright test spec/init` alone rewrote spec/board/evidence/R1.b1.* from the
+// init page and pruned what the board's own run had put there. Rows are keyed by the covering TEST
+// now, so the flow's harvest and the home screen's are two rows and nothing collides. The two tests
+// that pinned the `foreign` marker are deleted with it; what replaced them is the DISPLAY rule —
+// `mergeEvidenceRows` in tools/store-paths.test.mjs: the home screen's own test headlines, a
+// covering flow fills only the beats it left empty, and every covering test is named.
+//
+// What this file still holds is the CARRY, which the row key did not change: a fresh entry is folded
+// against the previous entry OF THE SAME TEST, exactly as the tests above exercise it.
 const homeBeat = (n, over = {}) => ({
   n,
   before: `spec/board/evidence/R1.b${n}.before.png`,
@@ -758,21 +762,11 @@ const homeBeat = (n, over = {}) => ({
   replicaExpectedAfter: `spec/board/evidence/R1.b${n}.after.expected.html`,
   ...over
 })
-test('a cross-screen flow does not replace — or prune — a beat the HOME screen already harvested', () => {
-  const index = { board: { evidence: { R1: entry({ runId: 'board-run', beats: [homeBeat(1)] }) } } }
-  // the init flow reruns alone: it proves board:R1 and files a beat of its own
-  const fromInit = entry({ runId: 'init-run', beats: [{ ...homeBeat(1), foreign: true }] })
-  const prune = foldEvidence(index, { 'board:R1': fromInit })
+test('a re-harvest of the SAME test replaces its own beat and names the superseded moment nothing else keeps', () => {
+  const index = { board: { evidence: { R1: entry({ runId: 'r1', beats: [homeBeat(1)] }) } } }
+  const again = entry({ runId: 'r2', beats: [homeBeat(1, { before: 'blob/' + 'a'.repeat(64) + '.png' })] })
+  foldEvidence(index, { 'board:R1': again })
   const b = index.board.evidence.R1.beats[0]
-  assert.equal(b.before, 'spec/board/evidence/R1.b1.before.png', 'the home run\'s own frames stand')
-  assert.equal(b.replicaExpectedAfter, 'spec/board/evidence/R1.b1.after.expected.html')
-  assert.deepEqual(prune, [], 'and nothing of the home run\'s is named for deletion')
-})
-test('…but a beat the home file left EMPTY is filled by the flow that did reach it', () => {
-  const index = { board: { evidence: { R1: entry({ runId: 'board-run', beats: [homeBeat(1)] }) } } }
-  const fromInit = entry({ runId: 'init-run', beats: [homeBeat(1), { ...homeBeat(2), foreign: true }] })
-  foldEvidence(index, { 'board:R1': fromInit })
-  const two = index.board.evidence.R1.beats.find(b => b.n === 2)
-  assert.ok(two, 'beat 2 exists now')
-  assert.equal(two.before, 'spec/board/evidence/R1.b2.before.png', 'the flow filled the empty beat')
+  assert.equal(b.before, 'blob/' + 'a'.repeat(64) + '.png', 'the fresh frame stands')
+  assert.equal(b.replicaExpectedAfter, 'spec/board/evidence/R1.b1.after.expected.html', 'and the untouched moment rides along')
 })

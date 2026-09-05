@@ -292,11 +292,11 @@ function renderVoiced (shotsByTest, beatsFile, packFile) {
   return recd.voiced
 }
 
-function recordRun (entry) {
+async function recordRun (entry) {
   // A capped log, not a growing one. Twenty runs is enough to see a pattern and small enough that
   // nobody has to remember to prune it — and the artifacts of a run that falls off the end go with
   // it, or the record directory grows without limit.
-  const runs = recordRunEntry(entry)
+  const runs = await recordRunEntry(entry)
   const keep = new Set(runs.map(r => r.runId).filter(Boolean))
   // NEVER prune a LIVE run's record dir. A run only enters the log at its own close, so while it
   // runs its directory is exactly the thing this sweep would call an orphan — and with takeover
@@ -851,7 +851,7 @@ function startRun (screen, opts = {}) {
       shotsByTest,
       archive
     }
-    recordRun(entry)
+    await recordRun(entry)
     // Release through the ONE slot rule, naming OURSELVES (myJob, the captured local — never the
     // global, which may already be the run that took us over). A nested run finishing hands the
     // slot back to the run it was nested in; a run that was TAKEN OVER (R4) is no longer the

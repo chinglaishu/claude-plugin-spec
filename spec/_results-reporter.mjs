@@ -472,7 +472,7 @@ export function noteReplica (row, rel, gapLines, screen, id, beat, phase) {
 export default class ResultsIndexReporter {
   onBegin (_config, suite) { this.suite = suite }
 
-  onEnd () {
+  async onEnd () {
     if (!this.suite) return
     const byScreen = {}
     const shotsByTest = {}
@@ -689,7 +689,7 @@ export default class ResultsIndexReporter {
       // existing evidence. Harvest first (copies + optional clip cuts), fold second.
       let evidence = {}
       try { evidence = harvestEvidence(evidenceHarvest, ranAt) } catch (err) { console.error('evidence harvest failed:', err) }
-      try { foldByScreen(byScreen, { partial, evidence }) } catch (err) { console.error('results-index fold failed:', err) }
+      try { await foldByScreen(byScreen, { partial, evidence }) } catch (err) { console.error('results-index fold failed:', err) }
       // Record a "recent runs" entry — but ONLY when the SERVER did not start this run. A board-started
       // run sets BOARD_RECORD and the server writes a richer entry itself (with per-test shots), so
       // recording here too would double it. A plain `npm run e2e` or the crawl's own test run sets no
@@ -701,7 +701,7 @@ export default class ResultsIndexReporter {
         const total = Object.values(byScreen).reduce((n, r) => n + r.total, 0)
         const failed = Object.values(byScreen).reduce((n, r) => n + r.failed, 0)
         try {
-          recordRunEntry({
+          await recordRunEntry({
             at: new Date(ranAt).toISOString(),
             screen: screens.length === 1 ? screens[0] : 'all',
             ms: totalMs,

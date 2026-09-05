@@ -4,12 +4,18 @@
 // approval could be written against one value and compared against another, and staleness would
 // be quietly wrong — which is the single failure this whole product cannot have.
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, renameSync, rmSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, renameSync, mkdirSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { join, resolve, dirname } from 'node:path'
+import { join, resolve, dirname, sep, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { aggregateCoverage, deriveReqState, deriveReqStatus, qualify } from './coverage.mjs'
-import { foldEvidence, legacyActualReplicas } from './evidence.mjs'
+import { foldEvidence } from './evidence.mjs'
+// THE DATA HOME (the human, 2026-09-05/06: "we only store things in codebase if it's necessary,
+// otherwise find a way to store somewhere else"). Everything derived — the fold, the run log, the
+// raw report, every frame, skeleton, replica, font and video — lives in ~/.specboard/<projectId>/,
+// outside every repository, behind the store's two switches (sqlite|pg, fs|s3).
+import { openStore, dataHome, blobPath, isBlobRel, isBlobSrc, getBlob } from './store.mjs'
+import { readStoreSync } from './store-sync.mjs'
 import { parseBehavior } from './behavior.mjs'
 // pure: the beat-function metadata (GIVEN + BEATS) of a screen's steps.ts, read statically (Task 5)
 import { parseBeats } from './compose.mjs'
@@ -24,8 +30,64 @@ export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 // ROOT, or ROOT itself when the board is vendored into the app repo. Nothing in the fold reads app
 // code — proof is derived from spec/ alone — but the project's own helpers and the capabilities list
 // (the app repo's .claude/ skills) need the way back. tools/_skeleton.mjs appRoot is the one rule.
-export const APP_ROOT = appRoot(ROOT, (() => { try { return JSON.parse(readFileSync(join(ROOT, 'spec/_specboard.json'), 'utf8')) } catch { return null } })())
+export const MANIFEST_HERE = (() => { try { return JSON.parse(readFileSync(join(ROOT, 'spec/_specboard.json'), 'utf8')) } catch { return null } })()
+export const APP_ROOT = appRoot(ROOT, MANIFEST_HERE)
 export const SPEC = join(ROOT, 'spec')
+
+// WHERE EVERYTHING DERIVED LIVES (decision A, 2026-09-05; the final shape, 2026-09-06). Named by the
+// manifest's projectId, so every checkout of a project maps to one home per machine and the team
+// store keys on the same name. SPECBOARD_HOME overrides the root for tests, CI and review.
+export const DATA_HOME = dataHome(ROOT, MANIFEST_HERE)
+// A board-started run's own scratch: Playwright's output dir for that run (its report, its raw
+// screenshots, the log it prints). NOT a served directory and NOT where anything durable lives —
+// what the run KEEPS lands as blobs at the fold, and this is swept when the run falls off the log.
+export const RUNDIR = join(DATA_HOME, 'runs')
+
+// A src out of the store → the file it names, or null. Three shapes and no fourth: a blob
+// (`blob/<sha>.<ext>`, a file under this home's blobs/), a repo-relative path (the AUTHORED tree —
+// prd.md, test.spec.ts, and the two pictures tests still write there), and the cloud shape
+// (`https://…/<sha>.<ext>`), which names bytes in a bucket and therefore NO path at all: its one
+// door is readSrc below. Each is confined to its own root, so a crafted string can reach nothing
+// else — the static server's allowlist and every tool read through here.
+export function resolveRel (src) {
+  const s = String(src || '')
+  if (!s || isAbsolute(s)) return null
+  const b = blobPath(DATA_HOME, s)
+  if (b) return b
+  if (isBlobSrc(s)) return null            // a cloud src is bytes in a bucket, never a file here
+  const p = resolve(ROOT, s)
+  return p.startsWith(ROOT + sep) ? p : null
+}
+
+// The BYTES behind either shape. Sync for the local ones (what every gate and the board's own
+// reading needs); the async door additionally fetches a cloud src through the store's driver. Both
+// answer `null` for a src whose bytes are gone — a missing picture is a fact to report, never an
+// exception to swallow somewhere up the stack (the callers turn it into a red row).
+export function readSrcSync (src) {
+  const p = resolveRel(src)
+  if (!p) return null
+  try { return readFileSync(p) } catch { return null }
+}
+export async function readSrc (src) {
+  const local = readSrcSync(src)
+  if (local) return local
+  if (!isBlobSrc(src) || isBlobRel(src)) return null
+  try { return await getBlob(DATA_HOME, src, { media: (MANIFEST_HERE && MANIFEST_HERE.media) || 'cloud', bucket: (MANIFEST_HERE && MANIFEST_HERE.bucket) || null }) } catch { return null }
+}
+
+// Pure: one evidence entry → every moment's file triple, in the order the row shows them. A beat's
+// BEFORE picture is its BASE when the fold landed one (phase 8: the Given, shared by every beat that
+// starts from the same page) — an entry from before phase 8 still carries replicaExpectedBefore.
+export function momentsOf (entry) {
+  const out = []
+  for (const b of (entry && Array.isArray(entry.beats) ? entry.beats : [])) {
+    if (!b) continue
+    out.push({ phase: 'before', frame: b.before || null, layout: b.layoutBefore || null, replica: b.base || b.replicaExpectedBefore || null, kind: b.base ? 'base' : 'moment' })
+    for (const v of (Array.isArray(b.values) ? b.values : [])) if (v) out.push({ phase: 'value', frame: v.frame || null, layout: v.layout || null, replica: v.replicaExpected || null, kind: 'moment' })
+    out.push({ phase: 'after', frame: b.after || null, layout: b.layoutAfter || null, replica: b.replicaExpectedAfter || null, kind: 'moment' })
+  }
+  return out
+}
 
 // Drafts are authored at this size and shown scaled, never re-laid-out.
 export const CANVAS_W = 1280
@@ -49,6 +111,7 @@ export const shotHash = path => sha(readFileSync(path))
 // reader sees either the old file or the new one and never a torn one. A test caught this as
 // "Unexpected end of JSON input"; the same race would corrupt a real approval.
 export function writeJson (path, value) {
+  mkdirSync(dirname(path), { recursive: true })   // the data home may not exist on a first write
   const tmp = `${path}.${process.pid}.tmp`
   writeFileSync(tmp, JSON.stringify(value, null, 2) + '\n')
   renameSync(tmp, path)
@@ -202,27 +265,91 @@ export function parseTestPlan (src) {
 }
 const unquote = str => String(str || '').replace(/\\(['"\\])/g, '$1')
 
-// Playwright writes one report for the whole run; the board needs it per screen. Tests live at
-// spec/<screen>/test.spec.ts, so the directory IS the screen — no registry to keep in sync.
-export const RESULTS = join(SPEC, '_results.json')
-export const RESULTS_INDEX = join(SPEC, '_results-index.json')
+// ─── THE FOLD IS ROWS ─────────────────────────────────────────────────────────────────────────────
+// `spec/_results-index.json`, `spec/_runs.json` and `spec/_results.json` are gone: the fold, the run
+// log and the raw report are rows in the project's data home (tools/store.mjs). Reading them for a
+// page is synchronous (tools/store-sync.mjs — better-sqlite3 is); writing them is the async store's
+// job, because that is the door a remote database fits behind.
+export const readStore = () => readStoreSync(DATA_HOME, { manifest: MANIFEST_HERE })
+
+// C2 (the human, 2026-09-06): EVIDENCE IS KEYED BY THE COVERING TEST. `spec/init`'s composed flow
+// tags `board:R1`, and under the old requirement key running it alone REPLACED the board's own
+// harvest of that beat — the collision the I5 precedence rule and the `foreign` marker were invented
+// to referee. They are deleted with it: the flow's harvest and the home screen's are two rows.
+//
+// A READER still wants one picture per requirement, so the rows are merged here, and the rule is the
+// display rule the human ruled on: the requirement's HOME screen's own test HEADLINES (it is the
+// file that owns the screen), a covering flow fills only the beats the home file never harvested,
+// and every covering test is named in `sources` so the reader can list them beneath. Pure.
+export function mergeEvidenceRows (rows, screen) {
+  const home = `spec/${screen}/test.spec.ts`
+  const ordered = [...(rows || [])].filter(Boolean)
+    .sort((a, b) => (a.testFile === home ? 0 : 1) - (b.testFile === home ? 0 : 1) || String(a.testFile).localeCompare(String(b.testFile)))
+  if (!ordered.length) return null
+  const head = ordered[0]
+  const out = { ...(head.entry || {}), runId: head.runId || null, at: head.at || null }
+  const beats = [...(Array.isArray(out.beats) ? out.beats : [])]
+  for (const r of ordered.slice(1)) {
+    for (const b of (Array.isArray(r.entry && r.entry.beats) ? r.entry.beats : [])) {
+      if (b && !beats.some(x => x && Number(x.n) === Number(b.n))) beats.push(b)
+    }
+  }
+  out.beats = beats.sort((a, b) => (Number(a && a.n) || 0) - (Number(b && b.n) || 0))
+  out.sources = ordered.map(r => ({ testFile: r.testFile, testTitle: r.testTitle || null, runId: r.runId || null, at: r.at || null }))
+  return out
+}
+
+// Pure: the store's rows → the per-screen index every reader of this module already understands
+// ({screen: {total, failed, ranAt, tests, srcHashes, provenHashes, evidence:{reqId: entry}}}). The
+// SHAPE is unchanged on purpose — it is what the builder, the server and the gates read — only its
+// home moved.
+export function indexFromRows (store) {
+  const index = {}
+  for (const s of (store && store.screens) || []) {
+    const { screen, ...rest } = s
+    index[screen] = rest
+  }
+  const byReq = new Map()
+  for (const r of (store && store.evidence) || []) {
+    const k = `${r.screen} ${r.reqId}`
+    if (!byReq.has(k)) byReq.set(k, [])
+    byReq.get(k).push(r)
+  }
+  for (const [k, rows] of byReq) {
+    const i = k.indexOf(' ')
+    const screen = k.slice(0, i)
+    const reqId = k.slice(i + 1)
+    const merged = mergeEvidenceRows(rows, screen)
+    if (!merged) continue
+    const entry = (index[screen] ??= {})
+    entry.evidence = { ...(entry.evidence || {}), [reqId]: merged }
+  }
+  return index
+}
 
 // The board's "recent runs" log. Every run appends one capped entry — a board-started run from the
 // server (rich, with per-test shots) and an external run (a plain `npm run e2e`, the crawl's own test
-// run) from the reporter (a summary). Shared so both write the same shape to the same capped file,
-// and neither a CLI run nor a crawl leaves the log empty the way it used to.
-export const RUNS = join(SPEC, '_runs.json')
-export const readRuns = () => existsSync(RUNS) ? JSON.parse(readFileSync(RUNS, 'utf8')) : []
-export function recordRunEntry (entry, cap = 20) {
-  const runs = [entry, ...readRuns()].slice(0, cap)
-  writeJson(RUNS, runs)
-  return runs
+// run) from the reporter (a summary). Shared so both write the same shape, and neither a CLI run nor
+// a crawl leaves the log empty the way it used to.
+export const readRuns = () => (readStore() || {}).runs || []
+export async function recordRunEntry (entry, cap = 20) {
+  const store = await openStore({ root: ROOT, home: DATA_HOME, manifest: MANIFEST_HERE })
+  try {
+    await store.putRun(entry)
+    const runs = await store.listRuns()
+    for (const old of runs.slice(cap)) if (old && old.runId) await store.deleteRun(old.runId)
+    const kept = runs.slice(0, cap)
+    // the pictures a dropped run named are nobody's any more — collected by reference, like every
+    // other blob (tools/store.mjs gcBlobs); the run's scratch dir is swept by the server's own prune
+    try { await store.gcBlobs() } catch (err) { console.error('blob gc failed:', err) }
+    return kept
+  } finally { await store.close() }
 }
 
 // Parse ONE Playwright JSON report into { screen: {total, failed, tests, ranAt} }. A report only
 // covers the screens that actually ran, which is the whole trap: run one screen and the report
 // mentions only that one.
-export function parseReport (path = RESULTS) {
+export function parseReport (path) {
   if (!existsSync(path)) return {}
   let report
   try { report = JSON.parse(readFileSync(path, 'utf8')) } catch { return {} }
@@ -269,8 +396,13 @@ export function parseReport (path = RESULTS) {
 // five tests — the board understating its own coverage, which is the same species of lie as
 // overstating it. A FULL screen run still replaces, because there the report is authoritative and
 // a merge would keep a test that has since been deleted from the file.
-export function foldByScreen (fresh, { partial = false, evidence = null } = {}) {
-  const index = existsSync(RESULTS_INDEX) ? JSON.parse(readFileSync(RESULTS_INDEX, 'utf8')) : {}
+export async function foldByScreen (fresh, { partial = false, evidence = null } = {}) {
+  const store = readStore()
+  const index = indexFromRows(store)
+  // the evidence rows AS THEY STAND, by their own key (C2: test file + screen + requirement), so a
+  // fresh entry is carried against the row of the SAME test rather than against the merged view a
+  // reader sees
+  const rowsByKey = new Map(((store && store.evidence) || []).map(r => [`${r.testFile} ${r.screen} ${r.reqId}`, r]))
   // The tree's CONTENT at this fold, pinned onto every entry this run writes — the second half of
   // staleness (passStale/runStale). Board-wide, not just this screen's, because coverage is
   // board-wide: a pass recorded on board's file can be staled by the requirement screen's own
@@ -297,7 +429,7 @@ export function foldByScreen (fresh, { partial = false, evidence = null } = {}) 
   // Pin the proof text (Changed-drift): for every requirement this run's tests touched whose folded
   // status is now PASS, stamp a content hash of its wording at this moment. Compared at derive time
   // (enrichReqs) against the current text — a mismatch on a still-passing requirement reads Changed.
-  stampProvenHashes(fresh, index)
+  const pinned = stampProvenHashes(fresh, index)
   // Fold this run's harvested EVIDENCE (Task 15, D2 — the frame pair + its window, the raw
   // material any renderer of proof media needs; the Focus media pane renders it, and its
   // frame-stepper paces off the window — Task 13). Per requirement onto the requirement's screen,
@@ -306,31 +438,66 @@ export function foldByScreen (fresh, { partial = false, evidence = null } = {}) 
   // stays bounded. Deletion is best-effort: a missing file is already what pruning wanted. (D1's
   // clip-carry oracle and per-entry text-hash pin retired WITH the clip, 2026-08-24: they existed
   // only to decide whether a video-less fold could keep it.)
-  if (evidence && Object.keys(evidence).length) {
-    for (const p of foldEvidence(index, evidence)) {
-      try { rmSync(join(ROOT, p), { force: true }) } catch { /* already gone */ }
-    }
-    // …AND THE RETIRED HALF OF EVERY MOMENT (2026-09-04, one html per moment). A `.actual.html` is
-    // named by no entry any more, so the keep-set above can never reach one: it would stay in the
-    // tree for ever, be served, and be refused by `npm run proof mirror` as a replica nothing gated.
-    // Swept per screen this fold touched — the same best-effort deletion, and the rule itself is
-    // pure and unit-tested (tools/evidence.mjs legacyActualReplicas).
-    for (const scr of new Set(Object.keys(evidence).map(q => (q.includes(':') ? q.slice(0, q.indexOf(':')) : '')).filter(Boolean))) {
-      const dir = join(SPEC, scr, 'evidence')
-      if (!existsSync(dir)) continue
-      let names = []
-      try { names = readdirSync(dir) } catch { names = [] }
-      for (const n of legacyActualReplicas(names)) {
-        try { rmSync(join(dir, n), { force: true }) } catch { /* already gone */ }
-      }
-    }
+  // …EACH ONTO ITS OWN ROW (C2, 2026-09-06): one per covering TEST, so a flow that proves another
+  // screen's requirement can never overwrite the home screen's harvest of it. The per-entry CARRY
+  // rules are unchanged (tools/evidence.mjs foldEvidence, unit-tested) — they now compare a fresh
+  // entry against the OLD ROW OF THE SAME TEST, which is exactly what they always meant. There is no
+  // prune list any more: a blob lives while a retained row names it, and the gc below is the whole
+  // retention rule (the `foreign` marker and the I5 precedence went with the collision they refereed).
+  const evidenceRows = []
+  for (const [key, raw] of Object.entries(evidence || {})) {
+    const { testFile, testTitle, qid } = splitEvidenceKey(key, raw)
+    const i = String(qid).indexOf(':')
+    if (i < 1) continue                      // never invent a screen for an unqualified id
+    const screen = qid.slice(0, i)
+    const reqId = qid.slice(i + 1)
+    if (!existsSync(join(SPEC, screen))) continue
+    const old = (rowsByKey.get(`${testFile} ${screen} ${reqId}`) || {}).entry || null
+    const shim = { [screen]: { evidence: old ? { [reqId]: old } : {} } }
+    foldEvidence(shim, { [qid]: raw })
+    evidenceRows.push({ testFile, screen, reqId, testTitle, runId: raw.runId || null, at: raw.at || null, entry: shim[screen].evidence[reqId] })
   }
   // drop screens whose directory is gone — a deleted screen should not haunt the column
-  for (const screen of Object.keys(index)) if (!existsSync(join(SPEC, screen))) delete index[screen]
-  // temp-then-rename: two runs can fold at once (a board-started run while the suite runs), and a
-  // half-written index is worse than a stale one
-  writeJson(RESULTS_INDEX, index)
+  const dropped = Object.keys(index).filter(screen => !existsSync(join(SPEC, screen)))
+  for (const screen of dropped) delete index[screen]
+  await writeFold(index, { screens: [...new Set([...Object.keys(fresh), ...pinned])], dropped, evidenceRows })
   return index
+}
+
+// The key a harvest entry arrives under. Since C2 that is `<test file> <screen>:<id>` — one
+// requirement harvested by two test FILES in one run is two entries, never one that clobbers the
+// other. An entry from an older harness (or a hand-written fixture) carries the qualified id alone
+// and is filed under the requirement's own screen's test file, which is what it always meant.
+function splitEvidenceKey (key, raw) {
+  const i = String(key).indexOf(' ')
+  const qid = i < 0 ? String(key) : String(key).slice(i + 1)
+  const screen = qid.slice(0, Math.max(0, qid.indexOf(':')))
+  return {
+    qid,
+    testFile: (i < 0 ? (raw && raw.testFile) : String(key).slice(0, i)) || `spec/${screen}/test.spec.ts`,
+    testTitle: (raw && raw.testTitle) || null
+  }
+}
+
+// The one WRITE of a fold: the screens this run touched, the evidence rows it harvested, the screens
+// whose directory is gone — then the gc, which is the whole retention rule now (a blob lives exactly
+// while a retained row names it). Ordering matters: fold first, collect second, or the gc would
+// delete the very bytes the fold is about to name.
+async function writeFold (index, { screens, dropped, evidenceRows }) {
+  const store = await openStore({ root: ROOT, home: DATA_HOME, manifest: MANIFEST_HERE })
+  try {
+    for (const screen of screens) {
+      if (!index[screen]) continue
+      const { evidence: _derived, ...row } = index[screen]   // evidence is its own table, not `extra`
+      await store.putScreen(screen, row)
+    }
+    for (const screen of dropped) {
+      for (const r of await store.listEvidence({ screen })) await store.deleteEvidence(r)
+      await store.deleteScreen(screen)
+    }
+    for (const r of evidenceRows) await store.putEvidence(r)
+    try { await store.gcBlobs() } catch (err) { console.error('blob gc failed:', err) }
+  } finally { await store.close() }
 }
 
 // Stamp `provenHashes[reqId] = reqHash(meaningText(body))` for every requirement the FRESH run
@@ -342,10 +509,11 @@ export function foldByScreen (fresh, { partial = false, evidence = null } = {}) 
 // (deleted, renamed) is simply not stamped.
 function stampProvenHashes (fresh, index) {
   const touched = new Set()
+  const pinned = new Set()
   for (const r of Object.values(fresh)) {
     for (const t of r.tests || []) for (const id of Object.keys(t.reqs || {})) touched.add(id)
   }
-  if (!touched.size) return
+  if (!touched.size) return pinned
   // folded status is board-wide (a second screen's test can cover the same id), so derive it from
   // the whole just-folded index — the same fold enrichReqs reads, minus its source-staleness filter
   // (a pin stamped from a pass that later goes stale-by-source is harmless: staleness drops the
@@ -364,7 +532,11 @@ function stampProvenHashes (fresh, index) {
     // no tests, and readScreen treats it as "never run" (the run guard there), never a fake green
     const entry = (index[scr] ??= {})
     entry.provenHashes = { ...(entry.provenHashes || {}), [rid]: reqHash(meaningText(body)) }
+    pinned.add(scr)
   }
+  // which screens' rows this stamping touched — a cross-screen pin lands on a screen this run did
+  // not otherwise fold, and its row has to be written too or the pin is lost at the next read
+  return pinned
 }
 
 // A requirement's body text off its screen's prd.md, cached per screen for one fold — shared by the
@@ -378,14 +550,12 @@ function reqBody (scr, rid, cache = {}) {
   return reqs.find(r => r.id === rid)?.body ?? null
 }
 
-export const foldResults = (reportPath = RESULTS) => foldByScreen(parseReport(reportPath))
-
+// THE fold, as the board reads it. Materialised from the store's rows on every call: two processes
+// fold into this database (the suite's reporter and a board-started run), so a cached copy would be
+// a stale answer the moment either of them wrote. A project with no store yet reads as {} — an empty
+// board, never a crash, and never a fake green.
 export function readResults () {
-  if (existsSync(RESULTS_INDEX)) {
-    try { return JSON.parse(readFileSync(RESULTS_INDEX, 'utf8')) } catch { /* fall through */ }
-  }
-  // before the first fold, the raw report is all there is
-  return parseReport()
+  return indexFromRows(readStore())
 }
 
 // The files whose CONTENT a screen's proof stands on. steps.ts carries beat assertions since
@@ -823,7 +993,7 @@ const flat = s => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ')
 // already settled, which is the exact failure R5 of the conflicts PRD names. Sorting the two
 // sides before hashing is what makes an a/b swap the same conflict rather than a new one.
 export const conflictKey = f => {
-  const side = x => flat(x?.source) + '' + flat(x?.quote)
+  const side = x => flat(x?.source) + '\u0001' + flat(x?.quote)
   return sha([flat(f?.subject), ...[side(f?.a), side(f?.b)].sort()].join('\0'))
 }
 

@@ -549,16 +549,13 @@ export function foldEvidence (index, entries) {
       const beats = raw.beats.map(b => {
         const o = oldBeat(b.n)
         if (!o) return b
-        // THE HOME SCREEN'S FILE OWNS ITS BEATS (final review I5, 2026-09-04). Evidence is keyed by
-        // REQUIREMENT, so a composed flow that starts on one screen and proves another's requirement
-        // (spec/init's flow tags board:R1) writes into the other screen's evidence — and running
-        // that flow ALONE rewrote spec/board/evidence/R1.b1.* from the init page and pruned what the
-        // board's own run had put there, turning the next board run red. A cross-screen flow fills
-        // only beats the home file left empty: where the home screen already harvested this beat,
-        // its files stand and nothing here names them for pruning. (The reporter marks the beat and
-        // does not even copy the bytes; this is the index half of the same rule, and the half a unit
-        // test can hold.) Coverage is untouched — the flow still PROVES the requirement.
-        if (b.foreign) return o
+        // (THE `foreign` MARKER IS GONE, 2026-09-06, with the collision it refereed — the human's C2
+        // ruling. Evidence used to be keyed by REQUIREMENT, so a composed flow that starts on one
+        // screen and proves another's (spec/init's flow tags board:R1) wrote into the other screen's
+        // evidence and, run alone, overwrote what the board's own run had put there. Rows are keyed
+        // by the covering TEST now — the flow's harvest and the home screen's are two rows — so
+        // there is nothing left for a precedence rule to decide, and this carry compares a fresh
+        // entry only against the previous entry OF THE SAME TEST.)
         let carried = b
         if (!(b.layoutBefore || b.layoutAfter) && (o.layoutBefore || o.layoutAfter)) {
           carried = { ...carried }

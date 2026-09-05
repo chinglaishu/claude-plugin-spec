@@ -11,6 +11,16 @@ import { join, resolve, isAbsolute } from 'node:path'
 // spec/<screen>/ — those are the target's own screens, never shipped.
 export const FILES = [
   'tools/spec-store.mjs', 'tools/coverage.mjs', 'tools/journey.mjs', 'tools/build-board.mjs',
+  // THE STORE (the data home, 2026-09-05/06). Everything a run derives lives in
+  // ~/.specboard/<projectId>/ behind these — the async door (`store.mjs`), the pure address math
+  // (`store-address.mjs`), the two db drivers (sqlite by default, pg for a team) and the two blob
+  // drivers (a local dir, or an S3-compatible bucket) — plus the SYNCHRONOUS reader the board
+  // renders through (`store-sync.mjs`). spec-store.mjs imports the first and the last, and each of
+  // those imports the rest, so a scaffolded project that got some of them could not load its own
+  // board at all (update.test.mjs's every-relative-import-is-vendored guard is what catches it).
+  'tools/store.mjs', 'tools/store-address.mjs', 'tools/store-sync.mjs',
+  'tools/store-db-sqlite.mjs', 'tools/store-db-pg.mjs',
+  'tools/store-blob-fs.mjs', 'tools/store-blob-s3.mjs',
   // pure Given/When/Then parser — imported by spec-store.mjs (enrichReqs attaches r.behavior), so a
   // scaffolded project needs it or the vendored spec-store cannot load at all (update.test.mjs's
   // every-relative-import-is-vendored guard is what catches this class of miss).

@@ -226,21 +226,7 @@ export async function openStore ({ root = process.cwd(), home = null, manifest =
       if (!row) return null
       const tests = await db.all('SELECT * FROM tests WHERE screen = ? ORDER BY seq, title', [screen])
       const cov = await db.all('SELECT * FROM coverage WHERE screen = ?', [screen])
-      const byTitle = new Map()
-      for (const c of cov) {
-        if (!byTitle.has(c.title)) byTitle.set(c.title, {})
-        byTitle.get(c.title)[c.req_id] = c.verdict
-      }
-      return {
-        screen,
-        total: row.total,
-        failed: row.failed,
-        ranAt: row.ran_at,
-        srcHashes: unjson(row.src_hashes),
-        provenHashes: unjson(row.proven_hashes),
-        ...(unjson(row.extra) || {}),
-        tests: tests.map(t => ({ title: t.title, file: t.file, ok: !!t.ok, ms: t.ms, error: t.error, line: t.line, reqs: byTitle.get(t.title) || {} }))
-      }
+      return screenFromRows(row, tests, cov)
     },
     async listScreens () { return (await db.all('SELECT screen FROM screens ORDER BY screen', [])).map(r => r.screen) },
     async deleteScreen (screen) {
@@ -339,6 +325,29 @@ export async function openStore ({ root = process.cwd(), home = null, manifest =
   return store
 }
 
-function evidenceRow (r) {
+// ─── the row shapes, pure and SHARED ──────────────────────────────────────────────────────────────
+// One mapping from db rows to the objects the tool reads, used by the async store above AND by the
+// synchronous reader the board renders through (tools/store-sync.mjs). Two transports, one shape:
+// a second mapping is a second answer, and the two would drift the first time a column moved.
+export function screenFromRows (row, tests = [], coverage = []) {
+  if (!row) return null
+  const byTitle = new Map()
+  for (const c of coverage) {
+    if (!byTitle.has(c.title)) byTitle.set(c.title, {})
+    byTitle.get(c.title)[c.req_id] = c.verdict
+  }
+  return {
+    screen: row.screen,
+    total: row.total,
+    failed: row.failed,
+    ranAt: row.ran_at,
+    srcHashes: unjson(row.src_hashes),
+    provenHashes: unjson(row.proven_hashes),
+    ...(unjson(row.extra) || {}),
+    tests: (tests || []).map(t => ({ title: t.title, file: t.file, ok: !!t.ok, ms: t.ms, error: t.error, line: t.line, reqs: byTitle.get(t.title) || {} }))
+  }
+}
+
+export function evidenceRow (r) {
   return { testFile: r.test_file, screen: r.screen, reqId: r.req_id, testTitle: r.test_title, runId: r.run_id, at: r.at, entry: unjson(r.entry, {}) }
 }
