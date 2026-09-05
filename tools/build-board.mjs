@@ -8,7 +8,8 @@ import { join, resolve, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync, existsSync } from 'node:fs'
 import {
-  ROOT, SPEC, esc, designCss, allScreens, sortedAreas, writeText, shotHash, readConfig, readRuns, ciGate
+  ROOT, SPEC, esc, designCss, allScreens, sortedAreas, writeText, shotHash, readConfig, readRuns, ciGate,
+  resolveRel, readSrcSync
 } from './spec-store.mjs'
 import { journey } from './journey.mjs'
 import { stripBehaviorLead } from './behavior.mjs'
@@ -33,6 +34,20 @@ import { harvestOf } from './proof-integrity.mjs'
 // breakpoint from its BASE number at emit time (the emit reads `bp(1080)`, keeping the base
 // legible) — changing --scale alone moves the emitted values, the knob's one-line promise kept.
 // Pure and exported for tools/scale-breakpoints.test.mjs.
+// THE ONE RESOLVER for a picture the fold landed (the data home, 2026-09-05/06). Two shapes: a BLOB,
+// whose NAME already IS its content hash — so it needs no `?h=` cache-buster at all, and a cloud src
+// is an opaque url this never opens; and an authored repo path (screen.png), which is overwritten in
+// place and therefore still hashed. A src whose bytes are gone bakes NOTHING: the reader's cell then
+// says the gap out loud instead of drawing a broken picture.
+const evSrc = p => {
+  if (!p) return null
+  const s = String(p)
+  if (/^https:/.test(s)) return s
+  const abs = resolveRel(s)
+  if (!abs || !existsSync(abs)) return null
+  return s.startsWith('blob/') ? s : s + '?h=' + shotHash(abs)
+}
+
 export const parseScale = css => {
   const m = /--scale:\s*([0-9.]+)/.exec(css)
   return m ? Number(m[1]) : 1
@@ -255,8 +270,7 @@ const card = (s, i, runs, inCi = false) => {
   const ci = ciChip(inCi)
   const still = latestStill(s, runs)
   // the evidence fallback is served off the same allowlisted spec/** path; hashed like screen.png
-  const stillSrc = still && (still.hash ? `${still.src}?h=${still.hash}`
-    : (existsSync(join(ROOT, still.src)) ? `${still.src}?h=${shotHash(join(ROOT, still.src))}` : null))
+  const stillSrc = still && (still.hash ? `${still.src}?h=${still.hash}` : evSrc(still.src))
   const rows = cardRows(s).map(x => x.kind === 'fam' ? famRow(x.f)
     : x.kind === 'more' ? `<li class="more">… ${x.n} more</li>`
       : `<li><span class="id">${esc(x.r.id)}</span><span class="mk ${esc(x.r.status)}">${CARD_MARK[x.r.status] || CARD_MARK.untested}</span><span class="rtl">${esc(x.r.title)}</span></li>`).join('')
@@ -412,10 +426,8 @@ const evAttrs = (s, r) => {
   if (!e) return ''
   let out = ''
   for (const [k, p] of [['before', e.before], ['after', e.after]]) {
-    if (!p) continue
-    const abs = join(ROOT, String(p))
-    if (!existsSync(abs)) continue
-    out += ` data-ev-${k}="${esc(String(p) + '?h=' + shotHash(abs))}"`
+    const v = evSrc(p)
+    if (v) out += ` data-ev-${k}="${esc(v)}"`
   }
   if (out && e.window && typeof e.window.from === 'number' && typeof e.window.to === 'number') {
     out += ` data-ev-window="${esc(e.window.from + ':' + e.window.to)}"`
@@ -426,9 +438,9 @@ const evAttrs = (s, r) => {
   // ride their own attribute, NOT data-ev-window: a later CLI fold moves the window with the fresh
   // frames while the video keeps the offsets it was cut against.
   if (e.video && e.video.path) {
-    const vabs = join(ROOT, String(e.video.path))
-    if (existsSync(vabs)) {
-      out += ` data-ev-video="${esc(String(e.video.path) + '?h=' + shotHash(vabs))}"`
+    const v = evSrc(e.video.path)
+    if (v) {
+      out += ` data-ev-video="${esc(v)}"`
       if (typeof e.video.from === 'number' && typeof e.video.to === 'number') {
         out += ` data-ev-vwin="${esc(e.video.from + ':' + e.video.to)}"`
       }
@@ -442,11 +454,7 @@ const evAttrs = (s, r) => {
   // is dropped rather than baked empty — the reader's cell then says the gap out loud. An old
   // harvest has no `beats` and bakes nothing; the reader falls back to the requirement-level pair.
   if (Array.isArray(e.beats) && e.beats.length) {
-    const path = p => {
-      if (!p) return null
-      const abs = join(ROOT, String(p))
-      return existsSync(abs) ? String(p) + '?h=' + shotHash(abs) : null
-    }
+    const path = evSrc
     // THE SCENE'S OWN RING (the human, 2026-08-31: "do more aggressive zoom in on the area it's
     // focusing"). The beat's focus rect sets the row's ZOOM; the ring of the scene on show sets the
     // AIM, so a beat whose rings sit 600px apart down the page can be framed tight instead of being
@@ -455,10 +463,9 @@ const evAttrs = (s, r) => {
     // re-harvest is needed — an existing evidence tree gains the aim on its next build. A skeleton
     // that rang nothing, or is missing, simply yields none and that scene stays on the focus.
     const readL = p => {
-      if (!p) return null
-      const abs = join(ROOT, String(p))
-      if (!existsSync(abs)) return null
-      try { return JSON.parse(readFileSync(abs, 'utf8')) } catch { return null }
+      const bytes = readSrcSync(p)
+      if (!bytes) return null
+      try { return JSON.parse(bytes.toString('utf8')) } catch { return null }
     }
     const aim = p => { const l = readL(p); return l ? focusFromLayout(l) : null }
     const list = e.beats.map(b => {
@@ -568,13 +575,15 @@ const evAttrs = (s, r) => {
   // set in, fetched once per requirement by the reader and written into the srcdoc. Only a file that
   // is really on disk rides — a replica with no sheet renders in a fallback stack, honestly.
   if (out && e.fontFaces) {
-    const fabs = join(ROOT, String(e.fontFaces))
-    if (existsSync(fabs)) {
-      const key = String(e.fontFaces) + '?h=' + shotHash(fabs)
+    const key = evSrc(e.fontFaces)
+    const bytes = key ? readSrcSync(e.fontFaces) : null
+    if (key && bytes) {
       out += ` data-ev-faces="${esc(key)}"`
       if (!FACES.has(key)) {
         try {
-          FACES.set(key, absoluteFacesCss(readFileSync(fabs, 'utf8'), String(e.fontFaces).replace(/\/faces\.css$/, '')))
+          // every url pointed at the DIRECTORY THE SHEET LIVES IN — a blob sheet's faces are its
+          // siblings under /blob/, exactly as they were siblings under _fonts/ before
+          FACES.set(key, absoluteFacesCss(bytes.toString('utf8'), String(e.fontFaces).replace(/\/[^/]+$/, '')))
         } catch { /* an unreadable sheet is a fallback stack, honestly — never a failed build */ }
       }
     }

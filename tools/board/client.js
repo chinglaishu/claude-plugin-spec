@@ -3660,7 +3660,7 @@ const B = window.__BOARD__ || {}
     b.addEventListener('click', () => setInitMode(b.dataset.mode))
 
   const storeHints = {
-    local: 'Kept under spec/_runs/ and pruned with the run log — nothing leaves your machine.',
+    local: 'Kept in this project’s data home (~/.specboard/<project>/), addressed by content and pruned with the run log — nothing leaves your machine and nothing is committed.',
     git: 'Each run\'s shots are committed to this branch in an isolated worktree (your working tree is untouched). It stays local unless you tick push.',
     bucket: 'Each run\'s shots are PUT to this base URL (base/runId/name) and the board loads them from there, so they outlive the local prune. The endpoint must accept the PUT.'
   }
@@ -4224,7 +4224,7 @@ const B = window.__BOARD__ || {}
           // the WHOLE run log — the per-case log is that case's stdout/stderr/error (bounded); run.log
           // is the entire process output, including globalSetup / seed output and the untruncated tail,
           // which the per-case view never had. A CLI run has no run.log, so the link is withheld.
-          if (rec[title].length < 10) rec[title].push({ ...r.shotsByTest[title], runId: r.runId, hasLog: !!r.hasLog })
+          if (rec[title].length < 10) rec[title].push({ ...r.shotsByTest[title], runId: r.runId, hasLog: !!r.hasLog, log: r.log || '' })
         }
       }
       // The RECORDING is the test's cover and its ONE artifact (board R10): the last asserted frame
@@ -4406,8 +4406,10 @@ const B = window.__BOARD__ || {}
           // link to the WHOLE run log — the complete process output for the run this case ran in, not
           // just this case's bounded stdout. Only a board-started run writes run.log, so link only when
           // that file exists; a CLI run has none and simply shows its per-case log.
-          const whole = (h.hasLog && h.runId) ? ' · <a class="wholelog" href="/spec/_runs/' + eh(h.runId) +
-            '/run.log" target="_blank" rel="noopener">whole run log ↗</a>' : ''
+          // the whole log is a BLOB now (the data home, 2026-09-05/06) — the run record names its
+          // src, and an older record that names none simply offers no link
+          const whole = (h.log) ? ' · <a class="wholelog" href="/' + eh(h.log) +
+            '" target="_blank" rel="noopener">whole run log ↗</a>' : ''
           return '<li><div class="lgh"><span class="mark ' + mark + '"></span>' +
             eh(when) + ' · ' + eh(took) + sha + whole + '</div><pre>' + eh(h.log) + '</pre></li>'
         }).join('')

@@ -21,6 +21,10 @@ export const FILES = [
   'tools/store.mjs', 'tools/store-address.mjs', 'tools/store-sync.mjs',
   'tools/store-db-sqlite.mjs', 'tools/store-db-pg.mjs',
   'tools/store-blob-fs.mjs', 'tools/store-blob-s3.mjs',
+  // …and the static server's ALLOWLIST as a pure decision (board.html · the authored spec · a blob),
+  // imported by serve-board.mjs — a scaffolded project's server cannot load without it, and it is
+  // the one rule that keeps this server from handing out .git/config.
+  'tools/static-allow.mjs',
   // pure Given/When/Then parser — imported by spec-store.mjs (enrichReqs attaches r.behavior), so a
   // scaffolded project needs it or the vendored spec-store cannot load at all (update.test.mjs's
   // every-relative-import-is-vendored guard is what catches this class of miss).

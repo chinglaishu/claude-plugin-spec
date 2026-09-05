@@ -149,14 +149,20 @@ export function facesCssPath (screen) {
 // already rooted, a `data:` face and an http(s) one are left exactly as they are: absolutising an
 // absolute url is how a rewrite starts inventing files.
 const REL_URL = /url\(\s*(["']?)([^"')]+)\1\s*\)/gi
+// …and the sheet's own DIRECTORY has two shapes now (the data home, 2026-09-05/06): `blob` (the
+// board serves it at /blob/, and the faces are its siblings there) or the bucket's own url prefix.
+// An absolute dir is used as it stands; a local one is rooted at the board's origin, exactly as it
+// was when the sheet sat in `spec/<screen>/evidence/_fonts/`.
 export function absoluteFacesCss (css, dir) {
   const text = String(css || '')
-  const root = String(dir || '').replace(/^\/+|\/+$/g, '')
+  const raw = String(dir || '')
+  const abs = /^https?:\/\//i.test(raw)
+  const root = abs ? raw.replace(/\/+$/, '') : raw.replace(/^\/+|\/+$/g, '')
   if (!text || !root) return text
   return text.replace(REL_URL, (whole, q, url) => {
     const u = String(url).trim()
     if (!u || /^(?:https?:|data:|blob:|\/)/i.test(u)) return whole
-    return 'url("/' + root + '/' + u + '")'
+    return 'url("' + (abs ? root : '/' + root) + '/' + u + '")'
   })
 }
 

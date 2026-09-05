@@ -909,7 +909,9 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     const pictured = want.filter(Boolean)
     expect(pictured.length, 'at least one moment of the beat is pictured: ' + JSON.stringify(want)).toBeGreaterThan(0)
     for (const p of pictured) {
-      expect(existsSync(p.split('?')[0]), 'a named replica is a file on disk: ' + p).toBe(true)
+      // …and its BYTES are really there (through the store's one door since 2026-09-06: a picture is
+      // a src — a blob in the data home or an authored path — never a file the test can name itself)
+      expect(!!readSrcSync(p.split('?')[0]), 'a named replica has bytes behind it: ' + p).toBe(true)
     }
     // the row opens on its first moment, showing that moment's own picture
     await expect.poll(repOf, { timeout: 8000 }).toBe(want[0])
@@ -1275,6 +1277,10 @@ import { parseBehavior } from '../../tools/behavior.mjs'
 // the picture than the gate makes.
 import { replicaAttrs } from '../../tools/replica-gate.mjs'
 import { layoutHash } from '../../tools/viz.mjs'
+// THE FOLD IS ROWS, AND A PICTURE IS A SRC (the data home, 2026-09-05/06). The oracle is still the
+// harvest itself — read here through the very door the board and the gates read it through, so this
+// test cannot pass on a picture the board could not actually load.
+import { readResults, readSrcSync } from '../../tools/spec-store.mjs'
 // phase 7: a screen with a PRD, its derived sketch and NOTHING else — the state every screen starts
 // in, which none of this repo's own four screens is in any more (they are all harvested)
 import { makeNoUiScreen } from '../_fixture'
@@ -1285,7 +1291,7 @@ import { makeNoUiScreen } from '../_fixture'
 // REPLICA — the app's own markup for the region the assertion rang). Read off the fold and the tree,
 // so the oracle is the harvest itself and never a fixture.
 const replicaSpecimens = () => {
-  const idx = JSON.parse(readFileSync('spec/_results-index.json', 'utf8'))
+  const idx = readResults()
   const ev = (idx.board && idx.board.evidence) || {}
   const out: Array<{ rid: string, beat: any, rep: string, exp: string, claimed: Array<{ file: string, claims: any[] }>, lay: any }> = []
   for (const rid of Object.keys(ev)) {
@@ -1293,7 +1299,8 @@ const replicaSpecimens = () => {
     if (!beat || !beat.before || !beat.after || !beat.layoutAfter) continue
     const exp = beat.replicaExpectedAfter || ''
     const rep = beat.replicaExpectedBefore || ''
-    if (!exp || !rep || !existsSync(exp) || !existsSync(rep) || !existsSync(beat.layoutAfter)) continue
+    const layBytes = readSrcSync(beat.layoutAfter)
+    if (!exp || !rep || !readSrcSync(exp) || !readSrcSync(rep) || !layBytes) continue
     // …and WHAT IT CLAIMS, and WHERE (2026-09-04): a claim is filed on the moment that made it — the
     // VALUE moment proveVisible rang — so the picture that can be shown to be an ANSWER rather than
     // merely a likeness is that moment's Expected, not the beat's resting one. Read here, with its
@@ -1301,12 +1308,13 @@ const replicaSpecimens = () => {
     const claimed: Array<{ file: string, claims: any[] }> = []
     for (const v of (beat.values || [])) {
       const f = v && v.replicaExpected
-      if (!f || !existsSync(f)) continue
-      const cs = (replicaAttrs(readFileSync(f, 'utf8')).claims || [])
+      const bytes = f ? readSrcSync(f) : null
+      if (!bytes) continue
+      const cs = (replicaAttrs(bytes.toString('utf8')).claims || [])
         .filter((c: any) => c && typeof c.expected === 'string' && c.expected.trim())
       if (cs.length) claimed.push({ file: f, claims: cs })
     }
-    out.push({ rid, beat, rep, exp, claimed, lay: JSON.parse(readFileSync(beat.layoutAfter, 'utf8')) })
+    out.push({ rid, beat, rep, exp, claimed, lay: JSON.parse(layBytes.toString('utf8')) })
   }
   // a specimen whose beat actually RANG something leads: it is the one that can prove the picture is
   // aimed at the component, not merely present
@@ -1389,9 +1397,10 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
     const doc = await frame.evaluate(f => String((f as HTMLIFrameElement).srcdoc || ''))
     expect(/<script/i.test(doc), 'the Expected page carries no script at all').toBe(false)
     expect(/\son\w+\s*=\s*["\']/i.test(doc), 'nor an inline handler').toBe(false)
-    // IT IS THE COMMITTED FILE, not a re-render of anything: the replica's own root attributes ride
-    // in it, and they are the ones the gate reads off the file on disk.
-    const onDisk = replicaAttrs(readFileSync(spec.exp, 'utf8'))
+    // IT IS THE LANDED FILE, not a re-render of anything: the replica's own root attributes ride in
+    // it, and they are the ones the gate reads off the very bytes the fold landed (a blob in the
+    // data home since 2026-09-06, read here through the store's one door).
+    const onDisk = replicaAttrs(String(readSrcSync(spec.exp)))
     expect(doc.includes('data-replica-side="expected"'), 'the root says which half of the pair it is').toBe(true)
     expect(doc.includes('data-replica-kit="' + onDisk.kit + '"'), 'and which kit captured it').toBe(true)
     expect(doc.includes('data-replica-region="' + (onDisk.region
@@ -1679,7 +1688,7 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
     // skeleton on disk beside it — a picture the harvest has moved past is caught here, not by eye.
     const unpinned: string[] = []
     for (const sp of specs) {
-      const a = replicaAttrs(readFileSync(sp.exp, 'utf8'))
+      const a = replicaAttrs(String(readSrcSync(sp.exp)))
       if (!a.layout) { unpinned.push(sp.rid + ': never gated'); continue }
       if (a.layout !== layoutHash(sp.lay, null)) unpinned.push(sp.rid + ': the harvest moved past it')
     }
@@ -1705,18 +1714,28 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
       'a beat with no pin is a banner that can never say "layout moved"').toEqual([])
     expect(pins.filter(x => x.pin !== x.want).map(x => x.rid),
       'and every pin still hashes the skeleton beside it, so nothing here is stale').toEqual([])
-    // SECOND, DERIVED end to end: move the app (a real edit to the committed skeleton the pin was
-    // taken against), rebuild the board through the real builder, and read the banner. The chain is
-    // the production one — file on disk → tools/build-board.mjs evAttrs → data-ev-beats → the
-    // storyline's one banner — so it fails if any link of it dies. Restored in a finally, and the
-    // board rebuilt from the true tree, so the run leaves nothing behind.
+    // SECOND, DERIVED end to end: move the app — the beat is re-pointed at a skeleton in which the
+    // app HAS moved — then the board is rebuilt through the real builder and the banner read. The
+    // chain is the production one — the fold's row → tools/build-board.mjs evAttrs → data-ev-beats →
+    // the storyline's one banner — so it fails if any link of it dies. Restored in a finally, and the
+    // board rebuilt from the true rows, so the run leaves nothing behind.
+    //
+    // The moved skeleton is a NEW BLOB, never an edit of the old one (2026-09-06): a blob's name IS
+    // the hash of its bytes, so writing different bytes into it would leave the store holding a file
+    // that lies about its own address. Moving the app means the row points somewhere else — which is
+    // exactly what a re-harvest does.
     const spec4 = specs[0]
-    const layFile = spec4.beat.layoutAfter as string
-    const original = readFileSync(layFile, 'utf8')
+    const store4 = await openStore({ root: REPO_ROOT, home: DATA_HOME })
+    const row4 = (await store4.listEvidence({ screen: 'board', reqId: spec4.rid }))
+      .find((r: any) => ((r.entry || {}).beats || []).some((x: any) => x && Number(x.n) === Number(spec4.beat.n)))
+    expect(row4, 'the fold has a row for this requirement').toBeTruthy()
+    const was4 = JSON.parse(JSON.stringify(row4!.entry))
     try {
-      const moved = JSON.parse(original)
+      const moved = JSON.parse(String(readSrcSync(spec4.beat.layoutAfter as string)))
       if (moved.els && moved.els.length) moved.els[0].x = Number(moved.els[0].x || 0) + 7   // the app moved
-      writeFileSync(layFile, JSON.stringify(moved))
+      const movedSrc = await store4.putBlob(Buffer.from(JSON.stringify(moved)), 'json')
+      for (const x of row4!.entry.beats) if (x && Number(x.n) === Number(spec4.beat.n)) x.layoutAfter = movedSrc
+      await store4.putEvidence({ ...row4!, entry: row4!.entry })
       build()
       const hop2 = spec4.rid === 'R2' ? 'R3' : 'R2'
       await page.goto('/#/board/' + hop2)
@@ -1742,7 +1761,8 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
       await proveVisible(ov.locator('.fread .fstory:not(.isstale)'), MISSING,
         'A picture that stopped matching is never shown as current', { soft: true })
     } finally {
-      writeFileSync(layFile, original)
+      await store4.putEvidence({ ...row4!, entry: was4 })
+      await store4.close()
       build()
       await page.goto('/#/board/' + (spec4.rid === 'R2' ? 'R3' : 'R2'))
       await page.reload()
@@ -2639,7 +2659,7 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     // When/Then and one harvested row, so it stopped being the right specimen the moment the walk
     // stopped riding a drawing that existed for every beat whether or not a run had been there.
     const multi = (() => {
-      const idx = JSON.parse(readFileSync('spec/_results-index.json', 'utf8'))
+      const idx = readResults()
       const ev = (idx.board && idx.board.evidence) || {}
       return Object.keys(ev)
         .map(rid => ({ rid, n: ((ev[rid] || {}).beats || []).filter((b: any) => b && (b.before || b.after)).length }))
@@ -3361,13 +3381,15 @@ test('The proof is scannable as frames — one still per checked value, cut from
     // in the tree (the same source the bake reads; red until the first recorded board run commits
     // one, then a video-less CLI fold must KEEP it — the carry this pins). The reader no longer
     // plays it (2026-09-02), but the FLOW view does, and the fold still has to commit it.
-    const idx = JSON.parse(readFileSync('spec/_results-index.json', 'utf8'))
+    const idx = readResults()
     const withVideo = Object.values((idx.board && idx.board.evidence) || {})
       .filter((e: any) => e && e.video && e.video.path) as any[]
     expect(withVideo.length, 'at least one board requirement carries a committed video').toBeGreaterThan(0)
     for (const e of withVideo) {
-      expect(e.video.path).toMatch(/^spec\/board\/evidence\/[0-9a-f]{12}\.webm$/)
-      expect(existsSync(e.video.path), 'the committed video exists on disk: ' + e.video.path).toBe(true)
+      // a CONTENT ADDRESS since 2026-09-06 — the recording is a blob in the data home (or, in a
+      // cloud store, the same sha-named object's url), never a file committed under spec/
+      expect(e.video.path).toMatch(/^(blob\/[0-9a-f]{64}\.webm|https:\/\/.*\/[0-9a-f]{64}\.webm)$/)
+      expect(!!readSrcSync(e.video.path), 'the committed video has bytes behind it: ' + e.video.path).toBe(true)
       expect(typeof e.video.from, 'the seek offset rides the video, frozen at commit').toBe('number')
     }
   })
@@ -4049,7 +4071,8 @@ test('The ⋯ menus hand you a ready Claude prompt — the board authors nothing
 // function-shaped, proven step; otherwise "runs in Claude", naming the blocking beat.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { build } from '../../tools/build-board.mjs'
-const INDEX_FILE = 'spec/_results-index.json'
+import { DATA_HOME, ROOT as REPO_ROOT } from '../../tools/spec-store.mjs'
+import { openStore } from '../../tools/store.mjs'
 // the beat metadata read INDEPENDENTLY of the module under test (final review m8: the oracle used
 // to be parseBeats itself) — a plain regex over each `{ fn: '…', proves: '…' }` entry of steps.ts
 const beatsOf = (src: string) => {
@@ -4221,14 +4244,28 @@ test('The compose endpoint composes deterministically and refuses honestly — n
   // recorded on init's and dispatch's composed flows — patching the board entry alone left those
   // current whenever the previous fold was fresh, and the stale branch composed (200) on every
   // second run (Task 9: runs 2 and 4 red, 1 and 3 green). The stale branch must stale the whole fold.
-  const patchBoardIndex = (mut: (e: any) => void, all?: (e: any) => void) => {
-    const before = readFileSync(INDEX_FILE, 'utf8')
-    const idx = JSON.parse(before)
+  // …and the fold is ROWS now (the data home, 2026-09-05/06): the patch reads every screen's row,
+  // mutates the copy and writes it back, and the restore puts the exact rows it read back. Same
+  // fixture, same restore discipline — only the storage moved.
+  const patchBoardIndex = async (mut: (e: any) => void, all?: (e: any) => void) => {
+    const store = await openStore({ root: REPO_ROOT, home: DATA_HOME })
+    const names = await store.listScreens()
+    const was: Record<string, any> = {}
+    for (const n of names) was[n] = await store.getScreen(n)
+    const idx = JSON.parse(JSON.stringify(was))
     expect(idx.board, 'the board has folded at least once').toBeTruthy()
     mut(idx.board)
     if (all) for (const e of Object.values(idx)) all(e)
-    writeFileSync(INDEX_FILE, JSON.stringify(idx, null, 2) + '\n')
-    return () => writeFileSync(INDEX_FILE, before)
+    const put = async (s: any, from: Record<string, any>) => {
+      for (const n of names) { const { screen, ...row } = from[n]; await s.putScreen(n, row) }
+    }
+    await put(store, idx)
+    await store.close()
+    return async () => {
+      const s2 = await openStore({ root: REPO_ROOT, home: DATA_HOME })
+      await put(s2, was)
+      await s2.close()
+    }
   }
   const fresh = (e: any) => {
     e.ranAt = Date.now() + 10 * 60 * 1000       // newer than any source — no pass is stale
@@ -4245,7 +4282,7 @@ test('The compose endpoint composes deterministically and refuses honestly — n
     if (e.srcHashes) for (const k of Object.keys(e.srcHashes)) e.srcHashes[k] = 'moved-since-this-run'
   }
   await checkReq('R13', async () => {
-    let restore = patchBoardIndex(fresh)
+    let restore = await patchBoardIndex(fresh)
     try {
       const ok = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards', 'b:board:openDetailReader'], name: 'scratch flow', dryRun: true } })
       expect(ok.status(), 'compose (R1, R2 proven): ' + await ok.text()).toBe(200)
@@ -4261,19 +4298,19 @@ test('The compose endpoint composes deterministically and refuses honestly — n
       // the SAME chain against proofs gone stale by source (m2): refused, and the reason is "run
       // first" — proven-but-stale is told apart from never-proven; the emitter never composes on a
       // stale Then
-      restore(); restore = patchBoardIndex(stale, stale)   // every screen's records — board-wide coverage
+      await restore(); restore = await patchBoardIndex(stale, stale)   // every screen's records — board-wide coverage
       const st = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards', 'b:board:openDetailReader'], name: 'scratch flow', dryRun: true } })
       expect(st.status(), 'compose (R1/R2 stale): ' + await st.text()).toBe(409)
       expect(await st.text()).toMatch(/^R1, R2 are proven, but stale by source — run spec\/board first$/)
-    } finally { restore(); build() }
+    } finally { await restore(); build() }
     // the gap: toggleViews needs `detail` and nothing before it gives it — asked on the FRESH index
     // so the joint check, not the proof check, is what refuses
-    restore = patchBoardIndex(fresh)
+    restore = await patchBoardIndex(fresh)
     try {
       const gap = await request.post('/api/compose', { data: { chain: ['b:board:toggleViews'], name: 'gap', dryRun: true } })
       expect(gap.status(), await gap.text()).toBe(409)
       expect(await gap.text()).toMatch(/needs detail/)
-    } finally { restore(); build() }
+    } finally { await restore(); build() }
     // no name: refused before anything else, whatever the fold says
     const noname = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards'], name: '  ', dryRun: true } })
     expect(noname.status(), await noname.text()).toBe(409)

@@ -15,11 +15,16 @@ import {
   ROOT, APP_ROOT, SPEC, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
   CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson,
-  readRuns, recordRunEntry, reEscape, runVerdict, readResults, slotAfterClose, RUNDIR,
+  readRuns, recordRunEntry, reEscape, runVerdict, readResults, slotAfterClose, RUNDIR, resolveRel, DATA_HOME,
   shouldVoice, narrationPack, voiceReadiness, voicesDir
 } from './spec-store.mjs'
 // pure (no fs, no clock) — safe to import here; the BUILDER still runs as a child process below
 import { deriveChapters, deriveKind } from './flow.mjs'
+// the static allowlist's pure decision — shared with tools/static-allow.test.mjs, which is where the
+// rule is held (the server itself cannot be imported without listening)
+import { allowKind } from './static-allow.mjs'
+// the store's one door for bytes: a run's whole log lands as a blob like everything else it keeps
+import { putBlob } from './store.mjs'
 // pure (no fs) — the flow composer's library derivation, joint check, emitter and prompt (Task 5)
 import { deriveLibrary, composeCheck, emitFlow, composePrompt, flowLanded, validFlowName } from './compose.mjs'
 import { shipToGit, shipToBucket } from './ship-record.mjs'
@@ -798,8 +803,12 @@ function startRun (screen, opts = {}) {
     // takes it away with everything else the run produced. FORCE_COLOR=0 already keeps it clean. A
     // board-started run has one; a CLI run (npm run e2e) has no record dir and so none — the entry
     // says which, so the board only offers the "whole run log" link when there is a file behind it.
-    let hasLog = false
-    try { writeFileSync(join(recordDir, 'run.log'), log.replace(/\x1b\[[0-9;]*m/g, '')); hasLog = true } catch { /* best effort: a missing log never fails a run */ }
+    // …AND IT LANDS AS A BLOB (the data home, 2026-09-05/06): the record dir is scratch now, swept
+    // when the run falls off the capped log, so the log the board links to is a src like every other
+    // thing a run keeps — and it is collected by reference with the run that named it.
+    let logSrc = null
+    try { logSrc = await putBlob(DATA_HOME, Buffer.from(log.replace(/\x1b\[[0-9;]*m/g, '')), 'log') } catch { /* best effort: a missing log never fails a run */ }
+    const hasLog = !!logSrc
     let shotsByTest = collectRecord(recordDir)
     // Cut the proof frames (board R14) from this run's recordings BEFORE archiving, so the git/bucket
     // ship carries them too. Best-effort: no ffmpeg or a failed cut just leaves a test without a strip.
@@ -842,9 +851,10 @@ function startRun (screen, opts = {}) {
       ok: verdict.ok,
       note: verdict.note,
       runId,
-      // whether spec/_runs/<runId>/run.log exists — so the board offers the whole-log link only when
-      // there is a file behind it (a CLI run has none).
+      // whether this run kept a whole-run log — so the board offers the link only when there are
+      // bytes behind it (a CLI run has none). `log` is the src those bytes live at.
       hasLog,
+      log: logSrc,
       // what each test SAW, keyed by title — the record is only useful if it can be looked at,
       // and only trustworthy if you can tell which test it belongs to
       shotsByTest,
@@ -1266,14 +1276,17 @@ const server = createServer(async (req, res) => {
   let p = decodeURIComponent(url.pathname)
   if (p === '/') p = '/board.html'
   const rel = normalize(p).replace(/^(\.\.[/\\])+/, '').replace(/^\/+/, '')
-  const allowed = rel === 'board.html' || rel.startsWith('spec/')
+  // THREE KINDS AND NO FOURTH (tools/static-allow.mjs): board.html, the AUTHORED tree under spec/,
+  // and a BLOB — every picture the fold landed in the data home, asked for by its own content
+  // address. resolveRel (tools/spec-store.mjs) is what turns each into a file, confined to its root.
+  const kind = allowKind(rel)
   // A direct state.json write (a test, a second tool) never triggers the watcher; rebuild before we
   // serve so the board a reload sees reflects the current pins, not a version from before them.
   if (rel === 'board.html' && boardStaleAgainstState()) {
     try { build() } catch (err) { console.error(String(err.stderr || err)) }
   }
-  const file = join(ROOT, rel)
-  if (!allowed || !file.startsWith(ROOT) || !existsSync(file) || !statSync(file).isFile()) {
+  const file = kind === 'board' ? join(ROOT, 'board.html') : kind ? resolveRel(rel) : null
+  if (!file || !existsSync(file) || !statSync(file).isFile()) {
     res.writeHead(404, { 'content-type': 'text/plain' }); res.end('not found'); return
   }
   const body = readFileSync(file)
@@ -1285,7 +1298,7 @@ const server = createServer(async (req, res) => {
   // will only ever show it inside an <iframe sandbox srcdoc>; this header is the third wall, so a
   // replica opened DIRECTLY in a tab is inert too — no script, no fetch, no network font, no
   // same-origin identity at all. board.html is not under spec/ and is untouched.
-  const csp = rel.startsWith('spec/') && rel.endsWith('.html')
+  const csp = (kind === 'spec' || kind === 'blob') && rel.endsWith('.html')
     ? { 'content-security-policy': "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src 'self' data:" }
     : {}
   // …AND THE FACES THOSE REPLICAS ARE SET IN ARE FETCHED CROSS-ORIGIN (phase 4a, 2026-09-03). The
@@ -1294,7 +1307,10 @@ const server = createServer(async (req, res) => {
   // rule — is a cross-origin one that a bare 200 refuses. Scoped to `spec/**/_fonts/*`: font files
   // and the one faces.css beside them, which are content-addressed bytes with nothing to leak, and
   // nothing else on this server becomes readable to another origin.
-  const cors = /^spec\/.*\/_fonts\/[^/]+$/.test(rel) ? { 'access-control-allow-origin': '*' } : {}
+  // …and the faces are BLOBS now (the data home, 2026-09-05/06): the woff2/ttf/otf files and the one
+  // faces sheet that declares them, content-addressed bytes with nothing to leak. Nothing else on
+  // this server becomes readable to another origin.
+  const cors = kind === 'blob' && /\.(woff2?|ttf|otf|css)$/.test(rel) ? { 'access-control-allow-origin': '*' } : {}
   // BYTE-RANGE support. The run recordings are MediaRecorder .webm files, which carry no duration
   // header — a <video> timeline can only become seekable once the browser probes the file's end,
   // and it probes with Range requests. Without 206 partials the player shows an unscrubbable

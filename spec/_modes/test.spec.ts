@@ -2,7 +2,8 @@ import { test, expect, checkReq } from '../_base'
 import { readdirSync, rmSync, statSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readScreen } from '../../tools/spec-store.mjs'
+import { readScreen, DATA_HOME, ROOT } from '../../tools/spec-store.mjs'
+import { openStore } from '../../tools/store.mjs'
 import { reqHash, meaningText } from '../../tools/reqhash.mjs'
 import { parseBehavior } from '../../tools/behavior.mjs'
 import { build } from '../../tools/build-board.mjs'
@@ -251,7 +252,7 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     'Supporting prose under the shape.\n\n' +
     '## R2 — A prose-only requirement\n\nOnly prose here — no triple, so no block.'
   const { name, dir } = makeScreen('probe-behavior', body, { evidence: true })
-  const restore = injectIndex(name, passWithEvidence(name))
+  const restore = await injectIndex(name, passWithEvidence(name))
   try {
     const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
     await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
@@ -358,7 +359,7 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     await c1.locator('.lst-head').click()
     await expect(c1.locator('.lst-body .fread .fstory .sbrow')).toHaveCount(3)
     await expect(c1.locator('.lst-body .fread .fstory .sbproof .pcstrip .pcfig img')).toHaveCount(2)
-  } finally { restore() }
+  } finally { await restore() }
 })
 
 // ── Task 12: the first beat row on first sight, the beats scrolling inside the card ──
@@ -471,17 +472,24 @@ test('renders — Focus fits the viewport: the first beat row on first sight, th
 // ── the board RENDERS Changed (board R4's fifth word) ──────────────────────
 // The board's own requirements are never naturally Changed (a fresh fold re-stamps their pins from
 // the current text), so these tests inject the state: a screen whose R1 is Passed in its folded
-// coverage but whose `provenHashes` pin does not match the current body. The index is written to
-// disk because build() reads it there; each test restores the exact prior bytes in `finally` (the
-// state guard does not snapshot the results index — it is meant to fold, so we put it back ourselves).
-const INDEX = join(SPEC, '_results-index.json')
-
-function injectIndex (name: string, entry?: any) {
-  const before = existsSync(INDEX) ? readFileSync(INDEX, 'utf8') : null
-  const idx = before ? JSON.parse(before) : {}
-  idx[name] = entry || (changedResult(name) as any)[name]
-  writeFileSync(INDEX, JSON.stringify(idx, null, 2) + '\n')
-  return () => { if (before == null) rmSync(INDEX, { force: true }); else writeFileSync(INDEX, before) }
+// coverage but whose `provenHashes` pin does not match the current body. The fold is ROWS in the
+// project's data home now (2026-09-05/06), not a file under spec/, so the injection is a write of
+// this probe screen's own rows — and the restore DELETES them, which is the whole cleanup a probe
+// needs (nothing else on the board has a row named `probe-…`).
+async function injectIndex (name: string, entry?: any) {
+  const store = await openStore({ root: ROOT, home: DATA_HOME })
+  const { evidence, ...row } = entry || (changedResult(name) as any)[name]
+  await store.putScreen(name, row)
+  for (const [rid, e] of Object.entries(evidence || {})) {
+    await store.putEvidence({ testFile: `spec/${name}/test.spec.ts`, screen: name, reqId: rid, entry: e as any })
+  }
+  await store.close()
+  return async () => {
+    const s = await openStore({ root: ROOT, home: DATA_HOME })
+    for (const r of await s.listEvidence({ screen: name })) await s.deleteEvidence(r)
+    await s.deleteScreen(name)
+    await s.close()
+  }
 }
 
 // a fresh, current PASS for R1 that also carries the D2 evidence harvest's index entry — the
@@ -500,7 +508,7 @@ const passWithEvidence = (name: string) => ({
 
 test('renders — a Changed requirement wears the indigo changed chip, never a plain Passed', async ({ page }) => {
   const { name } = makeScreen('probe-changed')
-  const restore = injectIndex(name)
+  const restore = await injectIndex(name)
   try {
     const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
     await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
@@ -553,18 +561,18 @@ test('renders — a Changed requirement wears the indigo changed chip, never a p
       await expect(row.locator('.lst-body .fread .frmeta .fchip')).toHaveClass(/\bchanged\b/)
       await expect(row.locator('.lst-body .frmeta .fptop .fpm')).toHaveCount(0)
     }
-  } finally { restore() }
+  } finally { await restore() }
 })
 
 test('renders — the home banner counts a Changed requirement as drift', async ({ page }) => {
   const { name } = makeScreen('probe-changed-banner')
-  const restore = injectIndex(name)
+  const restore = await injectIndex(name)
   try {
     const card = page.locator('#home .card[data-screen="' + name + '"]')
     await settleAt(page, '/', card)
     // the drift banner names the changed count — "… 1 changed since their proof"
     await expect(page.locator('.clear')).toContainText('1 changed since their proof')
-  } finally { restore() }
+  } finally { await restore() }
 })
 
 // THE "NEED A LOOK" STRIP (Task 8, the frozen mockup 2026-08-17): with anything failed or changed
@@ -576,8 +584,8 @@ test('renders — the home strip counts what needs a look and deep-links the fir
   const chg = makeScreen('probe-attn-changed')
   const failEntry = { ranAt: Date.now() + 100000, total: 1, failed: 1,
     tests: [{ title: 'x', ok: false, error: 'expected 2 · got 1', reqs: { [`${bad.name}:R1`]: 'fail' } }] }
-  const restoreA = injectIndex(bad.name, failEntry)
-  const restoreB = injectIndex(chg.name)
+  const restoreA = await injectIndex(bad.name, failEntry)
+  const restoreB = await injectIndex(chg.name)
   try {
     const card = page.locator('#home .card[data-screen="' + chg.name + '"]')
     await settleAt(page, '/', card)
@@ -606,5 +614,5 @@ test('renders — the home strip counts what needs a look and deep-links the fir
     const dt = page.locator('.dt[data-screen="' + scr + '"]:not([hidden])')
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(rid)
     await expect(dt.locator('.focusov .fread .fchip')).toHaveText(/Failed|Changed/)
-  } finally { restoreB(); restoreA() }
+  } finally { await restoreB(); await restoreA() }
 })

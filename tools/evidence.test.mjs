@@ -553,3 +553,14 @@ test('deriveFacesCss names each face by the blob the fold landed it as, in eithe
     deriveFacesCss(rules, [{ url: 'https://cdn/x.woff2', hash: 'abc', ext: 'woff2' }]),
     '@font-face{font-family:X;src:url(abc.woff2)}')
 })
+
+test('absoluteFacesCss points a face at the dir the SHEET lives in — /blob for a local store, the bucket prefix for a cloud one', async () => {
+  const { absoluteFacesCss } = await import('./evidence.mjs')
+  const css = '@font-face{font-family:X;src:url("ff.woff2")}'
+  assert.equal(absoluteFacesCss(css, 'blob'), '@font-face{font-family:X;src:url("/blob/ff.woff2")}')
+  assert.equal(absoluteFacesCss(css, 'https://bucket.test/specboard'),
+    '@font-face{font-family:X;src:url("https://bucket.test/specboard/ff.woff2")}')
+  // an already-rooted or absolute url is left exactly as it is — absolutising an absolute url is how
+  // a rewrite starts inventing files
+  assert.equal(absoluteFacesCss('@font-face{src:url("https://cdn/x.woff2")}', 'blob'), '@font-face{src:url("https://cdn/x.woff2")}')
+})
