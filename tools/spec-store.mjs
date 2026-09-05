@@ -860,10 +860,14 @@ export const DEFAULT_CONFIG = {
   // a one-line tagline for the board's header crumb — `<package name> · <tagline>` (Task 8, the
   // frozen mockup's "Tsumiki · task-tracker demo"). Authored once, optional; blank = the name alone.
   tagline: '',
-  // where a run's screenshots and videos are kept. 'local' = spec/_runs/ in this repo (default).
-  // 'git' = committed to a branch of this repo (pushed to origin only if push:true). A bucket = a
-  // base URL uploads are PUT to.
-  storage: { where: 'local', gitBranch: '', push: false, bucketUrl: '' }
+  // where a run's screenshots and videos are kept. 'local' = the project's DATA HOME
+  // (~/.specboard/<projectId>/runs/, decision A 2026-09-05) — the default, and outside every git by
+  // construction. 'bucket' = a base URL the record is PUT to, so it outlives the local prune and can
+  // be read by a teammate: the first half of the team store, which the s3 blob driver now embodies.
+  // A THIRD home, 'git' — the record committed onto a branch of the app's own repo — was RETIRED
+  // 2026-09-06 (T16): a run record is a cache, and git keeps a cache forever. That is the growth this
+  // whole plan removed, so the tool must not offer to re-create it. A stored 'git' clamps to 'local'.
+  storage: { where: 'local', bucketUrl: '' }
 }
 
 export function readConfig () {
@@ -900,10 +904,11 @@ export function cleanConfig (cfg = {}, cur = {}) {
     // a real boolean on disk — a stale form or a truthy string can never pin a half-on state
     voiceOver: !!src.voiceOver,
     tagline: str(src.tagline, 120).trim(),
+    // TWO homes, and the clamp is what retires the third: a config still carrying `where: 'git'`
+    // (or its gitBranch/push) reads back as 'local' and loses those keys on the next save — no
+    // migration step, no error, and no way to keep shipping a cache into git (T16, 2026-09-06).
     storage: {
-      where: ['local', 'git', 'bucket'].includes(src.storage?.where) ? src.storage.where : 'local',
-      gitBranch: str(src.storage?.gitBranch, 120).trim(),
-      push: !!src.storage?.push,
+      where: ['local', 'bucket'].includes(src.storage?.where) ? src.storage.where : 'local',
       bucketUrl: str(src.storage?.bucketUrl, 400).trim()
     }
   }

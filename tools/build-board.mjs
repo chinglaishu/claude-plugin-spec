@@ -4229,11 +4229,8 @@ export function build () {
           <div class="fld" style="margin-bottom:0">
             <div class="l">Where to keep run screenshots &amp; video</div>
             <div class="seg" id="initstore">
-              <button data-store="local" class="on">In this repo</button><button data-store="git">Git branch</button><button data-store="bucket">Bucket URL</button>
+              <button data-store="local" class="on">On this machine</button><button data-store="bucket">Bucket URL</button>
             </div>
-            <input class="input" id="initgitbranch" placeholder="branch name, e.g. spec-shots" style="margin-top:8px" hidden>
-            <label class="watchtog sm" id="initpushwrap" style="margin-top:8px" hidden>
-              <input type="checkbox" id="initpush"> also push to origin (an outward action)</label>
             <input class="input" id="initbucket" placeholder="https://…  a base URL uploads are PUT to" style="margin-top:8px" hidden>
             <div class="h" id="initstorehint">Kept in this project’s data home (~/.specboard/&lt;project&gt;/), addressed by content and pruned with the run log — nothing leaves your machine and nothing is committed.</div>
           </div>

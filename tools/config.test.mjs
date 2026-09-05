@@ -11,7 +11,12 @@ const FULL = {
   routes: ['/home', '/properties'],
   signIn: 'await page.goto("/login")',
   stepDelayMs: 2000,
-  storage: { where: 'git', gitBranch: 'runs', push: true, bucketUrl: '' }
+  // The fixture's storage used to be the GIT-BRANCH shipper (`where: 'git'`, a branch, a push flag),
+  // retired 2026-09-06 (T16, decision A) — run shots are a cache, and a branch keeps a cache forever.
+  // Rule 4 on the three pins below it carried: their load-bearing property is the partial-save merge,
+  // not the destination, so the fixture moves to the destination that SURVIVES (a bucket) and the
+  // merge stays proven. The retirement itself is pinned by its own test at the foot of this file.
+  storage: { where: 'bucket', bucketUrl: 'https://shots.example/runs' }
 }
 
 test('a partial save PRESERVES the fields it does not mention', () => {
@@ -21,7 +26,7 @@ test('a partial save PRESERVES the fields it does not mention', () => {
   assert.deepEqual(out.routes, ['/home', '/properties'], 'routes preserved')
   assert.equal(out.signIn, 'await page.goto("/login")', 'signIn preserved')
   assert.equal(out.baseUrl, 'http://localhost:4000', 'the provided field wins')
-  assert.equal(out.storage.where, 'git', 'storage preserved')
+  assert.equal(out.storage.where, 'bucket', 'storage preserved')
 })
 
 test('the incoming stepDelayMs wins, clamped high, and invalid input falls to the default', () => {
@@ -39,10 +44,10 @@ test('a storage-only save keeps the top-level fields, and vice-versa', () => {
   const storageOnly = cleanConfig({ storage: { where: 'local' } }, FULL)
   assert.equal(storageOnly.stepDelayMs, 2000, 'top-level preserved through a storage save')
   assert.equal(storageOnly.storage.where, 'local', 'storage.where updated')
-  assert.equal(storageOnly.storage.gitBranch, 'runs', 'the OTHER storage keys are preserved (one-level merge)')
+  assert.equal(storageOnly.storage.bucketUrl, 'https://shots.example/runs', 'the OTHER storage keys are preserved (one-level merge)')
 
   const topOnly = cleanConfig({ baseUrl: 'http://x' }, FULL)
-  assert.equal(topOnly.storage.where, 'git', 'storage preserved through a top-level save')
+  assert.equal(topOnly.storage.where, 'bucket', 'storage preserved through a top-level save')
 })
 
 test('with no current config, an omitted stepDelayMs falls to the 300 default', () => {
@@ -63,4 +68,17 @@ test('voiceOver is off by default, round-trips on, and survives a partial save',
   assert.strictEqual(
     cleanConfig({ voiceOver: false }, { ...FULL, voiceOver: true }).voiceOver, false,
     'an explicit false turns it off')
+})
+
+test('storage has two homes, local and bucket — a git branch is not one (decision A, 2026-09-05)', () => {
+  // T16, 2026-09-06: the git-branch shipper committed each run's screenshots and video onto a branch
+  // of the app's own repo — the exact anti-pattern this storage plan removes, because a run record is
+  // a CACHE and git keeps a cache forever (the 850 MB of history that started all of this). A stored
+  // config that still says 'git' does not keep shipping there and does not error: it clamps to
+  // 'local' — the data home — and the two keys that only the branch used are dropped on the next save.
+  const c = cleanConfig({ storage: { where: 'git', gitBranch: 'shots', push: true, bucketUrl: '' } }, {})
+  assert.equal(c.storage.where, 'local')
+  assert.equal('gitBranch' in c.storage, false)
+  assert.equal('push' in c.storage, false)
+  assert.equal(cleanConfig({ storage: { where: 'bucket', bucketUrl: 'https://b' } }, {}).storage.where, 'bucket')
 })

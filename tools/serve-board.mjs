@@ -27,7 +27,7 @@ import { allowKind } from './static-allow.mjs'
 import { putBlob } from './store.mjs'
 // pure (no fs) — the flow composer's library derivation, joint check, emitter and prompt (Task 5)
 import { deriveLibrary, composeCheck, emitFlow, composePrompt, flowLanded, validFlowName } from './compose.mjs'
-import { shipToGit, shipToBucket } from './ship-record.mjs'
+import { shipToBucket } from './ship-record.mjs'
 // every fs.watch in this file goes through watchDir — an unhandled FSWatcher 'error' is a THROW that
 // takes the SERVER with it, and a deleted watched directory raises exactly that on Linux (see
 // tools/watch-dir.mjs for the CI crash this comes from)
@@ -810,11 +810,11 @@ function startRun (screen, opts = {}) {
     try { logSrc = await putBlob(DATA_HOME, Buffer.from(log.replace(/\x1b\[[0-9;]*m/g, '')), 'log') } catch { /* best effort: a missing log never fails a run */ }
     const hasLog = !!logSrc
     let shotsByTest = collectRecord(recordDir)
-    // Cut the proof frames (board R14) from this run's recordings BEFORE archiving, so the git/bucket
+    // Cut the proof frames (board R14) from this run's recordings BEFORE archiving, so the bucket
     // ship carries them too. Best-effort: no ffmpeg or a failed cut just leaves a test without a strip.
     try { await extractProofFrames(recordDir, shotsByTest) } catch (err) { console.error('proof-frame cut failed:', err) }
     // Voice-over: mux the narration onto this run's recording, producing a voiced mp4 the player
-    // prefers. BEFORE archiving, so a git ship carries it too. Best-effort: a render failure leaves
+    // prefers. BEFORE archiving, so a bucket ship carries it too. Best-effort: a render failure leaves
     // the silent recording untouched and says so on the run — never a failed run (board R10 rule 3).
     if (voice) {
       try {
@@ -828,10 +828,10 @@ function startRun (screen, opts = {}) {
     // reason on the run and keeps the local copy, and never touches the verdict.
     let archive = null
     const store = readConfig().storage || { where: 'local' }
-    if (store.where === 'git' && Object.keys(shotsByTest).length) {
-      archive = { where: 'git', ...shipToGit(recordDir, runId, store.gitBranch, ROOT, !!store.push) }
-    } else if (store.where === 'bucket' && Object.keys(shotsByTest).length) {
-      const r = await shipToBucket(recordDir, runId, shotsByTest, store.bucketUrl, ROOT)
+    // ONE destination beyond the data home: a bucket. The git-branch shipper that stood here was
+    // retired 2026-09-06 (T16) — a run record is a cache, and git keeps a cache forever.
+    if (store.where === 'bucket' && Object.keys(shotsByTest).length) {
+      const r = await shipToBucket(recordDir, runId, shotsByTest, store.bucketUrl, resolveRel)
       archive = { where: 'bucket', ok: r.ok, error: r.error, count: r.count }
       // point the board at the bucket copies, which outlive the local prune
       if (r.ok) shotsByTest = r.shotsByTest

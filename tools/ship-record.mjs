@@ -1,50 +1,18 @@
-// Shipping a run's screenshots and video somewhere other than this repo. Two destinations the human
-// asked for: a git branch (versioned, shareable through the host) and a bucket (survives the
-// local prune, shareable by URL). Both are BEST EFFORT — a shipping failure logs and falls back to
-// the local copy; it never fails the run, because the record is a convenience and the verdict is not.
+// Shipping a run's screenshots and video somewhere other than this machine. ONE destination now: a
+// bucket — the record survives the local prune and is readable by URL, which is the first half of the
+// team store (the same shape the s3 blob driver speaks). It is BEST EFFORT — a shipping failure logs
+// and keeps the local copy; it never fails the run, because the record is a convenience and the
+// verdict is not.
+//
+// THE SECOND DESTINATION IS GONE (T16, 2026-09-06, decision A): `shipToGit` committed each run's
+// screenshots and video onto a branch of the app's own repo, in an isolated worktree, optionally
+// pushed. It is the exact anti-pattern this storage plan exists to remove — a run record is a CACHE,
+// and git keeps a cache forever (the 850 MB of history that started the plan). Deleted rather than
+// deprecated: an option nobody should choose is not worth the code that offers it. Records live in
+// the data home (~/.specboard/<projectId>/runs/) and go to a bucket when a person asks.
 
-import { execFileSync } from 'node:child_process'
-import { cpSync, mkdirSync, rmSync, existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
-import { join, basename, extname } from 'node:path'
-import { tmpdir } from 'node:os'
-
-const git = (args, cwd) =>
-  execFileSync('git', args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim()
-
-// Commit the run's record onto a branch, in an ISOLATED worktree so the working tree the human (and
-// any other agent) is using is never touched. Pushing to origin is an OUTWARD action, so it is
-// off unless explicitly asked for (Setup's "push to origin"): the default commits locally to the
-// branch, versioned and safe, and the human pushes when they mean to.
-export function shipToGit (recordDir, runId, branch, root, push = false) {
-  if (!branch) return { ok: false, error: 'no branch name set' }
-  const wt = join(tmpdir(), `specboard-shots-${process.pid}-${runId}`)
-  try {
-    try { git(['worktree', 'remove', '--force', wt], root) } catch { /* none to remove */ }
-    let exists = true
-    try { git(['rev-parse', '--verify', branch], root) } catch { exists = false }
-    git(['worktree', 'add', ...(exists ? [wt, branch] : ['-b', branch, wt])], root)
-    try {
-      const dest = join(wt, 'run-shots', runId)
-      mkdirSync(dest, { recursive: true })
-      cpSync(recordDir, dest, { recursive: true })
-      git(['add', 'run-shots'], wt)
-      git(['-c', 'user.email=specboard@local', '-c', 'user.name=specboard',
-        'commit', '-m', `run ${runId} — ${readdirSync(dest).length} artifact(s)`], wt)
-      const sha = git(['rev-parse', 'HEAD'], wt).slice(0, 12)
-      let pushed = false
-      let pushError = null
-      if (push) {
-        try { git(['push', 'origin', branch], root); pushed = true }
-        catch (e) { pushError = String(e.stderr || e.message || e).slice(0, 160) }
-      }
-      return { ok: true, branch, sha, requestedPush: push, pushed, pushError }
-    } finally {
-      try { git(['worktree', 'remove', '--force', wt], root) } catch { /* leave it */ }
-    }
-  } catch (err) {
-    return { ok: false, error: String(err.stderr || err.message || err).slice(0, 300) }
-  }
-}
+import { existsSync, readFileSync } from 'node:fs'
+import { basename, extname } from 'node:path'
 
 const TYPE = { '.png': 'image/png', '.webm': 'video/webm' }
 
@@ -52,13 +20,21 @@ const TYPE = { '.png': 'image/png', '.webm': 'video/webm' }
 // bucket, so the board loads shots from there and they outlive the local prune. Works against any
 // endpoint that accepts an unauthenticated PUT at that path (a presigned setup, a simple upload
 // server, a permissive bucket) — the failure, when a bucket needs auth, is a clear PUT status.
-export async function shipToBucket (recordDir, runId, shotsByTest, bucketUrl, root) {
+//
+// The last argument is the caller's `resolveRel` — spec-store's ONE door from a record string to the
+// file it names (rule 7, fixed here 2026-09-06 while retiring the git half). It used to be the repo
+// ROOT, joined onto each string: correct while a shot was `spec/_runs/<id>/x.png`, and silently wrong
+// since the data home landed, because a shot is now `blob/<sha>.png`. Every `existsSync` missed, every
+// put returned null, and the function reported `ok` with `count: 0` while REPLACING the record with
+// empty shot lists — a green that shipped nothing and lost the local pointers on the way.
+export async function shipToBucket (recordDir, runId, shotsByTest, bucketUrl, resolveRel) {
   if (!bucketUrl) return { ok: false, error: 'no bucket URL set' }
+  if (typeof resolveRel !== 'function') return { ok: false, error: 'no path resolver given' }
   const base = bucketUrl.replace(/\/+$/, '')
   const uploaded = {}
   const put = async localRel => {
-    const abs = join(root, localRel)
-    if (!existsSync(abs)) return null
+    const abs = resolveRel(localRel)
+    if (!abs || !existsSync(abs)) return null
     const url = `${base}/${runId}/${basename(localRel)}`
     const res = await fetch(url, {
       method: 'PUT',

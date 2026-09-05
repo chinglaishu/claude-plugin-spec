@@ -3659,17 +3659,19 @@ const B = window.__BOARD__ || {}
   for (const b of document.querySelectorAll('#initmode button'))
     b.addEventListener('click', () => setInitMode(b.dataset.mode))
 
+  // TWO homes for a run's record. A third — a GIT BRANCH of the app's own repo — was retired
+  // 2026-09-06 (T16, decision A): a run record is a cache, and git keeps a cache forever. A config
+  // still saying 'git' clamps to 'local' server-side (spec-store cleanConfig), which is why this
+  // control needs no migration: it simply lights the first button.
   const storeHints = {
     local: 'Kept in this project’s data home (~/.specboard/<project>/), addressed by content and pruned with the run log — nothing leaves your machine and nothing is committed.',
-    git: 'Each run\'s shots are committed to this branch in an isolated worktree (your working tree is untouched). It stays local unless you tick push.',
     bucket: 'Each run\'s shots are PUT to this base URL (base/runId/name) and the board loads them from there, so they outlive the local prune. The endpoint must accept the PUT.'
   }
   function setStore (w) {
-    for (const b of document.querySelectorAll('#initstore button')) b.classList.toggle('on', b.dataset.store === w)
-    document.getElementById('initgitbranch').hidden = w !== 'git'
-    document.getElementById('initpushwrap').hidden = w !== 'git'
-    document.getElementById('initbucket').hidden = w !== 'bucket'
-    document.getElementById('initstorehint').textContent = storeHints[w] || storeHints.local
+    const where = storeHints[w] ? w : 'local'
+    for (const b of document.querySelectorAll('#initstore button')) b.classList.toggle('on', b.dataset.store === where)
+    document.getElementById('initbucket').hidden = where !== 'bucket'
+    document.getElementById('initstorehint').textContent = storeHints[where]
   }
   for (const b of document.querySelectorAll('#initstore button'))
     b.addEventListener('click', () => setStore(b.dataset.store))
@@ -3689,8 +3691,6 @@ const B = window.__BOARD__ || {}
     document.getElementById('initvoiceover').checked = !!cfg.voiceOver
     const st = cfg.storage || { where: 'local' }
     setStore(st.where || 'local')
-    document.getElementById('initgitbranch').value = st.gitBranch || ''
-    document.getElementById('initpush').checked = !!st.push
     document.getElementById('initbucket').value = st.bucketUrl || ''
   }
 
@@ -3771,8 +3771,6 @@ const B = window.__BOARD__ || {}
       voiceOver: document.getElementById('initvoiceover').checked,
       storage: {
         where: storeWhere(),
-        gitBranch: document.getElementById('initgitbranch').value,
-        push: document.getElementById('initpush').checked,
         bucketUrl: document.getElementById('initbucket').value
       }
     }
