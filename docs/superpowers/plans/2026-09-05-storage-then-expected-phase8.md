@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **PRECEDENCE (the human, 2026-09-06): where any two documents conflict, `docs/decisions-c1-c5-2026-09-06.html` — the latest rulings — governs; then this banner; then the design page `docs/storage-references-design-2026-09-05.html`; then the task bodies in the source plans. Older pages (`expected-base-patch-plan-2026-09-05.html`, `storage-userflow-2026-09-05.html`) are task-body detail only.**
+>
 > **RE-RULED 2026-09-05, FINAL SHAPE (the human, in three rulings: "like Langfuse hosted locally"; "reference claude-mem, media local-but-out-of-repo or a cloud blob url"; "test records into local db / remote db — team = remote db url + cloud blob url"). Design page: `docs/storage-references-design-2026-09-05.html`. Deltas over every task body below:**
 > - **Where (claude-mem's pattern):** ALL derived data in `~/.specboard/<projectId>/` — the user's home directory, out of every repo by construction. `SPECBOARD_HOME` overrides it (tests, CI, artifact review). The interim `specboard/data/` idea is withdrawn.
 > - **The db (switch 1):** the fold, run records and raw report are rows behind ONE **async** store interface with two drivers — `sqlite` (`board.db` via `better-sqlite3`, the default) or `pg` (a remote `SPECBOARD_DB_URL`). Every "index.json"/"runs.json"/"results.json" in the task bodies reads as these rows. The API is async from day one so the pg driver fits with no rewrite.
