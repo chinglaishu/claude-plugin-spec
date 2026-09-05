@@ -1168,3 +1168,65 @@ test('I3: a block that calls a steps function opens a page, so a zero-claim inte
   assert.equal(opensPage("await request.post('/api/run')", {}), false)
   assert.equal(opensPage("await request.post('/api/run')"), false)
 })
+
+// ── ONE BASE, GRADED ONCE (phase 8 A5, 2026-09-05) ──────────────────────────────────────────────
+// A beat's BEFORE picture is the screen's base — one blob shared by every beat that starts from that
+// page — so grading it per beat would print the same verdict five times and, worse, let one beat's
+// green stand in for another's. It is graded ONCE, against EACH sharing beat's own before skeleton:
+// the file's rules run a single time, and the pin is compared per beat, so a screen that has been
+// re-harvested for one requirement and not another says exactly which one has moved on.
+// There is no orphan rule: a blob no record names is collected at the fold (tools/store.mjs
+// gcBlobs), so the index IS the list.
+const baseFixture = () => {
+  const files = new Map()
+  const layR1 = src('json', 4)
+  const layR3 = src('json', 5)
+  files.set(layR1, JSON.stringify(RLAY))
+  files.set(layR3, JSON.stringify({ ...RLAY, els: [...RLAY.els, { x: 1, y: 1, w: 40, h: 20, kind: 'text', text: 'moved' }] }))
+  const base = src('html', 6)
+  files.set(base, '<style>.rep .r0{color:red}</style>\n<div class="rep r0" data-replica-kit="replica-1"' +
+    ' data-replica-region="100 100 600 300" data-replica-path="" data-replica-side="expected"' +
+    ' data-replica-layout="' + layoutHash(RLAY, null) + '" data-replica-gaps="[]" data-claims="[]">' +
+    ACTUAL_BODY + '</div>\n')
+  const index = {
+    todo: {
+      evidence: {
+        R1: { beats: [{ n: 1, before: src('png', 7), layoutBefore: layR1, base, values: [] }] },
+        R3: { beats: [{ n: 1, before: src('png', 8), layoutBefore: layR3, base, values: [] }] }
+      }
+    }
+  }
+  return { index, base, read: async s => (files.has(s) ? Buffer.from(files.get(s)) : null) }
+}
+
+test('phase 8: a base shared by two beats is graded ONCE and every sharing beat\'s before skeleton must match its pin', async () => {
+  const f = baseFixture()
+  const rows = (await gate(f)).filter(r => r.kind === 'base')
+  assert.equal(rows.length, 1, 'one row for the shared base')
+  assert.equal(rows[0].file, f.base)
+  assert.equal(rows[0].id, 'R1 b1, R3 b1', 'the row names every beat that shares it')
+  assert.equal(rows[0].ok, false)
+  assert.match(rows[0].why, /R3 b1: the harvest is newer than the base/)
+  assert.doesNotMatch(rows[0].why, /R1 b1/)
+})
+
+test('phase 8: a beat whose base blob is gone is a red row, not a silent pass', async () => {
+  const f = baseFixture()
+  f.index.todo.evidence.R1.beats[0].base = 'blob/' + '0'.repeat(64) + '.html'
+  f.index.todo.evidence.R3.beats[0].base = 'blob/' + '0'.repeat(64) + '.html'
+  const r = (await gate(f)).find(x => x.kind === 'base')
+  assert.ok(r)
+  assert.equal(r.ok, false)
+  assert.match(r.why, /its base is gone/)
+})
+
+test('phase 8: a base whose every sharing beat still matches it passes, and the moment loop does not grade it twice', async () => {
+  const f = baseFixture()
+  f.index.todo.evidence.R3.beats[0].layoutBefore = f.index.todo.evidence.R1.beats[0].layoutBefore
+  const rows = await gate(f)
+  const bases = rows.filter(r => r.kind === 'base')
+  assert.equal(bases.length, 1)
+  assert.equal(bases[0].ok, true, bases[0].why)
+  assert.deepEqual(rows.filter(r => r.file === f.base && r.kind !== 'base'), [],
+    'the per-moment loop leaves the base to the base row')
+})

@@ -291,30 +291,19 @@ export function checkMirrors (spec = 'spec') {
 // unit-tested on a fixture with no store at all.
 export async function checkReplicas (index = readResults(), { read = readSrc } = {}) {
   const rows = []
-  for (const screen of Object.keys(index || {}).filter(s => !s.startsWith('_')).sort()) {
-    for (const [id, entry] of Object.entries((index[screen] && index[screen].evidence) || {})) {
-      for (const m of momentsOf(entry)) {
-        if (!m.replica) continue
-        const row = { screen, id, file: m.replica, side: 'expected', kind: m.kind, ok: true, why: '', gaps: [] }
-        rows.push(row)
-        let html = ''
-        try { const b = await read(m.replica); html = b ? String(b) : '' } catch { html = '' }
-        if (!html) {
-          row.ok = false
-          row.why = 'the picture is gone — nothing answers ' + m.replica
-          continue
-        }
+  // ONE FILE'S OWN RULES, in one place (phase 8 A5, 2026-09-05). A moment's picture and a BASE are
+  // graded by exactly the same reading — gated, un-truncated, no gaps, the pin over the skeleton it
+  // was measured with, the words, the failed claims' values — so the rules live here once and both
+  // callers below use them. What differs is only WHICH skeleton, and how many beats have to agree
+  // with the pin: a moment has one, a base has every beat that shares it.
+  const gradeFile = (row, html, lay) => {
       const a = replicaAttrs(html)
       const why = []
       if (a.truncated) row.gaps.push({ kind: 'truncated', what: 'the capture ran out of bytes', x: 0, y: 0, w: 0, h: 0 })
       if (!a.layout) why.push('not gated: no data-replica-layout — nothing walked this replica back')
       for (const g of a.gaps) row.gaps.push(g)
-      // the skeleton this moment was measured with — named by the row beside the picture (the fold
-      // pairs them; before the data home they were paired by a filename rule)
-      let lay = null
-      if (m.layout) {
-        try { const b = await read(m.layout); lay = b ? JSON.parse(String(b)) : null } catch { lay = null }
-      }
+      // the skeleton this picture was measured with — named by the row beside it (the fold pairs
+      // them; before the data home they were paired by a filename rule), read by the caller
       if (!lay) {
         why.push('no layout skeleton beside it — the replica claims a harvest that is gone')
       } else {
@@ -398,6 +387,79 @@ export async function checkReplicas (index = readResults(), { read = readSrc } =
         if (row.gaps.length) why.unshift(`the replica is missing what the harvest measured — ${gapSummary(row.gaps)}`)
         row.ok = !row.gaps.length && !why.length
         row.why = why.join('; ')
+    return a
+  }
+
+  // THE BASES FIRST (phase 8 A5): a base is the screen's Given, shared by every beat that starts
+  // from that page, so it is graded ONCE — against each sharing beat's own before skeleton. Nothing
+  // here can be an orphan: a blob no record names is collected at the fold (tools/store.mjs
+  // gcBlobs), so the index IS the list of bases there are.
+  const bases = new Map()                    // src → [{ screen, id, n, layout }]
+  for (const screen of Object.keys(index || {}).filter(s => !s.startsWith('_')).sort()) {
+    for (const [id, entry] of Object.entries((index[screen] && index[screen].evidence) || {})) {
+      for (const b of (entry && Array.isArray(entry.beats) ? entry.beats : [])) {
+        if (!b || !b.base) continue
+        if (!bases.has(b.base)) bases.set(b.base, [])
+        bases.get(b.base).push({ screen, id, n: b.n, layout: b.layoutBefore || null })
+      }
+    }
+  }
+  for (const [rel, refs] of bases) {
+    const row = {
+      screen: refs[0].screen,
+      id: refs.map(r => `${r.id} b${r.n}`).join(', '),
+      file: rel,
+      side: 'expected',
+      kind: 'base',
+      ok: true,
+      why: '',
+      gaps: []
+    }
+    rows.push(row)
+    let html = ''
+    try { const b = await read(rel); html = b ? String(b) : '' } catch { html = '' }
+    if (!html) { row.ok = false; row.why = 'its base is gone — nothing answers ' + rel; continue }
+    // the file's own rules, once, against the FIRST sharing beat's skeleton (they all describe the
+    // same page — which is the very thing the per-ref pin check below proves rather than assumes)
+    const lays = []
+    for (const r of refs) {
+      let lay = null
+      if (r.layout) { try { const b = await read(r.layout); lay = b ? JSON.parse(String(b)) : null } catch { lay = null } }
+      lays.push(lay)
+    }
+    const a = gradeFile(row, html, lays[0])
+    // …and then EVERY beat that names it must still hash to its pin. One re-harvested requirement
+    // and one not is exactly the state this catches, and it says which.
+    const pin = a && a.layout
+    if (pin) {
+      for (let i = 0; i < refs.length; i++) {
+        const lay = lays[i]
+        if (lay && layoutHash(lay, null) === pin) continue
+        row.ok = false
+        row.why += (row.why ? '; ' : '') + `${refs[i].id} b${refs[i].n}: the harvest is newer than the base`
+      }
+    }
+  }
+
+  for (const screen of Object.keys(index || {}).filter(s => !s.startsWith('_')).sort()) {
+    for (const [id, entry] of Object.entries((index[screen] && index[screen].evidence) || {})) {
+      for (const m of momentsOf(entry)) {
+        if (!m.replica) continue
+        if (m.kind === 'base') continue        // graded above, once, for every beat that shares it
+        const row = { screen, id, file: m.replica, side: 'expected', kind: 'moment', ok: true, why: '', gaps: [] }
+        rows.push(row)
+        let html = ''
+        try { const b = await read(m.replica); html = b ? String(b) : '' } catch { html = '' }
+        if (!html) {
+          row.ok = false
+          row.why = 'the picture is gone — nothing answers ' + m.replica
+          continue
+        }
+        let lay = null
+        if (m.layout) {
+          try { const b = await read(m.layout); lay = b ? JSON.parse(String(b)) : null } catch { lay = null }
+        }
+        gradeFile(row, html, lay)
       }
     }
   }
