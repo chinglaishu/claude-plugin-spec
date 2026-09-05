@@ -79,7 +79,7 @@ const fixture = (mutate = null) => {
 
 test('the mirror gate passes a committed drawing that still mirrors its harvest', () => {
   const root = fixture()
-  try {
+  {
     const rows = checkMirrors(root)
     assert.equal(rows.length, 1)
     assert.deepEqual(rows[0].gaps, [])
@@ -87,24 +87,24 @@ test('the mirror gate passes a committed drawing that still mirrors its harvest'
     assert.equal(rows[0].ok, true)
     assert.equal(rows[0].id, 'R1')
     assert.equal(rows[0].screen, 'todo')
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
 test('the mirror gate refuses a committed drawing that dropped a measured word', () => {
   const root = fixture(svg => svg.replace(/<text[^>]*>Today · to do<\/text>/, ''))
-  try {
+  {
     const rows = checkMirrors(root)
     assert.equal(rows[0].ok, false)
     assert.ok(rows[0].gaps.length >= 1, 'the dropped heading is named')
     assert.equal(rows[0].gaps[0].kind, 'missing-text')
     assert.match(rows[0].gaps[0].what, /Today/)
     assert.equal(rows[0].pinOk, true, 'the harvest did not move — only the drawing is wrong')
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
 test('the mirror gate refuses a drawing the harvest has moved past — the layout pin', () => {
   const root = fixture()
-  try {
+  {
     // the app's layout moves: the field grows. The committed drawing was pinned to the old geometry.
     const moved = LAY(true)
     moved.els[2].w = 720
@@ -113,25 +113,25 @@ test('the mirror gate refuses a drawing the harvest has moved past — the layou
     assert.equal(rows[0].pinOk, false, 'data-viz-layout no longer equals the layoutHash of what is on disk')
     assert.equal(rows[0].ok, false)
     assert.match(rows[0].why, /layout/)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
 test('the mirror gate says so when a committed wireframe has no harvest left on disk', () => {
   const root = fixture()
-  try {
+  {
     rmSync(join(root, 'todo', 'evidence', 'R1.b1.before.layout.json'))
     rmSync(join(root, 'todo', 'evidence', 'R1.b1.after.layout.json'))
     const rows = checkMirrors(root)
     assert.equal(rows[0].ok, false)
     assert.match(rows[0].why, /no layout/)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
 test('the mirror gate ignores an archetype drawing — only a wireframe claims to mirror an app', () => {
   const root = fixture(svg => svg.replace('data-viz-kind="wireframe"', 'data-viz-kind="archetype"'))
-  try {
+  {
     assert.deepEqual(checkMirrors(root), [])
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
 // ── THE REPLICA GATE (phase 3, 2026-09-03) ───────────────────────────────────────────────────────
@@ -175,11 +175,16 @@ const CLAIMS = '[{&quot;label&quot;:&quot;the row&quot;,&quot;expected&quot;:&qu
 const FAILED_CLAIMS = '[{&quot;label&quot;:&quot;the row&quot;,&quot;expected&quot;:&quot;Pay the electricity bill&quot;,' +
   '&quot;got&quot;:&quot;&quot;,&quot;ok&quot;:false}]'
 
+// THE FIXTURE IS A FOLD, NOT A DIRECTORY (the data home, 2026-09-05/06). Nothing derived is
+// committed any more: the gate walks the index's own rows and reads each src through one door. So
+// the fixture hands it a one-beat fold and a reader over the bytes it made up — which is also what
+// makes every rule below testable with no store at all.
+const src = (ext, n) => 'blob/' + String(n).repeat(64) + '.' + ext
 const repFixture = (mutate = {}) => {
-  const root = join(tmpdir(), 'replica-gate-' + Math.random().toString(36).slice(2))
-  mkdirSync(join(root, 'todo', 'evidence'), { recursive: true })
+  const files = new Map()
   const lay = mutate.layout ? mutate.layout(structuredClone(RLAY)) : RLAY
-  writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.layout.json'), JSON.stringify(lay))
+  const laySrc = src('json', 1)
+  files.set(laySrc, JSON.stringify(lay))
   // `repin` re-pins the replica to the layout the fixture just wrote — for a test about the WORDS,
   // where a mutated skeleton would otherwise also fail on the pin and prove nothing about the words
   const pin = layoutHash(mutate.repin ? lay : RLAY, null)
@@ -190,119 +195,109 @@ const repFixture = (mutate = {}) => {
   let expected = REP_ROOT('expected', ACTUAL_BODY, ' data-claims="' + CLAIMS + '"', pin)
   if (mutate.actual) expected = mutate.actual(expected)
   if (mutate.expected) expected = mutate.expected(expected)
-  writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.expected.html'), expected)
-  return root
+  const expSrc = src('html', 2)
+  files.set(expSrc, expected)
+  const index = {
+    todo: {
+      evidence: {
+        R1: { beats: [{ n: 1, after: src('png', 3), layoutAfter: laySrc, replicaExpectedAfter: expSrc, values: [] }] }
+      }
+    }
+  }
+  if (mutate.index) mutate.index(index, files)
+  return { index, read: async s => (files.has(s) ? Buffer.from(files.get(s)) : null) }
 }
+// the gate, as the CLI calls it: over the fold, through the fixture's own reader
+const gate = f => checkReplicas(f.index, { read: f.read })
 
-test('the replica gate passes a gated moment whose pin, words and claims all still hold', () => {
-  const root = repFixture()
-  try {
-    const rows = checkReplicas(root)
+test('the replica gate passes a gated moment whose pin, words and claims all still hold', async () => {
+  const f = repFixture()
+  {
+    const rows = (await gate(f))
     assert.equal(rows.length, 1, 'one html per moment')
     assert.equal(rows[0].ok, true, rows[0].why)
     assert.equal(rows[0].screen, 'todo')
     assert.equal(rows[0].id, 'R1')
-    assert.match(rows[0].file, /R1\.b1\.after\.expected\.html$/)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+    assert.match(rows[0].file, /^blob\/[0-9a-f]{64}\.html$/, 'the row names the src the fold landed')
+    assert.equal(rows[0].kind, 'moment')
+  }
 })
 
-// A REAL one, out of this repo's own history (final re-review, new breakage 1, 2026-09-04). The
-// test that stood here wrote `<div class="rep r0">stale</div>` — a file with no pin at all — and so
-// only proved that an UNGATED file is refused, which was never in doubt. The file the release
-// actually leaves behind is the one the OLD harness gated: `b2538c8`'s own
-// spec/board/evidence/R1.b1.v1.actual.html, whose pin still hashes the skeleton committed beside it.
-// Run against that, `checkReplicas` returned `ok: true` — a retired half of the two-file shape,
-// reported healthy, on a tree `kg-update` brought forward without re-harvesting. So the KIND is what
-// is refused now, before any rule reads a byte: there is no `.actual.html` in this release at all
-// (the Actual half of a moment is the photograph named beside it), and a file of that name is a
-// leftover whose only honest answer is to harvest the screen again.
-const legacyActual = () => {
-  const root = join(tmpdir(), 'replica-legacy-' + Math.random().toString(36).slice(2))
-  const dir = join(root, 'board', 'evidence')
-  mkdirSync(dir, { recursive: true })
-  const show = (p) => execFileSync('git', ['show', 'b2538c8:' + p], { cwd: REPO, maxBuffer: 32 * 1024 * 1024 })
-  writeFileSync(join(dir, 'R1.b1.v1.actual.html'), show('spec/board/evidence/R1.b1.v1.actual.html'))
-  writeFileSync(join(dir, 'R1.b1.v1.layout.json'), show('spec/board/evidence/R1.b1.v1.layout.json'))
-  return root
-}
-
-test('a leftover .actual.html the OLD harness gated is refused — the retired kind, not a verdict on its bytes', () => {
-  const root = legacyActual()
-  try {
-    const row = checkReplicas(root).find(r => r.file.endsWith('.actual.html'))
-    assert.ok(row, 'the stale file is still seen')
-    assert.equal(row.side, 'actual')
-    // it is NOT refused as ungated — this one carries a valid pin over the skeleton beside it, which
-    // is exactly why the old fixture proved nothing
-    assert.doesNotMatch(row.why, /not gated/)
-    assert.equal(row.ok, false, 'a gated legacy Actual still fails: ' + JSON.stringify(row))
-    assert.match(row.why, /retired file — re-harvest the screen/)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+// THE CENSUS IS WHAT A READER SEES (the data home, 2026-09-05/06). The gate used to walk a
+// DIRECTORY, which is why it needed a rule refusing the retired `.actual.html` half of the old
+// two-file shape by name: a tree `kg-update` brought forward without re-harvesting still had those
+// files, and the gate graded them. Nothing derived is committed now and the gate walks the fold's
+// own rows — so a file left on disk is graded by nobody, because nobody shows it. What that rule was
+// really protecting is below: a row whose picture is GONE is refused, never quietly passed.
+test('a moment whose picture has no bytes behind it is refused — never a silent pass', async () => {
+  const f = repFixture()
+  f.index.todo.evidence.R1.beats[0].replicaExpectedAfter = 'blob/' + '9'.repeat(64) + '.html'
+  const rows = await gate(f)
+  assert.equal(rows.length, 1, 'the row is still counted — a missing picture is a fact, not an absence')
+  assert.equal(rows[0].ok, false)
+  assert.match(rows[0].why, /the picture is gone/)
 })
 
-test('a leftover .actual.html with no pin at all is refused too — the kind is enough', () => {
-  const root = repFixture()
-  try {
-    writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.actual.html'), '<div class="rep r0">stale</div>')
-    const row = checkReplicas(root).find(r => r.file.endsWith('.actual.html'))
-    assert.ok(row, 'the stale file is still seen')
-    assert.equal(row.ok, false)
-    assert.match(row.why, /retired file — re-harvest the screen/)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+test('a file nobody NAMES is not graded — the gate reads the fold, never a directory', async () => {
+  const f = repFixture()
+  f.read = (src => async s2 => (s2 === 'blob/' + '7'.repeat(64) + '.html' ? Buffer.from('<div class="rep r0">a leftover</div>') : src(s2)))(f.read)
+  const rows = await gate(f)
+  assert.equal(rows.length, 1, 'one row for the one moment the fold names')
+  assert.equal(rows[0].ok, true, rows[0].why)
 })
 
-test('deleting a text node from a replica fixture fails the gate — the plan\'s own acceptance', () => {
-  const root = repFixture({ actual: h => h.replace('<div class="r1">Pay the electricity bill</div>', '') })
-  try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
+test('deleting a text node from a replica fixture fails the gate — the plan\'s own acceptance', async () => {
+  const f = repFixture({ actual: h => h.replace('<div class="r1">Pay the electricity bill</div>', '') })
+  {
+    const rows = (await gate(f))
     assert.equal(rows[0].ok, false)
     assert.equal(rows[0].gaps[0].kind, 'missing-text')
     assert.match(rows[0].gaps[0].what, /electricity/)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
-test('the node text gate reads the skeleton INSIDE the region only', () => {
+test('the node text gate reads the skeleton INSIDE the region only', async () => {
   // "Outside the scene root" is measured on the live page but lies outside the replica's own region,
   // so the replica never carried it and must not be failed for it (the fixture above passes) — but a
   // word that moves INTO the region has to be there
-  const root = repFixture({ repin: true, layout: l => { l.els[3] = { ...l.els[3], x: 120, y: 260 }; return l } })
-  try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
+  const f = repFixture({ repin: true, layout: l => { l.els[3] = { ...l.els[3], x: 120, y: 260 }; return l } })
+  {
+    const rows = (await gate(f))
     assert.equal(rows[0].ok, false)
     assert.equal(rows[0].gaps[0].kind, 'missing-text')
     assert.match(rows[0].gaps[0].what, /Outside the scene root/)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
-test('the replica gate refuses one the harvest has moved past — the layout pin', () => {
-  const root = repFixture({ layout: l => { l.els[1] = { ...l.els[1], w: 140 }; return l } })
-  try {
-    const rows = checkReplicas(root)
+test('the replica gate refuses one the harvest has moved past — the layout pin', async () => {
+  const f = repFixture({ layout: l => { l.els[1] = { ...l.els[1], w: 140 }; return l } })
+  {
+    const rows = (await gate(f))
     assert.deepEqual(rows.map(r => r.ok), [false])
     assert.match(rows[0].why, /pin has moved/)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
-test('an UNGATED replica is refused — a picture nobody measured is not a proven likeness', () => {
-  const root = repFixture({ actual: h => h.replace(/ data-replica-layout="[^"]*"/, '') })
-  try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
+test('an UNGATED replica is refused — a picture nobody measured is not a proven likeness', async () => {
+  const f = repFixture({ actual: h => h.replace(/ data-replica-layout="[^"]*"/, '') })
+  {
+    const rows = (await gate(f))
     assert.equal(rows[0].ok, false)
     assert.match(rows[0].why, /not gated/)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
-test('an Expected that does not carry a failed claim\'s own value is refused', () => {
+test('an Expected that does not carry a failed claim\'s own value is refused', async () => {
   // the BODY loses the words (the claim in data-claims still asks for them — that is the point)
-  const root = repFixture({ expected: h => h.replace(CLAIMS, FAILED_CLAIMS)
+  const f = repFixture({ expected: h => h.replace(CLAIMS, FAILED_CLAIMS)
     .replace('<div class="r1">Pay the electricity bill</div>', '<div class="r1">Renew passport</div>') })
-  try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
+  {
+    const rows = (await gate(f))
     assert.equal(rows[0].ok, false)
     const claim = rows[0].gaps.find(g => g.kind === 'missing-claim')
     assert.ok(claim, 'rule 5 names it: ' + JSON.stringify(rows[0].gaps))
     assert.match(claim.what, /electricity/)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
 // WHAT A CLAIM MOVED IS NOT A MISSING WORD (2026-09-04, one html per moment). Rules 4 and 5 now run
@@ -310,7 +305,7 @@ test('an Expected that does not carry a failed claim\'s own value is refused', (
 // applying it is exactly what removes the live text rule 4 would otherwise demand. So a live element
 // standing inside a claim's own ring, or one whose text IS that claim's `got`, is exempt — and a
 // word NO claim touched is still demanded, which is what keeps rule 4 worth having on this file.
-test('a word a CLAIM moved is exempt from the word gate; a word nothing claimed is not', () => {
+test('a word a CLAIM moved is exempt from the word gate; a word nothing claimed is not', async () => {
   const ringed = '[{&quot;label&quot;:&quot;the heading&quot;,&quot;expected&quot;:&quot;Every task&quot;,' +
     '&quot;got&quot;:&quot;All tasks&quot;,&quot;ok&quot;:false,&quot;ring&quot;:{&quot;x&quot;:110,&quot;y&quot;:110,&quot;w&quot;:200,&quot;h&quot;:24}}]'
   // a PASSING match claim: the file is still this moment's tree, so rule 4 runs — and the live text
@@ -319,16 +314,16 @@ test('a word a CLAIM moved is exempt from the word gate; a word nothing claimed 
   const claimed = repFixture({
     expected: h => h.replace(CLAIMS, passing).replace('<h1 class="r1">All tasks</h1>', '<h1 class="r1" data-claim="wrong">Every task</h1>')
   })
-  try {
-    const row = checkReplicas(claimed).filter(r => r.file.endsWith('.expected.html'))[0]
+  {
+    const row = (await gate(claimed))[0]
     assert.equal(row.ok, true, 'the claim put its own value there: ' + row.why)
-  } finally { rmSync(claimed, { recursive: true, force: true }) }
+  }
   const dropped = repFixture({ expected: h => h.replace('<h1 class="r1">All tasks</h1>', '') })
-  try {
-    const row = checkReplicas(dropped).filter(r => r.file.endsWith('.expected.html'))[0]
+  {
+    const row = (await gate(dropped))[0]
     assert.equal(row.ok, false, 'a word no claim touched is still demanded')
     assert.ok(row.gaps.some(g => g.kind === 'missing-text' && /All tasks/.test(g.what)), JSON.stringify(row.gaps))
-  } finally { rmSync(dropped, { recursive: true, force: true }) }
+  }
 })
 
 // …AND THE RING BRANCH IS FILTERED THE SAME WAY THE TEXT BRANCH IS (final re-review, 2026-09-04).
@@ -340,98 +335,99 @@ test('a word a CLAIM moved is exempt from the word gate; a word nothing claimed 
 // passing claim's ring box. Dormant on both trees today (a claim carries a `ring` only where the
 // moment could not carry the ring at all — 0 of 204 committed claim lists have one), which is why
 // this is a fixture and not a repro.
-test('a PASSING claim\'s ring waives nothing — the exemption is what a claim MOVED, on both branches', () => {
+test('a PASSING claim\'s ring waives nothing — the exemption is what a claim MOVED, on both branches', async () => {
   // an EXACT pass, ringing the row: the app showed the very words the beat asked for, so nothing was
   // moved and the file must still contain them
   const exact = '[{&quot;label&quot;:&quot;the row&quot;,&quot;expected&quot;:&quot;Pay the electricity bill&quot;,' +
     '&quot;got&quot;:&quot;Pay the electricity bill&quot;,&quot;ok&quot;:true,' +
     '&quot;ring&quot;:{&quot;x&quot;:110,&quot;y&quot;:190,&quot;w&quot;:320,&quot;h&quot;:40}}]'
-  const root = repFixture({
+  const f = repFixture({
     expected: h => h.replace(CLAIMS, exact).replace('<div class="r1">Pay the electricity bill</div>', '')
   })
-  try {
-    const row = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))[0]
+  {
+    const row = (await gate(f))[0]
     assert.equal(row.ok, false, 'a word inside a passing claim\'s ring is still demanded: ' + JSON.stringify(row))
     assert.ok(row.gaps.some(g => g.kind === 'missing-text' && /electricity/.test(g.what)), JSON.stringify(row.gaps))
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
-test('…and a FAILED claim\'s ring still exempts what it moved — the seam rule 5 answers for', () => {
+test('…and a FAILED claim\'s ring still exempts what it moved — the seam rule 5 answers for', async () => {
   // the claim asked for words the app did not show, so the Expected carries the REQUIREMENT's value
   // and the live one is, correctly, gone: rule 4 must not demand it back, and rule 5 checks the file
   // really does carry the expected words
   const moved = '[{&quot;label&quot;:&quot;the row&quot;,&quot;expected&quot;:&quot;Renew passport&quot;,' +
     '&quot;got&quot;:&quot;Pay the electricity bill&quot;,&quot;ok&quot;:false,' +
     '&quot;ring&quot;:{&quot;x&quot;:110,&quot;y&quot;:190,&quot;w&quot;:320,&quot;h&quot;:40}}]'
-  const root = repFixture({
+  const f = repFixture({
     expected: h => h.replace(CLAIMS, moved)
       .replace('<div class="r1">Pay the electricity bill</div>', '<div class="r1" data-claim="row">Renew passport</div>')
   })
-  try {
-    const row = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))[0]
+  {
+    const row = (await gate(f))[0]
     assert.equal(row.ok, true, 'the claim put its own value there: ' + row.why + ' ' + JSON.stringify(row.gaps))
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
-test('a gap the IN-PAGE walk already found rides on the file and is reported here', () => {
+test('a gap the IN-PAGE walk already found rides on the file and is reported here', async () => {
   const gaps = '[{&quot;kind&quot;:&quot;missing-box&quot;,&quot;what&quot;:&quot;row&quot;,&quot;x&quot;:1,&quot;y&quot;:2,&quot;w&quot;:3,&quot;h&quot;:4}]'
-  const root = repFixture({ actual: h => h.replace('data-replica-gaps="[]"', 'data-replica-gaps="' + gaps + '"') })
-  try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
+  const f = repFixture({ actual: h => h.replace('data-replica-gaps="[]"', 'data-replica-gaps="' + gaps + '"') })
+  {
+    const rows = (await gate(f))
     assert.equal(rows[0].ok, false)
     assert.equal(rows[0].gaps[0].kind, 'missing-box')
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
-test('a TRUNCATED replica is a gap — a picture that ran out of bytes cannot be a likeness', () => {
-  const root = repFixture({ actual: h => h.replace('data-replica-kit', 'data-replica-truncated="1" data-replica-kit') })
-  try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
+test('a TRUNCATED replica is a gap — a picture that ran out of bytes cannot be a likeness', async () => {
+  const f = repFixture({ actual: h => h.replace('data-replica-kit', 'data-replica-truncated="1" data-replica-kit') })
+  {
+    const rows = (await gate(f))
     assert.equal(rows[0].ok, false)
     assert.equal(rows[0].gaps[0].kind, 'truncated')
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
-test('a replica whose skeleton is gone is refused, not quietly passed', () => {
-  const root = repFixture()
-  try {
-    rmSync(join(root, 'todo', 'evidence', 'R1.b1.after.layout.json'))
-    const rows = checkReplicas(root)
+test('a replica whose skeleton is gone is refused, not quietly passed', async () => {
+  const f = repFixture()
+  {
+    f.index.todo.evidence.R1.beats[0].layoutAfter = null   // the fold names no skeleton for this moment
+    const rows = (await gate(f))
     assert.deepEqual(rows.map(r => r.ok), [false])
     assert.match(rows[0].why, /no layout skeleton/)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
-test('a spec with no replicas yields no rows', () => {
-  const root = join(tmpdir(), 'replica-gate-empty-' + Math.random().toString(36).slice(2))
-  mkdirSync(join(root, 'todo', 'evidence'), { recursive: true })
-  try { assert.deepEqual(checkReplicas(root), []) } finally { rmSync(root, { recursive: true, force: true }) }
+test('a fold with no replicas yields no rows', async () => {
+  const f = repFixture()
+  f.index = { todo: { evidence: { R1: { beats: [{ n: 1, after: 'blob/' + '3'.repeat(64) + '.png', values: [] }] } } } }
+  assert.deepEqual(await gate(f), [])
+  assert.deepEqual(await checkReplicas({}, { read: f.read }), [])
 })
 
-test('the CLI\'s node text gate reads a word RUN too — a live "5" is not answered by "15" (fix round 1, I1)', () => {
-  const root = repFixture({
+test('the CLI\'s node text gate reads a word RUN too — a live "5" is not answered by "15" (fix round 1, I1)', async () => {
+  const f = repFixture({
     repin: true,
     layout: l => { l.els.push({ x: 120, y: 250, w: 40, h: 20, kind: 'text', text: '5' }); return l },
     actual: h => h.replace('<div class="r1">Pay the electricity bill</div>',
       '<div class="r1">Pay the electricity bill</div><div class="r1">15</div>')
   })
-  try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
+  {
+    const rows = (await gate(f))
     assert.equal(rows[0].ok, false)
     assert.equal(rows[0].gaps[0].what, '5')
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
 })
 
-test('…and a live "5" IS answered by "To do 5" — its own run inside a longer text', () => {
-  const root = repFixture({
+test('…and a live "5" IS answered by "To do 5" — its own run inside a longer text', async () => {
+  const f = repFixture({
     repin: true,
     layout: l => { l.els.push({ x: 120, y: 250, w: 40, h: 20, kind: 'text', text: '5' }); return l },
     actual: h => h.replace('<div class="r1">Pay the electricity bill</div>',
       '<div class="r1">Pay the electricity bill</div><div class="r1">To do 5</div>')
   })
-  try {
-    assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))[0].ok, true)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  {
+    assert.equal((await gate(f))[0].ok, true)
+  }
 })
 
 // ── FIX ROUND 2, item 1: the CLI's node-text gate shares containsRun's 48-char-cap relaxation too ──
@@ -439,29 +435,29 @@ test('…and a live "5" IS answered by "To do 5" — its own run inside a longer
 // that comes back at exactly that length may have been cut mid-word.) The brief's own example: init
 // R2's nine gaps were all real PRD sentences the walk had cut at 48, rejected here because the CLI's
 // haystack is the whole file's text with no box to pin it — the same rule must hold there too.
-test('the CLI\'s node text gate also lets a live text AT the 48-char cap end mid-word', () => {
+test('the CLI\'s node text gate also lets a live text AT the 48-char cap end mid-word', async () => {
   const cut = 'Search across requirement text, grouped into are'
-  const root = repFixture({
+  const f = repFixture({
     repin: true,
     layout: l => { l.els.push({ x: 120, y: 250, w: 300, h: 20, kind: 'text', text: cut }); return l },
     actual: h => h.replace('<div class="r1">Pay the electricity bill</div>',
       '<div class="r1">Pay the electricity bill</div><div class="r1">Search across requirement text, grouped into areas</div>')
   })
-  try {
+  {
     assert.equal(cut.length, 48)
-    assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))[0].ok, true)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+    assert.equal((await gate(f))[0].ok, true)
+  }
 })
 
-test('the CLI\'s node text gate never demands text back from a style/script/etc-tagged element', () => {
-  const root = repFixture({
+test('the CLI\'s node text gate never demands text back from a style/script/etc-tagged element', async () => {
+  const f = repFixture({
     repin: true,
     layout: l => { l.els.push({ x: 120, y: 250, w: 300, h: 20, kind: 'image', tag: 'style', text: '.wf0{animation:x 1s}' }); return l }
     // the actual body carries NOTHING matching that text — if the gate demanded it back, this would fail
   })
-  try {
-    assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))[0].ok, true)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  {
+    assert.equal((await gate(f))[0].ok, true)
+  }
 })
 
 // ── THE AUTHORED-INTENT LINT (phase 6, 2026-09-04) ───────────────────────────────────────────────
@@ -520,7 +516,7 @@ ${body}
 })
 `
 
-test('lintIntent flags a two-fact Then whose beat makes one hard claim', () => {
+test('lintIntent flags a two-fact Then whose beat makes one hard claim', async () => {
   const rows = lintIntent(PRD_TWO, specWith("    await proveVisible(page.locator('.n'), '4', 'To do')"))
   const r1 = rows.find(r => r.id === 'R1')
   assert.equal(r1.facts, 2)
@@ -531,7 +527,7 @@ test('lintIntent flags a two-fact Then whose beat makes one hard claim', () => {
   assert.match(r1.why, /soft/)             // …(b) and the one it makes is not soft
 })
 
-test('…and passes the same beat once every fact is a soft claim', () => {
+test('…and passes the same beat once every fact is a soft claim', async () => {
   const rows = lintIntent(PRD_TWO, specWith(
     "    await proveVisible(page.locator('.row'), 'Water the plants', 'The row, still listed', { soft: true })\n" +
     "    await proveVisible(page.locator('.n'), '4', 'To do', { soft: true })"))
@@ -543,7 +539,7 @@ test('…and passes the same beat once every fact is a soft claim', () => {
   assert.equal(r1.state, 'ok')
 })
 
-test('a one-fact Then is proven by one claim — hard or soft — but never by none', () => {
+test('a one-fact Then is proven by one claim — hard or soft — but never by none', async () => {
   const ok = lintIntent(PRD_TWO, specWith("    await proveVisible(page.locator('.n'), '4', 'To do')"))
   assert.equal(ok.find(r => r.id === 'R2').ok, true)      // R2's beat has a proveVisible
   const bad = lintIntent(PRD_TWO, `
@@ -559,14 +555,14 @@ test('todo', async ({ page }) => {
   assert.match(r2.why, /no claim/)
 })
 
-test('a beat no checkReq maps to is no-beat, not a gap — coverage already calls it unproven', () => {
+test('a beat no checkReq maps to is no-beat, not a gap — coverage already calls it unproven', async () => {
   const rows = lintIntent(PRD_TWO, "test('todo', async ({ page }) => {\n  await checkReq('R1', async () => { await proveVisible(a, 'b', 'c', { soft: true }) })\n})")
   const r2 = rows.find(r => r.id === 'R2')
   assert.equal(r2.state, 'no-beat')
   assert.equal(r2.ok, true, 'the intent lint does not fail a requirement no test reaches')
 })
 
-test('the claims a beat FUNCTION makes count — the beat-function convention', () => {
+test('the claims a beat FUNCTION makes count — the beat-function convention', async () => {
   // the flow keeps its checkReq AROUND the call (kg-e2e); the claims live in the step's body
   const spec = "test('todo', async ({ page }) => {\n  await checkReq('R1', async () => { await tickOneSubTask(page, state) })\n})"
   const steps = `
@@ -582,7 +578,7 @@ export async function tickOneSubTask (page, state) {
   assert.equal(r1.ok, true)
 })
 
-test('beats map to checkReq blocks per TEST, with the last beat taking the rest (BEAT_CURSOR)', () => {
+test('beats map to checkReq blocks per TEST, with the last beat taking the rest (BEAT_CURSOR)', async () => {
   const prd = `---
 screen: todo
 ---
@@ -627,14 +623,14 @@ test('two', async ({ page }) => {
 // (the beat-function convention the kg-e2e skill teaches) read as EXISTENCE-ONLY, because the lint
 // looked only at the block's own bytes. A proof does not stop being a proof because it was lifted
 // into spec/<screen>/steps.ts. Same expansion the intent lint uses, same helper sources.
-test('lintSource follows a checkReq into the beat function it calls', () => {
+test('lintSource follows a checkReq into the beat function it calls', async () => {
   const spec = "test('todo', async ({ page }) => {\n  await checkReq('R1', async () => { await tickOneSubTask(page, state) })\n})"
   const steps = "export async function tickOneSubTask (page, state) {\n  await expect(page.locator('.n')).toHaveText('4')\n}"
   assert.equal(lintSource(spec)[0].ok, false, 'the block alone asserts nothing')
   assert.equal(lintSource(spec, { helpers: [steps] })[0].ok, true, 'the beat it calls asserts the value')
 })
 
-test('…and proveVisible IS a value assertion — it reads the value off the screen and asserts it', () => {
+test('…and proveVisible IS a value assertion — it reads the value off the screen and asserts it', async () => {
   assert.equal(hasValueAssertion("await proveVisible(page.locator('.n'), '4', 'To do', { soft: true })"), true)
   assert.equal(hasValueAssertion("await expect(page.locator('.n')).toBeVisible()"), false)
   // …and so are these two, missing from the list until phase 6 read the rows: a plain `toContain`
@@ -644,7 +640,7 @@ test('…and proveVisible IS a value assertion — it reads the value off the sc
   assert.equal(hasValueAssertion("await expect(page).toHaveURL(new RegExp('#/' + name))"), true)
 })
 
-test('a claim named in a COMMENT is not a claim', () => {
+test('a claim named in a COMMENT is not a claim', async () => {
   // found on board R19: a comment explaining why the board's own harvest records no ring
   // ("its specs read the page with reveal(), not proveVisible()") counted as that beat's one claim,
   // and the beat read one claim short of a gap. A lint that can be satisfied by prose is not a lint.
@@ -689,7 +685,7 @@ screen: dispatch
 - **Then** the running job is cancelled and the new one takes the slot
 `
 
-test('a beat that DECLARES its gap is reported, and does not fail the lint', () => {
+test('a beat that DECLARES its gap is reported, and does not fail the lint', async () => {
   const spec = `
 test('dispatch', async ({ request }) => {
   await checkReq('R4', async () => {
@@ -704,7 +700,7 @@ test('dispatch', async ({ request }) => {
   assert.match(row.why, /no page open/, 'the reason is carried into the row')
 })
 
-test('…and a beat that declares NOTHING still fails', () => {
+test('…and a beat that declares NOTHING still fails', async () => {
   const spec = "test('dispatch', async ({ request }) => {\n  await checkReq('R4', async () => { expect(1).toBe(1) })\n})"
   const row = lintIntent(PRD_ONE, spec)[0]
   assert.equal(row.state, 'gap')
@@ -717,7 +713,7 @@ test('…and a beat that declares NOTHING still fails', () => {
 // Live at HEAD: board R11 beat 1 opened /#howitworks/kg-deep, asserted three visible/hidden things,
 // made zero claims, wrote one intentGap, and the lint printed DECLARED for all three facts. What
 // decides is whether the block OPENS A PAGE, which its own source says.
-test('a zero-claim declaration cannot waive a beat that opens a page', () => {
+test('a zero-claim declaration cannot waive a beat that opens a page', async () => {
   const prd = `---
 screen: board
 ---
@@ -743,7 +739,7 @@ test('board', async ({ page }) => {
   assert.match(row.why, /declared-on-an-open-page/)
 })
 
-test('…and it still waives a beat that opens none — the API-only shape it was written for', () => {
+test('…and it still waives a beat that opens none — the API-only shape it was written for', async () => {
   const prd = `---
 screen: dispatch
 ---
@@ -779,7 +775,7 @@ const STEPS = 'export async function draftedRowBecomesCard (page, state) {\n' +
   '  await page.locator(".dr").click()\n}\n' +
   'export async function countRows (state) { return state.rows.length }\n'
 
-test('a block whose page work lives in a step function opens a page — helpers included', () => {
+test('a block whose page work lives in a step function opens a page — helpers included', async () => {
   const bodies = functionBodies(STEPS)
   const body = 'await draftedRowBecomesCard(page, state)'
   assert.equal(opensPage(body), false, 'its own bytes say nothing — `page` as an argument is not `page.`')
@@ -790,7 +786,7 @@ test('a block whose page work lives in a step function opens a page — helpers 
   assert.equal(claimsIn('const n = await countRows(state)', bodies).open, false)
 })
 
-test('a zero-claim declaration cannot waive a beat whose page work is one call away', () => {
+test('a zero-claim declaration cannot waive a beat whose page work is one call away', async () => {
   const prd = `---
 screen: init
 ---
@@ -815,7 +811,7 @@ test('init', async ({ page }) => {
   assert.match(row.why, /declared-on-an-open-page/)
 })
 
-test('a declaration is REFUSED on a fact that names an absence — that one is claimable', () => {
+test('a declaration is REFUSED on a fact that names an absence — that one is claimable', async () => {
   // `proveVisible(locator, MISSING, …)` passes exactly when the thing is gone and fails, with the
   // app's own text as `got`, the moment it is back. A Then that says so must claim it.
   const prd = `---
@@ -858,7 +854,7 @@ test('board', async ({ page }) => {
 // board R11's beat 2 read "2 claims" for a block that contains no proveVisible at all: the one false
 // green the phase exists to make impossible. A body is the expression after `=>` up to the end of the
 // statement, or the brace block when the brace is the very next thing.
-test('functionBodies reads a CONCISE arrow as its expression, never the next brace in the file (C1)', () => {
+test('functionBodies reads a CONCISE arrow as its expression, never the next brace in the file (C1)', async () => {
   const src = [
     "const op = (l) => l.evaluate(n => n.getBoundingClientRect().width)",
     "const plain = s => s.trim()",
@@ -873,7 +869,7 @@ test('functionBodies reads a CONCISE arrow as its expression, never the next bra
   assert.match(bodies.get('later'), /proveVisible/)
 })
 
-test('…so a block whose helpers make no claim reads honestly — the R11 b2 repro (C1)', () => {
+test('…so a block whose helpers make no claim reads honestly — the R11 b2 repro (C1)', async () => {
   // the exact shape measured on spec/board/test.spec.ts at fix round 1's HEAD: a beat that calls a
   // concise-arrow helper and claims nothing, credited with the claims of an unrelated block below it.
   const spec = [
@@ -920,7 +916,7 @@ screen: todo
 // not walk its beats is a beat-mismatch: the harness files every block's harvest under the beat its
 // POSITION names, so an extra block hands its pictures to a sentence it is not about (board R20 had
 // seven blocks for six beats, and the beat-1 row showed another test's pictures).
-test('a requirement with more blocks than beats is a beat-mismatch that fails the gate (I1)', () => {
+test('a requirement with more blocks than beats is a beat-mismatch that fails the gate (I1)', async () => {
   const spec = [
     "test('one', async ({ page }) => {",
     "  await checkReq('R1', async () => { await proveVisible(a, '4', 'To do', { soft: true }) })",
@@ -935,7 +931,7 @@ test('a requirement with more blocks than beats is a beat-mismatch that fails th
   assert.match(mism.why, /3 blocks, 2 beats/)
 })
 
-test('…while a second test proving FEWER of its beats is NOT a mismatch (I1)', () => {
+test('…while a second test proving FEWER of its beats is NOT a mismatch (I1)', async () => {
   // board R10 is proven by five tests, dispatch R5 by a unit and a flow: a test that walks beat 1
   // and stops is the many-to-many coverage the board is built on, not a defect. What catches the
   // real version — a block that harvests a beat without covering it (board R20's seventh) — is the
@@ -954,7 +950,7 @@ test('…while a second test proving FEWER of its beats is NOT a mismatch (I1)',
   assert.equal(rows.every(r => r.ok), true, 'and both blocks cover the beat they harvest')
 })
 
-test('…while two tests that each walk the SAME beats are not a mismatch (I1)', () => {
+test('…while two tests that each walk the SAME beats are not a mismatch (I1)', async () => {
   const spec = [
     "test('unit', async ({ page }) => {",
     "  await checkReq('R1', async () => { await proveVisible(a, '4', 'To do', { soft: true }) })",
@@ -971,7 +967,7 @@ test('…while two tests that each walk the SAME beats are not a mismatch (I1)',
 // I2 · THE row is scored on THE block of beat k — the last one to harvest it, whose pictures are
 // the ones the board shows (workers:1, declaration order) — never the best of several. A beat that
 // reads ok from one block while the picture comes from another is the false green in another dress.
-test('a beat is scored on the block whose harvest the board shows, never the best (I2)', () => {
+test('a beat is scored on the block whose harvest the board shows, never the best (I2)', async () => {
   const spec = [
     "test('unit', async ({ page }) => {",
     "  await checkReq('R1', async () => { await proveVisible(a, '4', 'To do', { soft: true }) })",
@@ -1028,7 +1024,7 @@ test('the absence vocabulary reads the tree\'s own facts (I4)', () => {
 // that claims nothing at all has no page open (dispatch's specs drive /api/run with no browser), and
 // an absence there has no more surface to ring than a presence does — refusing its declaration would
 // demand a claim nobody can write.
-test('an absence on a beat that photographs NOTHING may still be declared (I4)', () => {
+test('an absence on a beat that photographs NOTHING may still be declared (I4)', async () => {
   const prd = `---
 screen: dispatch
 ---
@@ -1055,7 +1051,7 @@ screen: dispatch
 // …and a DECLARATION COVERS ONE FACT, like a claim does. A Then that names five facts, four of them
 // on screen and one only in a file, is four claims and one declaration — not one declaration that
 // waves the whole beat through.
-test('a declaration covers one fact; the rest of the beat still needs its claims (I3)', () => {
+test('a declaration covers one fact; the rest of the beat still needs its claims (I3)', async () => {
   const prd = `---
 screen: todo
 ---
@@ -1102,7 +1098,7 @@ test('a declaration is refused only for an absence with a NAMED subject (I4)', (
   assert.equal(absenceTarget('the count reads 4'), false)
 })
 
-test('a BACKTICK inside a regex character class is not a template literal (C1, second face)', () => {
+test('a BACKTICK inside a regex character class is not a template literal (C1, second face)', async () => {
   // spec/board/test.spec.ts:1246 — `const plain = (s) => String(s).replace(/[`*]/g, '')`. Read as a
   // template opener it swallowed 200 KB of the file, and every block calling `plain` was credited
   // with the 61 claims in that span: board R18 b1, R20 b2 and R23 b1 all read "33 claims" from a
@@ -1118,7 +1114,7 @@ test('a BACKTICK inside a regex character class is not a template literal (C1, s
   assert.equal(/proveVisible/.test(bodies.get('plain')), false)
 })
 
-test('a checkReq named in a COMMENT is not a block (fix round 2)', () => {
+test('a checkReq named in a COMMENT is not a block (fix round 2)', async () => {
   // spec/board/test.spec.ts:1884 — "// this is the SECOND checkReq('R19') of the test" — read as a
   // real call it invented a fourth block for a two-beat requirement, which BEAT_CURSOR then clamped
   // onto the last beat: a phantom block, and a beat-mismatch row nobody could fix by editing code.
@@ -1141,8 +1137,8 @@ test('a checkReq named in a COMMENT is not a block (fix round 2)', () => {
 // here, so a toast, a dismiss control or any body-level overlay whose box happens to fall inside
 // the region was still demanded back out of a file that can never contain it — board R16's ✕,
 // measured at 1359,146 with `inRoot: 0`, reported as a missing word on a replica that was right).
-test('the CLI word gate skips an element the skeleton marks OUTSIDE the scene root (I6)', () => {
-  const root = repFixture({
+test('the CLI word gate skips an element the skeleton marks OUTSIDE the scene root (I6)', async () => {
+  const f = repFixture({
     repin: true,
     layout: l => {
       l.rootMarked = 1
@@ -1151,9 +1147,24 @@ test('the CLI word gate skips an element the skeleton marks OUTSIDE the scene ro
       return l
     }
   })
-  try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
+  {
+    const rows = (await gate(f))
     assert.deepEqual(rows[0].gaps, [], 'an element outside the picture is not the picture\'s to show')
     assert.equal(rows[0].ok, true)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+  }
+})
+
+// ── B2 (final review I3's residual): THE ZERO-CLAIM WAIVER IS HEADLESS-ONLY ──────────────────────
+// A beat that opens no page has no surface for any fact, and `intentGap` may waive it whole. This
+// project's own beat-function convention keeps every `page.` one call away in an exported step, so
+// the question has to be asked of what the block CALLS — and of a `bodies` map in whichever shape
+// the caller holds it (a Map from functionBodies, or a plain object), because an object used to
+// throw here and a caught throw reads as "headless", which is the waiver granting itself.
+test('I3: a block that calls a steps function opens a page, so a zero-claim intentGap cannot waive it', async () => {
+  const bodies = { draftedRowBecomesCard: 'await page.click("x")' }
+  assert.equal(opensPage('await draftedRowBecomesCard(page, state); intentGap("api only")', bodies), true)
+  assert.equal(opensPage('await beats.typeTitle(state)', { typeTitle: 'await page.fill("#t", "x")' }), true)
+  assert.equal(opensPage('await beats.typeTitle(state)', new Map([['typeTitle', 'await page.fill("#t", "x")']])), true)
+  assert.equal(opensPage("await request.post('/api/run')", {}), false)
+  assert.equal(opensPage("await request.post('/api/run')"), false)
 })

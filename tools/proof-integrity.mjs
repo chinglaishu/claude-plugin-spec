@@ -26,7 +26,9 @@ import { replicaAttrs, claimGaps, textOf, containsRun, containsRunLoose, GATE_TO
 // …and the PRD's own authorities on what a requirement SAYS: parsePrd for its blocks, parseBehavior
 // for its beats. The intent lint below weighs a beat's claims against the Then a HUMAN wrote, so it
 // has to read that Then through the very parsers the board renders it with — never its own reading.
-import { parsePrd } from './spec-store.mjs'
+// the fold and the ONE door for a picture's bytes (the data home, 2026-09-05/06): a src is a blob
+// in this project's data home or the same object's url in a bucket, and readSrc answers both
+import { parsePrd, readResults, readSrc, momentsOf } from './spec-store.mjs'
 import { parseBehavior } from './behavior.mjs'
 import { execFileSync } from 'node:child_process'
 import { join, resolve, dirname } from 'node:path'
@@ -277,39 +279,42 @@ export function checkMirrors (spec = 'spec') {
 // the screens it touches (tools/evidence.mjs legacyActualReplicas) — and serve-board still serves
 // them.) There is no verdict this release can honestly give such a file's bytes: it is the retired
 // half of a shape that no longer exists, and the only answer is to harvest the screen again.
-const REPLICA_FILE = /^(.+)\.b(\d+)\.(before|after|v\d+)\.(actual|expected)\.html$/
-export function checkReplicas (spec = 'spec') {
+// THE GATE WALKS THE INDEX, NEVER A DIRECTORY (the data home, 2026-09-05/06). Nothing derived is
+// committed any more: a moment's picture is a src in the fold — `blob/<sha>.html` in the project's
+// data home, or the same object's url in a bucket — and the fold is the ONLY list of what a row
+// actually shows. So the census is exactly what the board renders: a file left behind on disk is
+// graded by nobody, because nobody shows it. (What replaced the old `.actual.html` refusal: that
+// half of the two-file shape can no longer be NAMED by a row, so it cannot be shown either.)
+//
+// `read` is the one door for the bytes — spec-store's readSrc, which answers a blob from this home's
+// blobs/ and a cloud src through the store's own driver. It is injectable so the rules below can be
+// unit-tested on a fixture with no store at all.
+export async function checkReplicas (index = readResults(), { read = readSrc } = {}) {
   const rows = []
-  if (!existsSync(spec)) return rows
-  const screens = readdirSync(spec, { withFileTypes: true })
-    .filter(d => d.isDirectory() && !d.name.startsWith('_')).map(d => d.name).sort()
-  for (const screen of screens) {
-    const dir = join(spec, screen, 'evidence')
-    if (!existsSync(dir)) continue
-    for (const f of readdirSync(dir).filter(n => REPLICA_FILE.test(n)).sort()) {
-      const m = REPLICA_FILE.exec(f)
-      const file = join(dir, f)
-      const row = { screen, id: m[1], file, side: m[4], ok: true, why: '', gaps: [] }
-      rows.push(row)
-      // the RETIRED KIND, refused on its name alone (see the header) — never graded, because a
-      // verdict on it would be a verdict about a shape this release does not produce
-      if (row.side === 'actual') {
-        row.ok = false
-        row.why = 'retired file — re-harvest the screen: there is no .actual.html in this release ' +
-          '(a moment’s Actual half is the photograph beside it)'
-        continue
-      }
-      let html = ''
-      try { html = readFileSync(file, 'utf8') } catch { html = '' }
+  for (const screen of Object.keys(index || {}).filter(s => !s.startsWith('_')).sort()) {
+    for (const [id, entry] of Object.entries((index[screen] && index[screen].evidence) || {})) {
+      for (const m of momentsOf(entry)) {
+        if (!m.replica) continue
+        const row = { screen, id, file: m.replica, side: 'expected', kind: m.kind, ok: true, why: '', gaps: [] }
+        rows.push(row)
+        let html = ''
+        try { const b = await read(m.replica); html = b ? String(b) : '' } catch { html = '' }
+        if (!html) {
+          row.ok = false
+          row.why = 'the picture is gone — nothing answers ' + m.replica
+          continue
+        }
       const a = replicaAttrs(html)
       const why = []
       if (a.truncated) row.gaps.push({ kind: 'truncated', what: 'the capture ran out of bytes', x: 0, y: 0, w: 0, h: 0 })
       if (!a.layout) why.push('not gated: no data-replica-layout — nothing walked this replica back')
       for (const g of a.gaps) row.gaps.push(g)
-      // the skeleton this moment was measured with, one name away (tools/evidence.mjs's own rule)
-      const layPath = file.replace(/\.(actual|expected)\.html$/, '.layout.json')
+      // the skeleton this moment was measured with — named by the row beside the picture (the fold
+      // pairs them; before the data home they were paired by a filename rule)
       let lay = null
-      if (existsSync(layPath)) { try { lay = JSON.parse(readFileSync(layPath, 'utf8')) } catch { lay = null } }
+      if (m.layout) {
+        try { const b = await read(m.layout); lay = b ? JSON.parse(String(b)) : null } catch { lay = null }
+      }
       if (!lay) {
         why.push('no layout skeleton beside it — the replica claims a harvest that is gone')
       } else {
@@ -388,11 +393,12 @@ export function checkReplicas (spec = 'spec') {
           }
         }
       }
-      // rule 5 — the Expected's own gate: what the requirement asked for must be in it
-      for (const g of claimGaps(textOf(html), a.claims)) row.gaps.push(g)
-      if (row.gaps.length) why.unshift(`the replica is missing what the harvest measured — ${gapSummary(row.gaps)}`)
-      row.ok = !row.gaps.length && !why.length
-      row.why = why.join('; ')
+        // rule 5 — the Expected's own gate: what the requirement asked for must be in it
+        for (const g of claimGaps(textOf(html), a.claims)) row.gaps.push(g)
+        if (row.gaps.length) why.unshift(`the replica is missing what the harvest measured — ${gapSummary(row.gaps)}`)
+        row.ok = !row.gaps.length && !why.length
+        row.why = why.join('; ')
+      }
     }
   }
   return rows
@@ -623,17 +629,24 @@ export function functionBodies (src) {
   return out
 }
 const CALLED = /\b([A-Za-z_$][\w$]*)\s*\(/g
+// `bodies` may be the Map `functionBodies` returns OR a plain object — both are handed to these
+// exported predicates from tests and from callers, and an object used to throw here (`bodies.has is
+// not a function`), which read as "this block opens no page" to anyone who caught it. One shape in,
+// one answer out (final review I3's residual, 2026-09-06).
+const asBodies = b => (b instanceof Map ? b : new Map(Object.entries(b || {})))
+
 export function expandBody (body, bodies, depth = 2, seen = new Set()) {
   let text = String(body || '')
   if (depth <= 0) return text
+  const map = asBodies(bodies)
   const names = new Set()
   CALLED.lastIndex = 0
   let m
   while ((m = CALLED.exec(text))) names.add(m[1])
   for (const name of names) {
-    if (seen.has(name) || !bodies.has(name)) continue
+    if (seen.has(name) || !map.has(name)) continue
     seen.add(name)
-    text += '\n' + expandBody(bodies.get(name), bodies, depth - 1, seen)
+    text += '\n' + expandBody(map.get(name), map, depth - 1, seen)
   }
   return text
 }
@@ -967,7 +980,7 @@ function walkSteps (steps, out) {
 }
 
 // The mirror gate's shell (thin, like runLint above — checkMirrors is what the unit tests exercise).
-function runMirror () {
+async function runMirror () {
   const rows = checkMirrors('spec')
   let bad = false
   for (const r of rows) {
@@ -992,7 +1005,7 @@ function runMirror () {
   }
   // …and the REPLICAS, in the same format after the drawings (phase 3, 2026-09-03): the row's other
   // picture is gated the same way, and for the same reason.
-  const reps = checkReplicas('spec')
+  const reps = await checkReplicas()
   let repBad = false
   for (const r of reps) {
     if (!r.ok) repBad = true
@@ -1089,7 +1102,7 @@ function runPerturb (screen) {
 if (resolve(process.argv[1] || '') === fileURLToPath(import.meta.url)) {
   const [, , cmd, arg] = process.argv
   if (cmd === 'lint') runLint()
-  else if (cmd === 'mirror') runMirror()
+  else if (cmd === 'mirror') await runMirror()
   else if (cmd === 'perturb') runPerturb(arg)
   else {
     console.error('usage:')

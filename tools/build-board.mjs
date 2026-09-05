@@ -19,15 +19,13 @@ import { deriveLibrary } from './compose.mjs'
 import { deriveKind } from './flow.mjs'
 // pure: one layout skeleton's ringed box — the AIM a scene's camera takes (the human, 2026-08-31)
 import { focusFromLayout, focusFromLayouts, absoluteFacesCss } from './evidence.mjs'
-// the geometry pin a mirror is drawn with, and the ONE reader of the harvest a drawing is made of
-// (tools/proof-integrity.mjs harvestOf — the same reading its mirror gate makes, so the board's
-// banner and the gate can never disagree about whether a drawing is behind its harvest)
+// the geometry pin a picture is measured against — the same hash the replica gate compares, so the
+// board's stale banner and the gate can never disagree about whether the app has moved past a picture
 import { layoutHash } from './viz.mjs'
 // the overlay's own ring + callout numbers (phase 4a): the Expected cell paints the ring inside the
 // iframe's own document, so the numbers travel to the client on the JSON island — ONE source with
 // spec/_base.ts renderOverlay, which is what the photograph beside it actually shows
 import { RING, CARD, WASH } from './overlay-geometry.mjs'
-import { harvestOf } from './proof-integrity.mjs'
 
 // Task 14 release pass — the two-column breakpoints ride the design system's --scale. A @media
 // query cannot read a CSS var, so build() parses the knob out of _design.css and computes each
