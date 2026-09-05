@@ -337,6 +337,9 @@ export function replicaAttrs (html) {
     // phase 8 A1: the class namespace of this file, so a reader that puts two replicas in one
     // document asks the ROOT which prefix is whose, never a regex over the class names
     ns: attrOf(tag, 'data-replica-ns'),
+    // phase 8 A2: the element-child path from body to this file's scene root — where the graft
+    // stands the patch inside the base. `''` is the whole page.
+    path: attrOf(tag, 'data-replica-path'),
     region: reg.length === 4 && reg.every(n => Number.isFinite(n)) ? { x: reg[0], y: reg[1], w: reg[2], h: reg[3] } : null,
     layout: attrOf(tag, 'data-replica-layout'),
     gaps: jsonOf(attrOf(tag, 'data-replica-gaps')),

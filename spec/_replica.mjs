@@ -334,6 +334,22 @@ export function captureReplica (arg) {
   }
   if (!root) root = doc.body || null
   if (!root) return null
+  // WHERE THE PATCH GOES BACK (phase 8 A2, 2026-09-05): the element-child path from body down to this
+  // scene root, so the reader can graft this moment onto the same element of the screen's BASE
+  // replica. Element children only — text nodes and the base's own <style> never count, and a
+  // placeholder keeps its slot, so the base and the patch agree about what index means. A
+  // body-rooted capture (every beat's before moment) carries the empty path: it IS the whole page.
+  const rootPath = (() => {
+    const parts = []
+    for (let n = root; n && n !== doc.body; n = n.parentElement) {
+      const p = n.parentElement
+      if (!p) break
+      let i = 0
+      for (const k of (p.children || [])) { if (k === n) break; i++ }
+      parts.unshift(i)
+    }
+    return parts.join('/')
+  })()
   // …and the root travels back to the caller as an ELEMENT (fix round 2, I6). The picture is this
   // subtree; the region is only its rectangle. Inside the one-pass moment the skeleton is marked
   // against this very node, so the gate asks "is it in the picture" instead of "is it in the box".
@@ -1387,6 +1403,7 @@ export function captureReplica (arg) {
   const rootAttrs = [['class', ('rep' + (built.cls ? ' ' + built.cls : ''))],
     ['data-replica-kit', 'replica-1'],
     ['data-replica-ns', NS],
+    ['data-replica-path', rootPath],
     ['data-replica-region', reg.x + ' ' + reg.y + ' ' + reg.w + ' ' + reg.h]]
   if (rb) rootAttrs.push(['data-ring-box', Math.round(rb.x) + ' ' + Math.round(rb.y) + ' ' + Math.round(rb.w) + ' ' + Math.round(rb.h)])
   if (truncated) rootAttrs.push(['data-replica-truncated', '1'])

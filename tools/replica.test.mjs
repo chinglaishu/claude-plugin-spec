@@ -2085,3 +2085,16 @@ test('the namespace is a pure function of the key — a re-harvest of the same m
   const b = cap(body(), { target: null, ring: { x: 10, y: 10, width: 40, height: 20 }, key: 'k' })
   assert.equal(a.html, b.html)
 })
+
+// ── WHERE THE PATCH GOES BACK (phase 8 A2, 2026-09-05) ──────────────────────────────────────────
+test('the root carries the element-child path from body to the scene root, and a body-rooted capture carries the empty path', () => {
+  const leaf = el('span', [300, 200, 40, 20], { text: 'Draft', cs: { color: 'rgb(1, 2, 3)' } })
+  const row = el('div', [280, 190, 738, 70], { children: [leaf], cs: { display: 'flex' } })
+  const list = el('div', [270, 180, 760, 300], { children: [el('div', [270, 180, 760, 10], {}), row], cs: { display: 'block' } })
+  const main = el('main', [230, 0, 1210, 900], { children: [el('h1', [240, 20, 200, 30], { text: 'All tasks' }), list] })
+  const body = el('body', [0, 0, 1440, 900], { children: [el('aside', [0, 0, 230, 900], {}), main] })
+  const r = cap(body, { target: leaf, ring: { x: 300, y: 200, width: 40, height: 20 }, key: 'k' })
+  assert.match(r.html, /data-replica-path="1\/1\/1"/, 'main is body[1], list is main[1], row is list[1]: ' + r.html.slice(0, 300))
+  const whole = cap(body, { target: null, ring: null, key: 'k0' })
+  assert.match(whole.html, /data-replica-path=""/)
+})

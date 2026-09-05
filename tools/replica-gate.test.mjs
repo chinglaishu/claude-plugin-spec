@@ -515,3 +515,9 @@ test('replicaAttrs reads the namespace off the root', () => {
   const html = '<style>.rep .rab12cd0{color:red}</style><div class="rep rab12cd0" data-replica-kit="replica-1" data-replica-ns="rab12cd" data-replica-region="0 0 10 10"></div>'
   assert.equal(replicaAttrs(html).ns, 'rab12cd')
 })
+
+// phase 8 A2: where in the base this patch belongs
+test('replicaAttrs reads the path off the root, empty when absent', () => {
+  assert.equal(replicaAttrs('<div class="rep" data-replica-path="1/0/3"></div>').path, '1/0/3')
+  assert.equal(replicaAttrs('<div class="rep"></div>').path, '')
+})
