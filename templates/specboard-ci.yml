@@ -40,11 +40,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `cache: npm` here, and `npm install` rather than `npm ci` below: a scaffolded board
+      # IGNORES its own package-lock.json (specboard's ignore list — the board's package.json is
+      # machine-written by the scaffold and its lock churns on every update), so a checkout has no
+      # lock for either to read. If you would rather have a pinned, cached install, un-ignore
+      # `package-lock.json` in `specboard/.gitignore`, commit it, and then switch these two steps to
+      # `cache: npm` + `cache-dependency-path: specboard/package-lock.json` + `npm ci`.
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: specboard/package-lock.json
 
       # THE RUNNER'S OWN DATA HOME. Everything a run derives — the fold (board.db), every blob, every
       # run record — lives in ~/.specboard/<projectId>/, outside every git by construction.
@@ -56,7 +60,7 @@ jobs:
           echo "SPECBOARD_HOME=$RUNNER_TEMP/specboard" >> "$GITHUB_ENV"
           mkdir -p "$RUNNER_TEMP/specboard"
 
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
         working-directory: specboard
 
       - run: npx playwright install --with-deps chromium
