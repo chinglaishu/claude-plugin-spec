@@ -91,7 +91,13 @@ export function updateProject ({ dest, src, base, files = FILES, dryRun = false 
   // touched by an update (removing a `/specboard/` line there is the owner's decision, not ours).
   // A project with no .gitignore of its own is the flat layout — its ignores live in the app repo,
   // so one is never created here.
-  for (const [rel, lines] of [['.gitignore', boardIgnoreLines()], ['spec/.gitignore', SPEC_IGNORE]]) {
+  // …with ONE exception per file the PROJECT has made its own. The list is per-file, so `/spec/_seed.ts`
+  // hides the very stub the skeleton ships for a project to fill in (dojostack's golden-data seed) and
+  // every other local edit that survived a conflict. Those are authored work living in a vendored slot,
+  // and the decision table above already knows which they are — so they are un-ignored by name, after
+  // the ignore line, which is how git spells "except this one" (last match wins).
+  const mine = [...report.skipped, ...report.conflicts.map(c => c.file)].map(f => '!/' + f)
+  for (const [rel, lines] of [['.gitignore', [...boardIgnoreLines(), ...mine]], ['spec/.gitignore', SPEC_IGNORE]]) {
     const p = join(dest, rel)
     if (!existsSync(p)) continue
     const cur = readFileSync(p, 'utf8')

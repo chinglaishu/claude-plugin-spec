@@ -338,3 +338,24 @@ test('the ignore refresh is idempotent, writes nothing on a dry run, and creates
   updateProject({ dest: b.dest, src: b.src, base, files: ['a.mjs'], dryRun: true })
   assert.equal(read(b.dest, '.gitignore'), 'node_modules/\n', 'a dry run writes nothing')
 })
+
+// A PROJECT'S OWN EDIT TO A VENDORED FILE IS NOT VENDORED CODE (rule 7, found on dojostack, 2026-09-06).
+// The folder's ignore list is per-file, so `/spec/_seed.ts` hides the very file the skeleton ships as an
+// empty stub for the project to fill in — dojostack's golden-data seed, real authored work, would have
+// lived on one disk while the folder was "committed". The update knows exactly which vendored files the
+// project has edited (that is the decision table's `skipped` and `conflicts`), so it un-ignores those by
+// name — a negation line after the ignore, which is how git spells "except this one".
+test('a vendored file the project has edited is un-ignored by name, so its edit is committed', () => {
+  const { src, dest } = scratch()
+  w(src, 'spec/_seed.ts', 'BASE'); w(dest, 'spec/_seed.ts', 'THE PROJECT\'S OWN SEED')   // edited, unchanged upstream → skipped
+  w(src, 'spec/_base.ts', 'NEW'); w(dest, 'spec/_base.ts', 'EDITED')                     // edited AND changed upstream → conflict
+  w(src, 'spec/_design.css', 'NEW'); w(dest, 'spec/_design.css', 'OLD')                  // untouched → updated, stays ignored
+  w(dest, '.gitignore', 'node_modules/\n')
+  const base = { version: '1.0.0', files: { 'spec/_seed.ts': h('BASE'), 'spec/_base.ts': h('BASE'), 'spec/_design.css': h('OLD') } }
+  updateProject({ dest, src, base, files: ['spec/_seed.ts', 'spec/_base.ts', 'spec/_design.css'] })
+  const lines = read(dest, '.gitignore').split('\n')
+  assert.ok(lines.includes('!/spec/_seed.ts'), 'the filled-in stub is committed')
+  assert.ok(lines.includes('!/spec/_base.ts'), 'so is a file whose local edit survived a conflict')
+  assert.equal(lines.includes('!/spec/_design.css'), false, 'untouched vendored code stays out')
+  assert.ok(lines.indexOf('!/spec/_seed.ts') > lines.indexOf('/spec/_seed.ts'), 'the negation must come after the ignore — git takes the last match')
+})
