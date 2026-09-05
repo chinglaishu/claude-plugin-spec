@@ -129,7 +129,14 @@ export const FILES = [
   'spec/_seed.ts',
   // the escape log — a bug the green board missed, logged with the assertion it hardened and the
   // skill that got the lesson. See kg-staff section 4.
-  'spec/_escapes.md'
+  'spec/_escapes.md',
+  // the CI workflow as a TEMPLATE (T15, 2026-09-06) — it lands as specboard/templates/specboard-ci.yml
+  // for a person to copy into the app's own .github/workflows/. The scaffold deliberately never
+  // writes into anyone's .github/: a workflow runs on their runner minutes and gates their merges,
+  // so it is placed on purpose, not vendored into place. Listed here so an updating project gets the
+  // newer template beside its copy; it imports nothing, so the every-relative-import-is-vendored
+  // guard could never have caught the miss.
+  'templates/specboard-ci.yml'
 ]
 
 // The run scripts a scaffolded project gets. `board` runs under --watch so it restarts when its own

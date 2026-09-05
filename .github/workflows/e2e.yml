@@ -24,12 +24,28 @@ jobs:
           node-version: 20
           cache: npm
 
+      # THE RUNNER'S OWN DATA HOME (decision A, 2026-09-05). Nothing a run derives is committed any
+      # more — the fold (board.db), every blob and every run record live in ~/.specboard/<projectId>/,
+      # so a CI job starts with NO harvest and produces its own. Pointing SPECBOARD_HOME at the
+      # runner's temp dir keeps that home in one known place this job can upload afterwards, and
+      # keeps it off the checkout so nothing derived can ever be staged by accident.
+      # A reviewer opens the uploaded artifact with:  SPECBOARD_HOME=<unzipped dir> npm run board
+      - name: the runner's data home
+        run: |
+          echo "SPECBOARD_HOME=$RUNNER_TEMP/specboard" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/specboard"
+
       - run: npm ci
 
       - run: npx playwright install --with-deps chromium
 
       # The pure-function unit suite (coverage, ci-select, prd-render, update, …) — fast, no
       # browser, no server.
+      # HONEST SKIP, stated rather than hidden: tools/viz.test.mjs carries eight real-data pins that
+      # read demo/todo's harvest THROUGH ITS STORE. A fresh clone has no demo data home, so those
+      # eight report `skip` here with the command that would create one (`node tools/store-import.mjs`
+      # in demo/todo). Making them run would mean folding the demo's suite inside this job — setup
+      # hidden behind a green tick; a visible skip is the honest half of rule 3.
       - run: npm run test:tools
 
       # The e2e gate itself. NEVER pass --reporter here: it REPLACES playwright.board.ts's
@@ -47,9 +63,25 @@ jobs:
       # longer matches; `proof lint` refuses a beat whose Then facts are neither claimed nor
       # honestly declared. A gate people learn to skip is worth less than no gate, and a gate
       # nothing runs is one nobody had to learn to skip.
+      # (B1, 2026-09-05, retired with decision A: "grade the committed bytes before the suite" —
+      # nothing derived is committed any more, so the only harvest a job can grade is its own.)
       - run: npm run proof mirror
 
       - run: npm run proof lint
+
+      # THE HARVEST IS A CI ARTIFACT, never a commit (decision A, 2026-09-05). The fold (board.db,
+      # with its -wal/-shm beside it) and every blob the run landed live in the data home this job
+      # set above; keep them 14 days so a PR's pictures can be opened:
+      #     unzip specboard-harvest.zip -d /tmp/harvest && SPECBOARD_HOME=/tmp/harvest npm run board
+      # A team that wants the board without downloading is the team-store step (a remote db url + a
+      # cloud bucket), not this one.
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: specboard-harvest
+          path: ${{ runner.temp }}/specboard/
+          retention-days: 14
+          if-no-files-found: warn
 
       - if: failure()
         uses: actions/upload-artifact@v4

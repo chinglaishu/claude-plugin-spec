@@ -1,0 +1,101 @@
+# specboard — the e2e gate for a scaffolded project (the TEMPLATE, copy it in)
+#
+# HOW TO ENABLE, three steps and no editing of your app's build:
+#   1. Copy this file to `.github/workflows/specboard.yml` in the APP repo. The scaffold never writes
+#      into anyone's `.github/` — a workflow is yours, so you place it deliberately.
+#   2. Choose the screens that gate merges in `specboard/spec/_ci.json` (`{"screens": ["…"]}`);
+#      tools/ci-select.mjs resolves that file into the exact spec files this job runs. Delete the
+#      file and every screen on disk runs instead.
+#   3. If the suite drives an ALREADY-RUNNING site (a preview deployment) rather than a server the
+#      board starts for itself, add its URL as a repository variable named `BOARD_URL`
+#      (Settings → Secrets and variables → Actions → Variables). Leave it unset and
+#      playwright.board.ts starts and stops the board itself, which is what a self-contained project
+#      wants. An app the suite must sign into keeps its credentials in the app's own secrets and its
+#      sign-in script in `specboard/spec/_config.json` (that file is per machine and ignored — a CI
+#      job needs its values as env, never as a committed file).
+#
+# THE LAYOUT this assumes: the board lives in `specboard/` inside the app repo and is COMMITTED —
+# but only what a person AUTHORED (prd.md, test.spec.ts, steps.ts, the manifest, the rulings).
+# Nothing a run derives is in git any more (decision A, 2026-09-05), so a CI job starts with no
+# harvest at all and produces its own into the data home below, which it then uploads.
+
+name: specboard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  specboard-gate:
+    name: specboard-gate
+    runs-on: ubuntu-latest
+    # A handful of screens runs well under 30 minutes; this gives headroom on a shared runner
+    # without letting a hang run forever. Raise it as the chosen gate grows.
+    timeout-minutes: 45
+    env:
+      # Unset unless you added the repository variable in step 3 above — and unset means
+      # playwright.board.ts manages the server itself, which is the ordinary case.
+      BOARD_URL: ${{ vars.BOARD_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: specboard/package-lock.json
+
+      # THE RUNNER'S OWN DATA HOME. Everything a run derives — the fold (board.db), every blob, every
+      # run record — lives in ~/.specboard/<projectId>/, outside every git by construction.
+      # SPECBOARD_HOME moves that root; pointing it at the runner's temp dir puts this job's harvest
+      # in one known place to upload, and keeps it off the checkout so nothing derived can be staged
+      # by accident. A reviewer opens the artifact with: SPECBOARD_HOME=<unzipped dir> npm run board
+      - name: the runner's data home
+        run: |
+          echo "SPECBOARD_HOME=$RUNNER_TEMP/specboard" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/specboard"
+
+      - run: npm ci
+        working-directory: specboard
+
+      - run: npx playwright install --with-deps chromium
+        working-directory: specboard
+
+      # The e2e gate. NEVER pass --reporter here: the CLI flag REPLACES playwright.board.ts's
+      # configured reporters (json + list + the results-fold reporter), so the per-requirement fold
+      # silently never runs and the job goes green on a harvest nobody folded. NEVER pass -g either:
+      # the point of _ci.json is that a person chose whole spec files, not a grep-narrowed slice.
+      - run: npx playwright test --config=playwright.board.ts $(node tools/ci-select.mjs)
+        working-directory: specboard
+
+      # THE TWO GATES THE HARVEST IS JUDGED BY, after the suite that produces it. `proof mirror`
+      # refuses a replica the harvest no longer matches; `proof lint` refuses a beat whose Then facts
+      # are neither claimed nor honestly declared. They run AFTER the suite because the only harvest
+      # a job can grade is the one it just produced — nothing derived is committed to grade before it.
+      - run: npm run proof mirror
+        working-directory: specboard
+
+      - run: npm run proof lint
+        working-directory: specboard
+
+      # THE HARVEST IS AN ARTIFACT OF THE RUN, never a commit. Keep it 14 days so a PR's pictures can
+      # be opened:
+      #     unzip specboard-harvest.zip -d /tmp/harvest
+      #     cd specboard && SPECBOARD_HOME=/tmp/harvest npm run board
+      # A team that wants the board without downloading sets the two team values instead (a remote db
+      # url + a cloud bucket) — that is configuration, not this workflow.
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: specboard-harvest
+          path: ${{ runner.temp }}/specboard/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: specboard/test-results/
+          retention-days: 7
