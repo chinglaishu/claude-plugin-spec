@@ -71,8 +71,15 @@ jobs:
 
       # THE HARVEST IS A CI ARTIFACT, never a commit (decision A, 2026-09-05). The fold (board.db,
       # with its -wal/-shm beside it) and every blob the run landed live in the data home this job
-      # set above; keep them 14 days so a PR's pictures can be opened:
-      #     unzip specboard-harvest.zip -d /tmp/harvest && SPECBOARD_HOME=/tmp/harvest npm run board
+      # set above; keep them 14 days so a PR's pictures can be opened. Verified on run 33987902307
+      # (7.0 MB: board.db + 320 blobs), read back with:
+      #     unzip specboard-harvest.zip -d /tmp/harvest
+      #     # THIS repo has no spec/_specboard.json, so its project id is derived from the checkout
+      #     # PATH — the runner's differs from yours. Rename the one folder inside to the id your
+      #     # checkout expects (a scaffolded project needs no rename: its manifest pins the id):
+      #     ID=$(node -e "import('./tools/spec-store.mjs').then(m=>console.log(m.DATA_HOME))" | xargs basename)
+      #     mv /tmp/harvest/* /tmp/harvest/$ID          # a no-op when the two ids already match
+      #     SPECBOARD_HOME=/tmp/harvest npm run board
       # A team that wants the board without downloading is the team-store step (a remote db url + a
       # cloud bucket), not this one.
       - if: always()

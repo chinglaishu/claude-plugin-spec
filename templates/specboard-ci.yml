@@ -84,7 +84,8 @@ jobs:
         working-directory: specboard
 
       # THE HARVEST IS AN ARTIFACT OF THE RUN, never a commit. Keep it 14 days so a PR's pictures can
-      # be opened:
+      # be opened — no renaming needed, because your project id is pinned in the committed manifest
+      # (specboard/spec/_specboard.json), so the runner's data home is named exactly as yours is:
       #     unzip specboard-harvest.zip -d /tmp/harvest
       #     cd specboard && SPECBOARD_HOME=/tmp/harvest npm run board
       # A team that wants the board without downloading sets the two team values instead (a remote db
