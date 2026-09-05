@@ -80,8 +80,8 @@ covers — qualified (`asset-plan:R5`), so a flow can prove another screen's req
 - `coverReqs('a:R5', 'b:R3')` declares up front the full set a flow intends to reach, so a flow that
   stops early leaves the ones it never got to **not-reached** rather than silently absent.
 
-`spec/_results-reporter.mjs` folds each run's per-requirement pass/fail/not-reached into
-`spec/_results-index.json`; `tools/coverage.mjs` (pure, unit-tested) and `tools/spec-store.mjs`
+`spec/_results-reporter.mjs` folds each run's per-requirement pass/fail/not-reached into the
+project's data home (`~/.specboard/<projectId>/board.db`, tools/store.mjs); `tools/coverage.mjs` (pure, unit-tested) and `tools/spec-store.mjs`
 derive each requirement's **proven / unproven** state. Tests come in **two kinds, both first-class**
 (board R6, the human 2026-08-17): a **unit** test proves one screen or component displaying and
 acting right; a **flow** test crosses screens along a chosen path and reads as the units it
@@ -97,7 +97,23 @@ spec/<screen>/test.spec.ts   Playwright spec — tags requirements via checkReq 
 spec/<screen>/steps.ts       the screen's COMPOSABLE BEATS (the beat-function convention, kg-e2e): GIVEN + BEATS
                              metadata beside exported step functions — perform the When, assert the exact Then
                              from a threaded state, update it; the caller's checkReq wraps the call
-spec/<screen>/evidence/      the harvest (the before/after frame pair + its window, ONE `.expected.html` REPLICA per moment — the Actual half is the photograph beside it (the human, 2026-09-04) — and the screen's `_fonts/`) — COMMITTED here and in scaffolded projects (D2 2026-08-22); deterministic paths overwrite in place, superseded files pruned at the fold (tools/evidence.mjs), which also sweeps the retired `.actual.html` half
+~/.specboard/<projectId>/    THE DATA HOME (ruled by the human 2026-09-05, final shape 2026-09-06 — "we only store
+                             things in codebase if it's necessary, otherwise find a way to store somewhere else").
+                             EVERYTHING A RUN DERIVES lives here, outside every git by construction: `board.db` (the
+                             fold, the run log and the raw report as ROWS — screens/tests/coverage/evidence/runs/reports)
+                             and `blobs/<sha256>.<ext>` (every frame, layout skeleton, `.expected.html` REPLICA, font,
+                             faces sheet and recording). `runs/<runId>/` is a live run's SCRATCH only, swept when the run
+                             falls off the capped log. `spec/<screen>/evidence/` and `spec/<screen>/viz/` NO LONGER EXIST.
+                             Two switches, both committed manifest fields: db local|remote (sqlite `board.db` |
+                             a `SPECBOARD_DB_URL` postgres) and media local|cloud (this dir | an S3-compatible bucket) —
+                             a team is those two values and no rewrite. `SPECBOARD_HOME` moves the root (tests, CI).
+                             A PICTURE IS A SRC with two shapes — `blob/<sha>.<ext>` (served at `/blob/…`) or an
+                             `https://…/<sha>.<ext>` bucket url — and every reader treats it as opaque: `resolveRel` /
+                             `readSrc` (tools/spec-store.mjs) is the one door. Retention is by REFERENCE, never by path:
+                             a blob lives exactly while a retained row names it (`gcBlobs`, run at every fold).
+                             EVIDENCE IS KEYED BY THE COVERING TEST (the human's C2 ruling, 2026-09-06), so a flow that
+                             proves another screen's requirement is a second ROW, never a replacement — the reader merges
+                             them with the requirement's HOME screen's own test headlining (`mergeEvidenceRows`).
                              (spec/<screen>/viz/*.svg — the SKETCH, a house-style drawing of a requirement that had NOT
                              been harvested — is RETIRED, ruled by the human 2026-09-05. An un-harvested requirement
                              shows its Given/When→Then prose and an honest "no Expected yet"; the only picture beside a
@@ -128,11 +144,21 @@ spec/_moment.mjs             ONE MOMENT, ONE INSTANT (2026-09-04): composes the 
                              readings a likeness gate compares can never be three different instants of the app — and
                              carries the walk's own answers across (the ringed element it MEASURED, the boxes it dropped
                              as occluded) so the halves cannot disagree about what they are looking at
-spec/_results-index.json     per-screen results + per-requirement coverage, folded across runs — proof derives from this
+                             (`spec/_results-index.json`, `spec/_runs.json` and `spec/_results.json` are GONE with the
+                             files they named — the fold, the run log and the raw report are rows in `board.db`.)
 spec/_conflict-decisions.json  the human's adjudicated conflicts, keyed by content
 
 tools/coverage.mjs           pure: proves-steps + covers-tags → per-req pass/fail/not-reached, and proven/unproven
-tools/spec-store.mjs         reads/derives everything. THE authority on requirement state.
+tools/store.mjs              THE STORE, async and driver-agnostic: openStore (the schema + every row), putBlob/getBlob/
+                             removeBlob/listBlobs, referencedBlobs + gcBlobs. Address math is pure and lives beside it
+                             (tools/store-address.mjs); the drivers are store-db-sqlite|pg and store-blob-fs|s3.
+tools/store-sync.mjs         the same rows read SYNCHRONOUSLY through better-sqlite3 (local db only), because the board
+                             renders synchronously top to bottom. ONE row-mapping shared with the async store; a remote
+                             db THROWS here naming the async door rather than falling back to a local file (rule 3).
+tools/store-import.mjs       the one-time import of a committed harvest into the store — idempotent, never touching the repo
+tools/static-allow.mjs       pure: the static server's allowlist — board.html · the authored spec/** · a blob. No fourth kind.
+tools/spec-store.mjs         reads/derives everything. THE authority on requirement state — and the one door to the
+                             store for every other tool (DATA_HOME, readResults, readRuns, resolveRel, readSrc, momentsOf).
 tools/compose.mjs            pure, unit-tested: the flow composer — parseBeats (steps.ts, read statically),
                              deriveLibrary (nodes from behavior blocks + tests ONLY), the joint check, composeCheck,
                              emitFlow (chain → the composed flow file, no model) and composePrompt (the Claude path)
@@ -195,10 +221,17 @@ manifest's `app` path (`appRoot` → `APP_ROOT` in spec-store, carried across up
 capabilities list reads the app repo's `.claude/` through it, and a project's own `spec/_app.ts`-style
 helpers should too). `scaffold.mjs [appRepo]` creates the nested board and appends `/specboard/` to the
 app's .gitignore — it does NOT `git init` the folder; `--dir <boardDir>` and `--flat` are the escapes.
-**Next step (not built): the board's files stored in the cloud so a team shares one board** — the tiers
-are laid out in docs/sidecar-qa-2026-09-04.html §3 (the harvest blobs and run records to a private
-bucket via the existing `storage`/`shipToBucket` path, the fold index beside them, a read-only hosted
-board). dojostack is the first: `~/workspace/dojostack/dojostack_main/specboard` (board on :4174). This
+**AMENDED 2026-09-05/06 — WHAT A BOARD FOLDER HOLDS IS NOW ONLY AUTHORED FILES** (the human: "we only
+store things in codebase if it's necessary, otherwise find a way to store somewhere else"). Everything
+a run derives — the fold, the run log, the raw report, every frame, skeleton, replica, font and
+recording — moved OUT of every repository into the data home `~/.specboard/<projectId>/` (see the
+Architecture block). The trade-off stated above is half-paid: the HARVEST no longer lives on one disk
+inside a git nobody shares, and turning the board into a team's is two committed manifest values (a
+remote db url + a cloud bucket) rather than a migration. What has NOT changed yet: `scaffold.mjs` still
+appends `/specboard/` to the app's .gitignore, so a scaffolded folder is still ignored wholesale — the
+step that makes it COMMITTED (authored files only, the vendored code ignored inside it) is the
+skeleton's own task and is not built here; this note says so rather than describing it as done.
+dojostack is the first sidecar: `~/workspace/dojostack/dojostack_main/specboard` (board on :4174). This
 repo and demo/todo stay flat (they ARE the board).
 
 Commands:
@@ -251,8 +284,8 @@ change.
   the test I clicked has steps". A run's own screenshots stay board-only; steps, logs and coverage are
   always recorded — and so, since the D2 evidence harvest (Task 15, 2026-08-21), are each requirement's
   before/after EVIDENCE frames: `checkReq` photographs the page around every assertion body and the
-  reporter folds the pair plus the proves-step's WINDOW (its span in the recording) into
-  `spec/<screen>/evidence/` and the index, from CLI runs too. Since the per-beat storyline redesign
+  reporter folds the pair plus the proves-step's WINDOW (its span in the recording) into the DATA
+  HOME — blobs, named by content, and an evidence row keyed by the covering test — from CLI runs too. Since the per-beat storyline redesign
   (33049fb/3fbbaec, 2026-08-28) the Focus reader is per-beat ROWS: each beat's proof is a
   `proofCell` (`client.js`) that ALWAYS loops before → each asserted-value frame → after — no
   stills·gif·video toolbar exists any more (board R20 asserts `.pcmodes` is absent), only a
@@ -329,7 +362,7 @@ change.
   every file with checkout time, so the GitHub Actions gate read every requirement untested on a
   tree byte-identical to the fold that proved it (board R4 lost its "some proven rows exist"
   precondition; R12 derived a different next action). Since 2026-08-30 the fold pins the sources'
-  CONTENT beside the run — `srcHashes` per screen in `_results-index.json`, written by
+  CONTENT beside the run — `srcHashes` per screen on the fold's own row, written by
   `foldByScreen` — and `passStale`/`runStale` (`tools/spec-store.mjs`, pure, unit-tested in
   `tools/stale-proof.test.mjs`) demand BOTH gates: newer than the run AND a fingerprint that no
   longer matches. Keep both. Dropping the mtime gate would miss an edit made since the last fold
@@ -339,7 +372,7 @@ change.
   fixture that simulates staleness must move the fingerprints too, not just `ranAt`.
 - **Per-requirement coverage rides on the run, and is folded, never replaced.** `checkReq` emits a
   `proves <id>` step and `coverReqs` a `covers` annotation; the reporter reads both back out
-  (`tools/coverage.mjs`) into each test's `reqs`, folded into `_results-index.json` per screen. A
+  (`tools/coverage.mjs`) into each test's `reqs`, folded onto the screen's row (coverage rows). A
   qualified tag (`x:R3`) proves another screen's requirement, so the fold is board-wide, not per-file.
 - **The board's CLIENT BEHAVIOUR now lives in `tools/board/client.js`** — real JavaScript, read in
   verbatim by `build-board.mjs` and paired with a JSON island (`window.__BOARD__`) that carries its
@@ -364,27 +397,31 @@ change.
   run — is what caught it, on an attachment that was missing. Build the function in Node
   (`spec/_moment.mjs` `momentFunction`, `new Function`) and hand a FUNCTION over; and when a capture
   changes, check an attachment actually landed rather than trusting a green census.
-- **The static server is an allowlist, not a traversal guard** — only `board.html` and `spec/**` are
-  reachable. This plugin runs inside other people's repos; it once served `.git/config`. Keep it so.
+- **The static server is an allowlist, not a traversal guard** — only `board.html`, the authored
+  `spec/**` and a BLOB (`/blob/<sha256>.<ext>`, matched by its own content address and resolved
+  inside this project's data home) are reachable. This plugin runs inside other people's repos; it
+  once served `.git/config`. Keep it so — the decision is pure in `tools/static-allow.mjs`, and a
+  run's record directory is deliberately NOT servable (it is scratch; what a run keeps is a blob).
 - **Same-document hash navigation does not reload.** Going from `/` to `#/board` fires `hashchange`,
   not a load. When verifying by hand, force `location.reload()` or you will screenshot a stale page.
 - **Live streaming is on under automation; only page self-reload is held back.** The SSE run stream
   drives the panel even under `navigator.webdriver`; the reloads that would abort a Playwright
   navigation are the only thing suppressed.
-- **A per-screen run writes a report covering only that screen.** It is *folded* into
-  `_results-index.json`, never replaced — replacing blanks every other screen's proof.
-  **…and a cross-screen flow may not repaint a beat the requirement's HOME screen harvested** (final
-  review I5, 2026-09-04). Evidence is keyed by REQUIREMENT and its paths are deterministic, so
-  `spec/init`'s composed flow — which tags `board:R1` — rewrote `spec/board/evidence/R1.b1.*` from
-  the init page when run ALONE, pruned what the board's own run had put there, and turned the next
-  board run red on four tests. Per-screen runs are a documented normal workflow, so the rule is
-  precedence: the home screen's own file owns its beats, a flow fills only the beats it left empty,
-  and nothing a flow brings replaces or prunes them (the reporter marks the beat `foreign` and does
-  not even copy the bytes; `foldEvidence` keeps the old entry). Coverage is untouched — the flow
-  still PROVES the requirement. Keying evidence by TEST rather than by requirement would remove the
-  collision outright and is the honest next step; this is the rule until then. The fold
-  is a Playwright reporter (`spec/_results-reporter.mjs`), because Playwright writes its report only
-  *after* globalTeardown.
+- **A per-screen run writes a report covering only that screen.** It is *folded* into the store's
+  rows, never replaced — replacing blanks every other screen's proof.
+  **…and a cross-screen flow can no longer repaint a beat the requirement's HOME screen harvested**
+  (final review I5, 2026-09-04 — CLOSED by the human's C2 ruling, 2026-09-06). Evidence USED TO BE
+  keyed by REQUIREMENT with deterministic paths, so `spec/init`'s composed flow — which tags
+  `board:R1` — rewrote `spec/board/evidence/R1.b1.*` from the init page when run ALONE, pruned what
+  the board's own run had put there, and turned the next board run red on four tests. It is keyed by
+  the COVERING TEST now (`evidence(test_file, screen, req_id)`), so the flow's harvest and the home
+  screen's are two rows and nothing collides: the I5 precedence rule and the `foreign` marker are
+  DELETED with it. What survives is the DISPLAY rule — the reader shows one picture per requirement:
+  the home screen's own test headlines, a covering flow fills only the beats it left empty, and every
+  covering test is named (`mergeEvidenceRows`, tools/spec-store.mjs). Coverage was never affected —
+  the flow PROVES the requirement either way. The fold is a Playwright reporter
+  (`spec/_results-reporter.mjs`), because Playwright writes its report only *after* globalTeardown;
+  the RAW json report is filed as a row in the reporter's `onExit`, which runs after every reporter.
 - **The picture is guarded, so the gap between it and the proof cannot open again** (the human,
   2026-09-02; the drawn mirror it was written for was retired at phase 4a, 2026-09-03). Twice the
   drawn kit quietly stopped drawing something the harvest had measured, and only a person's eye on a

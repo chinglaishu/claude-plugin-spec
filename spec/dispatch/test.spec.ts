@@ -179,9 +179,14 @@ test('R4 — a person\'s second run takes over the running one: accepted, not re
 
   // R5: takeover is a cancel — the partial work is left on disk, so the run's log is still readable.
   await checkReq('R5', async () => {
-    intentGap('no page is open in this spec at all — the taken-over run is read out of /api/runs and the partial work it left is a file on disk (/spec/_runs/<id>/run.log), so there is no screen to read this beat off')
-    const log = await request.get('/spec/_runs/' + firstId + '/run.log')
-    expect(log.status(), 'the taken-over run left its partial log on disk').toBe(200)
+    intentGap('no page is open in this spec at all — the taken-over run is read out of /api/runs and the partial work it left is the log SRC its own record names, so there is no screen to read this beat off')
+    // …and the log is a BLOB now (the data home, 2026-09-05/06): the run's record names the src, and
+    // the board's own "whole run log ↗" link is that src. Reading it through the record is what the
+    // reader does, so this asks the same question the old `/spec/_runs/<id>/run.log` path asked —
+    // of the shape that exists.
+    expect(taken.log, 'the taken-over run\'s record names the log it left').toMatch(/^blob\/[0-9a-f]{64}\.log$/)
+    const log = await request.get('/' + taken.log)
+    expect(log.status(), 'and those bytes are served').toBe(200)
   })
 
   // The takeover run holds the slot until IT ends — so end it: cancel it BY NAME (R5) rather than
@@ -264,10 +269,12 @@ test('R6/R8 — a run saves its whole log, and records every test case on its ow
 
   // R6: the WHOLE log is kept — retrievable in full after the stream ended, not thrown away.
   await checkReq('R6', async () => {
-    intentGap('the whole log is read back from the file the server saved (/spec/_runs/<id>/run.log) ' +
-      'with no page open; the board\'s own log WINDOW is proven on the board screen, through the ' +
-      'reader\'s wired Logs button (board R10)')
-    const logRes = await request.get('/spec/_runs/' + run.runId + '/run.log')
+    intentGap('the whole log is read back from the src the run\'s own record names (a blob in the data ' +
+      'home since 2026-09-06 — what the board\'s "whole run log ↗" link points at) with no page open; ' +
+      'the board\'s own log WINDOW is proven on the board screen, through the reader\'s wired Logs ' +
+      'button (board R10)')
+    expect(run.log, 'the run\'s record names the log it saved').toMatch(/^blob\/[0-9a-f]{64}\.log$/)
+    const logRes = await request.get('/' + run.log)
     expect(logRes.status(), 'the run log was saved and is servable').toBe(200)
     const log = await logRes.text()
     // it is the whole log, not a one-word verdict: every one of board's cases is named in it, so a

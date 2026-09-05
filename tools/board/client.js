@@ -4224,7 +4224,10 @@ const B = window.__BOARD__ || {}
           // the WHOLE run log — the per-case log is that case's stdout/stderr/error (bounded); run.log
           // is the entire process output, including globalSetup / seed output and the untruncated tail,
           // which the per-case view never had. A CLI run has no run.log, so the link is withheld.
-          if (rec[title].length < 10) rec[title].push({ ...r.shotsByTest[title], runId: r.runId, hasLog: !!r.hasLog, log: r.log || '' })
+          // NOT `log`: that is the CASE's own log text, and the run-level one is a src (2026-09-06 —
+          // spreading it over `log` put a blob address in every case's <pre> and the replica gate
+          // caught it as moved text on board R10's own picture)
+          if (rec[title].length < 10) rec[title].push({ ...r.shotsByTest[title], runId: r.runId, hasLog: !!r.hasLog, runLog: r.log || '' })
         }
       }
       // The RECORDING is the test's cover and its ONE artifact (board R10): the last asserted frame
@@ -4408,7 +4411,7 @@ const B = window.__BOARD__ || {}
           // that file exists; a CLI run has none and simply shows its per-case log.
           // the whole log is a BLOB now (the data home, 2026-09-05/06) — the run record names its
           // src, and an older record that names none simply offers no link
-          const whole = (h.log) ? ' · <a class="wholelog" href="/' + eh(h.log) +
+          const whole = (h.runLog) ? ' · <a class="wholelog" href="/' + eh(h.runLog) +
             '" target="_blank" rel="noopener">whole run log ↗</a>' : ''
           return '<li><div class="lgh"><span class="mark ' + mark + '"></span>' +
             eh(when) + ' · ' + eh(took) + sha + whole + '</div><pre>' + eh(h.log) + '</pre></li>'

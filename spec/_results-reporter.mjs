@@ -144,8 +144,8 @@ export function flattenSteps (steps) {
   return out
 }
 
-// Folds each run's results into spec/_results-index.json — the per-screen source of truth the
-// board reads. It has to be a REPORTER, not a globalTeardown: Playwright writes the JSON report
+// Folds each run's results into the project's data home (rows in board.db) — the per-screen source
+// of truth the board reads. It has to be a REPORTER, not a globalTeardown: Playwright writes the JSON report
 // file AFTER teardown, so a teardown that read that file folded nothing. A reporter has the
 // results in hand at onEnd and needs no file at all.
 //
@@ -543,7 +543,7 @@ export default class ResultsIndexReporter {
       // Evidence frames are per-REQUIREMENT material, not "what this test saw" — keep them out of
       // the cover/shots selection or a checkReq's after-frame would displace the real cover.
       // …AND THEY LAND AS BLOBS TOO (the data home, 2026-09-05/06). A run's record used to name
-      // files inside its own directory under spec/_runs/<id>/, which the board then served; the
+      // files inside its own directory under the repo, which the board then served; the
       // record dir is scratch now (it is pruned with the run) and what the record KEEPS is a src,
       // gc'd by reference the moment the run falls off the capped log.
       const allShots = atts.filter(a => /\.png$/i.test(a.path || '') && !parseEvidenceAttachment(a.name))

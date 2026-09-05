@@ -1055,7 +1055,7 @@ function runPerturb (screen) {
 
     // --reporter=json REPLACES the config's reporter array (see playwright.board.ts) — the custom
     // spec/_results-reporter.mjs does not run, so this perturbed run can never fold into
-    // spec/_results-index.json. That is the whole safety property this command depends on.
+    // the store. That is the whole safety property this command depends on.
     const scratch = join(tmpdir(), `proof-integrity-${screen}-${Date.now()}.json`)
     let stdout
     try {

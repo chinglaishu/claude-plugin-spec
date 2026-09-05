@@ -10,3 +10,17 @@ e2e/.report.json
 
 # macOS finder droppings — never a source file
 .DS_Store
+
+# DERIVED — the data home (the human, 2026-09-05/06: "we only store things in codebase if it's
+# necessary, otherwise find a way to store somewhere else"). The harvest, the fold, the run log, the
+# raw report and the generated board live in ~/.specboard/<projectId>/ — content-addressed, gc'd by
+# reference at every fold, out of every git by construction. Only the AUTHORED spec is committed.
+board.html
+spec/_results.json
+spec/_results-index.json
+spec/_runs.json
+spec/_runs/
+spec/*/evidence/
+spec/*/viz/
+spec/*/screen.png
+spec/*/crawl.png

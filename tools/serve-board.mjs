@@ -731,7 +731,7 @@ function startRun (screen, opts = {}) {
     }
   }
   // A run started BY the board writes to its OWN report file. Scoped to one screen it would
-  // otherwise overwrite spec/_results.json — the file a concurrent full run (or the suite itself)
+  // otherwise overwrite the data home's report scratch — the file a concurrent full run (or the suite itself)
   // is also writing — and erase every other screen's result. It folds into the per-screen index
   // on close instead, so a one-screen run updates one screen and leaves the rest standing.
   // PER RUN, inside the run's own record: a nested run and the run it is nested in are both live at

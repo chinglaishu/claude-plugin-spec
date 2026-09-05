@@ -28,11 +28,17 @@ package-lock.json
 # (spec/_specboard.json is COMMITTED — it records the release AND the project's identity block,
 #  `project: { name, tagline }`, the board crumb's authored source; Task 8 fix round 1)
 
-# transient run state — EXCEPT the fold: since 0.25.1 evidence is committed by default, and the
-# evidence is meaningless without the index that names it (Task 7, 2026-08-22), so the demo commits
-# spec/_results-index.json + spec/_runs.json exactly as the plugin does; the raw JSON report stays out
+# transient run state — AND EVERYTHING DERIVED (the data home, 2026-09-05/06: nothing a run makes is
+# committed any more; the harvest, the fold, the run log and the generated board live in
+# ~/.specboard/<projectId>/, content-addressed and gc'd by reference at every fold)
 /spec/_results.json
+/spec/_results-index.json
+/spec/_runs.json
 /spec/_runs/
+/spec/*/evidence/
+/spec/*/viz/
+/spec/*/screen.png
+/spec/*/crawl.png
 /spec/_run-report.json
 /spec/_state-snapshot.*.json
 /spec/_dir-snapshot.*.json

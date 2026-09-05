@@ -171,7 +171,7 @@ export const screenKinds = s => {
 // NEWEST after-frame of the D2 evidence harvest — a project whose tests never shoot screen.png (the
 // Tsumiki demo) still gets a real frame of its latest run rather than a grey placeholder. The
 // caption names the run: the newest record's commit when the run manifest carries one, else the run
-// id. Null when nothing has run — the honest empty cover. Pure: `runs` is spec/_runs.json's array.
+// id. Null when nothing has run — the honest empty cover. Pure: `runs` is the run log's own array.
 export const latestStill = (s, runs) => {
   const run = s.run
   let src = null, hash = '', best = null
@@ -403,7 +403,7 @@ const runAll = name =>
 // comment was left behind, and two board tests then asserted a `.covers .ctag` chip that nothing
 // renders. A comment describing behaviour the code dropped is how a dead test survives review.)
 // The D2 EVIDENCE the fold carries for this requirement (Task 15: the before/after frame pair,
-// folded into spec/_results-index.json from CLI runs too) — baked onto the source row as
+// folded into the store's evidence rows from CLI runs too) — baked onto the source row as
 // data-ev-* attributes so the Focus media pane (client.js) can render it without a fetch. Only a
 // path whose FILE exists is baked (absence of a frame is never an error), and each carries a
 // content-hash cache-buster because the harvest overwrites in place (the same ?h= discipline as
@@ -4235,7 +4235,7 @@ export function build () {
             <label class="watchtog sm" id="initpushwrap" style="margin-top:8px" hidden>
               <input type="checkbox" id="initpush"> also push to origin (an outward action)</label>
             <input class="input" id="initbucket" placeholder="https://…  a base URL uploads are PUT to" style="margin-top:8px" hidden>
-            <div class="h" id="initstorehint">Kept under spec/_runs/ and pruned with the run log — nothing leaves your machine.</div>
+            <div class="h" id="initstorehint">Kept in this project’s data home (~/.specboard/&lt;project&gt;/), addressed by content and pruned with the run log — nothing leaves your machine and nothing is committed.</div>
           </div>
         </div>
         <div class="initfoot">
