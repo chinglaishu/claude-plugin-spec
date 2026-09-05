@@ -3562,6 +3562,17 @@ test('A test opens to its evidence and the log opens in a window', async ({ page
     // whole-beat waiver does not apply — each of beat 1's three facts says for itself why THIS
     // block cannot ring it. The cause is shared (this block stands on beat 3), and a shared reason
     // is still not a shared waiver.
+    // …AND C1 (`checkReq('R10', { beat: 3 }, …)`) DOES NOT CLOSE THIS ONE — measured, 2026-09-06.
+    // R10 is tagged by FOUR blocks in this file (lines ~180, ~363, ~392 and here), each the first
+    // checkReq('R10') of its own test, so all four land on beat 1 and the lint scores the LAST in
+    // source order — this one. Naming beat 3 here moves the harvest to the right sentence and
+    // immediately hands beat 1's scoring to the block at ~392, which is about the Flow player's
+    // voiced cut and neither claims nor declares beat 1's facts: the lint goes from 25 DECLARED and
+    // exit 0 to two INTENT-GAPs and exit 1. The honest close is an attribution pass over all four
+    // blocks (~180 genuinely stands on beat 1's story steps and their marks and could CLAIM them;
+    // ~363 and ~392 prove no particular beat of R10 at all), which is a judgement about what four
+    // tests prove — not something to smuggle into the task that added the argument. The declarations
+    // below stay: a visible debt, never a pass.
     intentGap('beat 1\'s "its numbered story steps show from its definition" lives on the hidden baked test row; this block stands on the log window (beat 3), where those steps are not on screen at all — they are claimed and declared in this requirement\'s own evidence block above')
     intentGap('beat 1\'s "before any run" is a state this block is past — a run has already folded by the time the ⋯ menu opens its log, so there is no pre-run row here for a claim to read')
     intentGap('beat 1\'s "each wearing the run\'s passed / failed / not-reached mark" is a mark on that same hidden baked row, absent from the log window this block opens')

@@ -1230,3 +1230,69 @@ test('phase 8: a base whose every sharing beat still matches it passes, and the 
   assert.deepEqual(rows.filter(r => r.file === f.base && r.kind !== 'base'), [],
     'the per-moment loop leaves the base to the base row')
 })
+
+// ── C1: A TEST CAN NAME THE BEAT IT PROVES (the human's ruling, 2026-09-06) ──────────────────────
+// `checkReq(id, fn)` names the requirement, never the beat: which beat a block proves was inferred
+// from its POSITION (BEAT_CURSOR), and in six places across the suite that inference could not be
+// made honestly — those beats carried a declared gap instead. The optional `{ beat }` argument lets
+// the block say so, and this lint refuses a number the PRD's behavior block does not have, so a
+// stale number is an error rather than a picture filed under the wrong sentence.
+const PRD_THREE = `---
+screen: todo
+---
+
+## R1 — three beats
+
+- **Given** the seeded board
+- **When** you tick one sub-task
+- **Then** the count reads 4
+- **When** you add a task
+- **Then** the new row shows at the bottom
+- **When** you open the log
+- **Then** the log opens in a floating window
+`
+
+test('C1: a checkReq that names its beat is scored against THAT beat, not its position', () => {
+  const spec = `
+test('todo', async ({ page }) => {
+  await checkReq('R1', { beat: 3 }, async () => {
+    await proveVisible(page.locator('.log'), 'a floating window', 'The log', { soft: true })
+  })
+})
+`
+  const rows = lintIntent(PRD_THREE, spec)
+  const b3 = rows.find(r => r.beat === 3)
+  assert.equal(b3.claims, 1, 'the named beat is the one that got the claim')
+  assert.equal(b3.ok, true, b3.why)
+  const b1 = rows.find(r => r.beat === 1)
+  assert.equal(b1.state, 'no-beat', 'and the block did NOT land on beat 1 by position: ' + b1.state)
+})
+
+test('C1: a named beat the behavior block does not have is refused, never clamped onto the last', () => {
+  const spec = `
+test('todo', async ({ page }) => {
+  await checkReq('R1', { beat: 9 }, async () => {
+    await proveVisible(page.locator('.log'), 'a floating window', 'The log', { soft: true })
+  })
+})
+`
+  const rows = lintIntent(PRD_THREE, spec)
+  const bad = rows.find(r => r.state === 'named-beat')
+  assert.ok(bad, 'the lint says so out loud: ' + JSON.stringify(rows.map(r => r.state)))
+  assert.equal(bad.ok, false)
+  assert.match(bad.why, /beat 9/)
+  assert.match(bad.why, /3 beats/)
+})
+
+test('C1: the argument is optional — a block without it still walks by position', () => {
+  const spec = `
+test('todo', async ({ page }) => {
+  await checkReq('R1', async () => { await proveVisible(a, 'b', 'c', { soft: true }) })
+  await checkReq('R1', async () => { await proveVisible(a, 'b', 'c', { soft: true }) })
+})
+`
+  const rows = lintIntent(PRD_THREE, spec)
+  assert.equal(rows.find(r => r.beat === 1).claims, 1)
+  assert.equal(rows.find(r => r.beat === 2).claims, 1)
+  assert.equal(rows.find(r => r.beat === 3).state, 'no-beat')
+})

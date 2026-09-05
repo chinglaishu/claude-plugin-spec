@@ -104,7 +104,13 @@ export function extractCheckReqBlocks (src) {
     }
     if (end === -1) continue // unbalanced — malformed source, skip rather than guess
     const line = text.slice(0, m.index).split('\n').length
-    blocks.push({ id, body: text.slice(braceStart + 1, end), line })
+    // …AND THE BEAT IT SAYS IT PROVES (C1, the human 2026-09-06): `checkReq(id, { beat: 3 }, fn)`.
+    // Read out of the text between the id and the arrow, so a block that names its beat is scored
+    // against that sentence instead of against its position in the file.
+    const between = scan.slice(m.index + m[0].length, arrow)
+    const nb = /\{[^}]*\bbeat\s*:\s*(\d+)/.exec(between)
+    const namedBeat = nb ? Number(nb[1]) : null
+    blocks.push({ id, body: text.slice(braceStart + 1, end), line, namedBeat })
   }
   return blocks
 }
@@ -804,7 +810,12 @@ export function blockBeats (specSource, id, beats, screen = '') {
     const t = testOf(b.line)
     const cursor = cursors.get(t) || 0
     cursors.set(t, cursor + 1)
-    out.push({ ...b, test: t, walk: cursor + 1, beat: beats ? Math.min(cursor + 1, beats) : cursor + 1 })
+    // …unless the block NAMES its beat (C1): the cursor still advances — the blocks around it keep
+    // walking exactly as they did — but this one is scored against the sentence it says it proves.
+    // A number the block does not have is left as it stands so `lintIntent` can refuse it by name;
+    // clamping it here would hide the very mistake the guard exists to catch.
+    const walked = beats ? Math.min(cursor + 1, beats) : cursor + 1
+    out.push({ ...b, test: t, walk: cursor + 1, beat: b.namedBeat || walked })
   }
   return out
 }
@@ -867,6 +878,22 @@ export function lintIntent (prdText, specSource, opts = {}) {
     // tests, dispatch R5 by a unit and a flow — so it was wrong, and it is the WORST-block scoring
     // below, not a count, that catches the real version of that defect: a block that harvests a
     // beat without covering it. Board R20's seventh block is caught there, on beat 1's own row.)
+    // A NAMED BEAT MUST EXIST (C1, the human 2026-09-06). `checkReq(id, { beat: n }, fn)` is the
+    // author saying which sentence this block proves; a number the behavior block does not have is
+    // a picture filed under nothing, and it is refused by name rather than clamped onto the last
+    // beat — the clamp is exactly what made position-inferred attribution dishonest in the first
+    // place. (A renumbered block whose beats swapped meaning is not caught here: the reqhash drift
+    // flips the requirement to Changed on any PRD edit, which is what forces the re-look.)
+    for (const b of blocks) {
+      if (b.namedBeat == null) continue
+      if (Number.isInteger(b.namedBeat) && b.namedBeat >= 1 && b.namedBeat <= beh.beats.length) continue
+      rows.push({
+        screen, id: r.id, beat: 0, facts: 0, claims: 0, soft: 0, ok: false, state: 'named-beat',
+        line: b.line,
+        why: `named-beat — this checkReq names beat ${b.namedBeat}, but ${r.id} has ${beh.beats.length} beats` +
+          '; a beat that does not exist files its harvest under no sentence at all'
+      })
+    }
     if (blocks.length) {
       const walks = new Map()
       for (const b of blocks) walks.set(b.test, (walks.get(b.test) || 0) + 1)
@@ -992,6 +1019,14 @@ function runLint () {
     for (const row of lintIntent(readFileSync(prd, 'utf8'), readFileSync(spec, 'utf8'), { screen, helpers })) {
       if (row.state === 'no-beat') {
         console.log(`${screen} · ${row.id}${row.beat ? ' · beat ' + row.beat : ''} · no-beat · ${row.why}`)
+        continue
+      }
+      // a checkReq naming a beat its requirement does not have (C1) — its own line, because the
+      // author's next move is a number, not a claim
+      if (row.state === 'named-beat') {
+        anyGap = true
+        console.log(`${screen} · ${row.id} · NAMED-BEAT`)
+        console.log(`    ${row.why}`)
         continue
       }
       // the requirement-level row: its checkReq blocks do not walk its beats (fix round 2)

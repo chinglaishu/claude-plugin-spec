@@ -1515,7 +1515,22 @@ function failSoft (id: string): void {
   // ONE line: _failAggregate keeps only the first line of a step's message, so the list rides it
   throw new Error(`proves ${id} — ${list.length} claim${list.length === 1 ? '' : 's'} failed: ${list.join(' · ')}`)
 }
-export async function checkReq (id: string, fn: () => Promise<void> | void): Promise<void> {
+// WHICH BEAT A BLOCK PROVES, WHEN POSITION CANNOT SAY (C1, the human's ruling 2026-09-06). The tag
+// names the requirement; which of its beats a given block proves was inferred from the block's
+// POSITION in the test (BEAT_CURSOR below), and in a handful of places that inference could not be
+// made honestly — a block standing on the requirement's THIRD sentence while the cursor filed its
+// harvest under the first. Those beats carried a declared intent gap instead, which is a visible
+// debt and never a pass. The optional second argument lets the block say so:
+// `checkReq('R10', { beat: 3 }, fn)`. It is OPTIONAL — every existing call is unchanged — and
+// `npm run proof lint` refuses a beat number the requirement's behavior block does not have, so a
+// stale number is an error rather than a picture filed under nothing.
+export async function checkReq (
+  id: string,
+  optsOrFn: { beat?: number } | (() => Promise<void> | void),
+  maybeFn?: () => Promise<void> | void
+): Promise<void> {
+  const opts = (typeof optsOrFn === 'function' ? {} : (optsOrFn || {})) as { beat?: number }
+  const fn = (typeof optsOrFn === 'function' ? optsOrFn : maybeFn) as () => Promise<void> | void
   // the step NAME stays exactly `proves <id>` — tools/coverage.mjs derives requirement state from it.
   const title = reqTitle(id)
   const nested = FLOW_DEPTH > 0
@@ -1531,6 +1546,15 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   const cursor = BEAT_CURSOR[id] || 0
   BEAT_CURSOR[id] = cursor + 1
   BEAT_IDX = beh && beh.beats.length ? Math.min(cursor, beh.beats.length - 1) : 0
+  // …or the beat the caller NAMED (C1). The cursor still advances, so the blocks around this one
+  // keep walking exactly as they did; only this block's own attribution moves. Clamped to the block
+  // the requirement actually has — a number past it is refused by `npm run proof lint`, which is
+  // where an author is told, rather than being silently filed under the last sentence here.
+  if (Number.isInteger(opts.beat) && (opts.beat as number) >= 1) {
+    BEAT_IDX = beh && beh.beats.length
+      ? Math.min((opts.beat as number) - 1, beh.beats.length - 1)
+      : 0
+  }
   BEHAVIOR = { id, given: beh ? beh.given : '', beats: beh ? beh.beats : [], state: 'active' }
   // …and the SAME cursor keys the harvest (2026-08-28): this check's frames, layout skeletons and
   // window are filed under the beat it proves, so the board's per-beat rows each carry their own
