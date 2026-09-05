@@ -76,17 +76,17 @@ ol.run li.git{border-left:4px solid var(--koke)}
 <p class="sub">2026-09-05 · the user flow, one step at a time: what each step creates and where it lives once the one plan has landed (<span class="k">plan-storage-then-expected-2026-09-05.html</span>: storage A → 0.45.0, then Expected phase 8 → 0.46.0). Plan task ids appear as small indigo tags. Rewritten in plain language 2026-09-05 on the human's request.</p>
 
 <h2>1 · First, the five places a file can live</h2>
-<p>Every file in this document lands in exactly one of these. The whole design is one sentence: <b>git keeps only what a person or an agent wrote; everything a test run produces lives in a per-project directory under your home folder, and reaches git nowhere.</b></p>
+<p>Every file in this document lands in exactly one of these. The whole design is one sentence: <b>git keeps only what a person or an agent wrote; everything a test run produces belongs to the locally-hosted board — a real store (database + blobs) inside the gitignored folder, exactly like a local Langfuse owns its data — and reaches git nowhere.</b></p>
 <div class="homes">
   <div class="homecard git"><h3>Committed — <span class="k">specboard/</span> in the app repo</h3>
     <p>The authored text: requirements, tests, the human's rulings, the manifest. Kilobytes. Lives as long as the feature does. This is what your coding agent and CI read from the checkout.</p></div>
   <div class="homecard ign"><h3>Ignored — also in <span class="k">specboard/</span>, kept out of git</h3>
     <p>The vendored plugin code (~45&nbsp;MB) and per-machine scratch like ports and a sign-in script. All of it regenerable; the folder's own <span class="k">.gitignore</span> keeps it out.</p></div>
-  <div class="homecard home"><h3>The data home — <span class="k">~/.specboard/&lt;project-id&gt;/</span></h3>
-    <p>Everything a run produces: the fold, the run records, and every photograph, skeleton and replica — each stored once under the hash of its own bytes (<span class="k">blobs/&lt;sha256&gt;.&lt;ext&gt;</span>). 10–50&nbsp;MB per screen, latest run wins, never in any git.</p>
-    <p><b>Not a database — a plain folder</b> doing a database's job for one user: <span class="k">index.json</span> is the table, <span class="k">blobs/</span> is the object store, no server or install needed. The real database (and bucket) arrive with the team store, holding these exact same shapes.</p></div>
+  <div class="homecard home"><h3>The data home — <span class="k">specboard/data/</span>, the board's own store <span class="note">(re-ruled 2026-09-05: the Langfuse model)</span></h3>
+    <p>Everything a run produces, owned by the locally-hosted board exactly the way Langfuse owns its data: <span class="k">board.db</span> — a real database (SQLite: zero install, one file) holding the fold, verdicts, coverage, run records — and <span class="k">blobs/&lt;sha256&gt;.&lt;ext&gt;</span>, the object store for every photograph, skeleton and replica. 10–50&nbsp;MB per screen, latest run wins, gitignored with the rest of the folder, never committed.</p>
+    <p><b>Team mode is the same stack on a shared host:</b> the identical server with Postgres + a bucket behind the same store interface — teammates just point at its URL.</p></div>
   <div class="homecard ci"><h3>CI artifact / team store — copies that leave the machine</h3>
-    <p>CI zips its runner's data home and keeps it 14 days for reviewers. Later, when a team asks, the same files go to a bucket + database instead — not in this plan.</p></div>
+    <p>CI zips its runner's data home and keeps it 14 days for reviewers. Later, when a team asks, the same board stack runs on a shared host — Postgres + a bucket behind the same store interface, one URL for everyone — not in this plan.</p></div>
   <div class="homecard none" style="grid-column:1/-1"><h3>Never stored — the drift itself</h3>
     <p>Proven / unproven / Changed is <b>computed</b> on every build by comparing the current requirement text against what the last run pinned. There is no status field anywhere, so there is nothing to go stale or to lie.</p></div>
 </div>
@@ -97,14 +97,14 @@ ol.run li.git{border-left:4px solid var(--koke)}
 <tr><th style="width:250px">ignored file</th><th style="width:210px">why it stays out of git</th><th>how a teammate gets theirs</th></tr>
 <tr><td><span class="k">tools/</span> · <span class="k">node_modules/</span> · <span class="k">board.html</span></td><td><b>Vendored / generated.</b> ~45&nbsp;MB of machinery that <span class="k">kg-update</span> replaces wholesale — committing it means merge conflicts on every update and a bloated app repo.</td><td>The committed manifest (<span class="k">spec/_specboard.json</span>) names the exact release; <span class="k">kg-update</span> + <span class="k">npm install</span> re-vendor it identically on their machine.</td></tr>
 <tr><td><span class="k">spec/_config.json</span></td><td><b>Per-machine, possibly secret.</b> Ports and app URL differ per machine, and a sign-in script can carry a credential — a credential must never be committed.</td><td>They write their own once. It is a few lines.</td></tr>
-<tr><td>the harvest (in <span class="k">~/.specboard/</span>) · <span class="k">test-results/</span> · <span class="k">crawl.*</span> · <span class="k">screen.png</span></td><td><b>Derived and churning.</b> Every run rewrites it, only the latest proves anything, and git keeps every version forever — this repo grew to 850&nbsp;MB of dead harvest history exactly this way.</td><td>They run the suite once: the committed tests against the app regenerate the whole harvest on their machine. It is a <i>cache of proof</i>, not the truth — the truth is the requirements and tests, which they already cloned.</td></tr>
+<tr><td>the harvest (in <span class="k">specboard/data/</span>) · <span class="k">test-results/</span> · <span class="k">crawl.*</span> · <span class="k">screen.png</span></td><td><b>Derived and churning.</b> Every run rewrites it, only the latest proves anything, and git keeps every version forever — this repo grew to 850&nbsp;MB of dead harvest history exactly this way.</td><td>They run the suite once: the committed tests against the app regenerate the whole harvest on their machine. It is a <i>cache of proof</i>, not the truth — the truth is the requirements and tests, which they already cloned.</td></tr>
 </table>
 <p style="margin-top:14px"><b>So a teammate's first hour looks like this:</b></p>
 <ol class="run">
 <li class="git"><b>Clone the app repo.</b><p>They now have everything anyone authored: every requirement, every test, every ruling, the manifest. That is the entire shared truth — a few hundred KB.</p></li>
 <li class="ign"><b><span class="k">kg-update</span> + <span class="k">npm install</span>.</b><p>The manifest names the release; the same tools land in their <span class="k">specboard/</span>, byte-identical to yours.</p></li>
-<li class="home"><b>Run the suite once — their private working copy.</b><p>Their own <span class="k">~/.specboard/&lt;id&gt;/</span> fills with a harvest of the app on <i>their</i> machine. This is deliberately NOT the shared truth — it is the fast inner loop for writing and fixing tests, where you cannot wait on CI between every red and green.</p></li>
-<li class="ci"><b>The shared truth is ONE canonical run per commit — CI's.</b><p>Every laptop's run can honestly differ (its app state, its branch, its machine), so the record a team shares is never "everyone's results merged" — it is the run from the one clean environment on the deterministic golden data. <b>Today</b> that run is the check on the commit plus a 14-day artifact anyone can open (<span class="k">SPECBOARD_HOME=&lt;dir&gt; npm run board</span>). <b>The team store makes it permanent:</b> CI writes that same canonical harvest into a database (the fold index) and a bucket (the blobs), and a hosted read-only board shows every teammate the identical record. Deferred until a team asks — but this, not git and not anyone's laptop, is where shared results live.</p></li>
+<li class="home"><b>Run the suite once — their own local instance.</b><p>Their board's <span class="k">specboard/data/</span> (the SQLite db + blobs) fills with a harvest of the app on <i>their</i> machine — like each developer running their own local Langfuse. This is deliberately NOT the shared truth — it is the fast inner loop for writing and fixing tests, where you cannot wait on CI between every red and green.</p></li>
+<li class="ci"><b>The shared truth is ONE canonical run per commit — CI's.</b><p>Every laptop's run can honestly differ (its app state, its branch, its machine), so the record a team shares is never "everyone's results merged" — it is the run from the one clean environment on the deterministic golden data. <b>Today</b> that run is the check on the commit plus a 14-day artifact anyone can open (point the board at the downloaded data directory). <b>Team mode makes it permanent, the Langfuse way:</b> the same board stack hosted on a shared box — Postgres + a bucket behind the same store interface — CI writes the canonical harvest into it, and every teammate opens the same URL and reads the identical record. This, not git and not anyone's laptop, is where shared results live.</p></li>
 </ol>
 <div class="dec"><b>The mental model:</b> git shares the <i>recipe</i> (requirements + tests). Each laptop's harvest is a <i>private working cache</i> for iterating. CI produces the <i>one canonical run per commit</i>, and the team store is the database that canonical run will live in — so teammates never compare divergent local results; they all read CI's. <span class="k">test-results/</span> itself is scratch on every machine, read once and discarded — it is never stored anywhere, local or cloud.</div>
 
@@ -126,12 +126,12 @@ ol.run li.git{border-left:4px solid var(--koke)}
   <td class="dash">—</td>
   <td class="mono">board.html · screen.png<br>test-results/</td>
   <td class="dash">same, overwritten</td></tr>
-<tr class="y"><td class="rowhead">data home<small>~/.specboard/&lt;id&gt;/</small></td>
-  <td class="dash">directory named,<br>created at first write</td>
+<tr class="y"><td class="rowhead">data home<small>specboard/data/ (ignored)</small></td>
+  <td class="dash">created empty<br>at the first run</td>
   <td class="dash">—</td>
   <td class="dash">— (nothing; the sketch<br>was retired, see §3)</td>
   <td class="dash">— (drift is computed)</td>
-  <td class="mono">index.json · runs/ ·<br>blobs/&lt;sha&gt;.*<br>(frames, skeletons,<br>Expected html, fonts, video)</td>
+  <td class="mono">board.db · runs/ ·<br>blobs/&lt;sha&gt;.*<br>(frames, skeletons,<br>Expected html, fonts, video)</td>
   <td class="dash">same files, latest wins;<br>unchanged bytes cost nothing;<br>unnamed blobs deleted</td></tr>
 <tr class="i"><td class="rowhead">leaves the machine<small>CI · later a team store</small></td>
   <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
@@ -144,7 +144,7 @@ ol.run li.git{border-left:4px solid var(--koke)}
 <header><b>Step 0 · Install</b><span><span class="k">kg-init</span> scaffolds the <span class="k">specboard/</span> folder into your app repo</span></header>
 <div class="file"><div class="name">spec/_specboard.json<span class="tag">T4 · T12</span></div><div><span class="chip git">committed</span></div>
   <div class="what">The folder's ID card: which specboard release is vendored, the project's id, and where the app is.
-  <small>The project id is what names the data-home directory — <span class="k">~/.specboard/&lt;id&gt;/</span> — so two checkouts of the same project share one harvest. Under 1&nbsp;KB, lives forever.</small></div></div>
+  <small>The project id is what identifies this project to a shared/team instance later. Under 1&nbsp;KB, lives forever.</small></div></div>
 <div class="file"><div class="name">.gitignore + spec/.gitignore<span class="tag">T12</span></div><div><span class="chip git">committed</span></div>
   <div class="what">Keep the vendored code and every derived file out of git — the folder itself IS committed, its machinery is not.</div></div>
 <div class="file"><div class="name">tools/ · node_modules/ · board.html</div><div><span class="chip ign">ignored</span></div>
@@ -186,9 +186,9 @@ ol.run li.git{border-left:4px solid var(--koke)}
   <div class="what">The authored test: which requirements it tags (<span class="k">checkReq</span>), the soft claims for every fact the Then names, the composable beats. Runs identically on your machine and in CI's clone.</div></div>
 <div class="file"><div class="name">test-results/ · screen.png</div><div><span class="chip ign">ignored</span></div>
   <div class="what">Playwright's scratch: the run's raw attachments, read once by the reporter and then worthless; plus the screen's fallback cover photo.</div></div>
-<div class="file"><div class="name">index.json<span class="tag">T5</span></div><div><span class="chip home">data home</span></div>
-  <div class="what">The <b>fold</b> — the one file the whole board derives from: every requirement's verdicts, coverage, claims, the source fingerprints, and the name of every blob a beat uses.
-  <small>Each screen's run folds its entry in; it never replaces the other screens'. THE authority on state (<span class="k">spec-store.mjs</span> reads only this).</small></div></div>
+<div class="file"><div class="name">board.db<span class="tag">T5</span></div><div><span class="chip home">data home</span></div>
+  <div class="what">The <b>fold</b>, in the board's database (SQLite): every requirement's verdicts, coverage, claims, the source fingerprints, and the name of every blob a beat uses.
+  <small>Each screen's run folds its rows in; it never replaces the other screens'. THE authority on state (<span class="k">spec-store.mjs</span> reads only this).</small></div></div>
 <div class="file"><div class="name">runs.json · runs/&lt;id&gt;/<span class="tag">T7 · T8</span></div><div><span class="chip home">data home</span></div>
   <div class="what">One record per run: the log, shots, video. Only the last N runs are kept; older ones are pruned.</div></div>
 <div class="file"><div class="name">blobs/&lt;sha256&gt;.png<span class="tag">T7</span></div><div><span class="chip home">data home</span></div>
@@ -205,7 +205,7 @@ ol.run li.git{border-left:4px solid var(--koke)}
 <div class="file"><div class="name">blobs/&lt;sha256&gt;.webm<span class="tag">T7</span></div><div><span class="chip home">data home</span></div>
   <div class="what">The screen's run video, for the whole-requirement proof band.</div></div>
 <div class="file"><div class="name">board.html (regenerated)</div><div><span class="chip ign">ignored</span></div>
-  <div class="what">Rebuilt from <span class="k">index.json</span> after every fold. Generated, never edited, never committed.</div></div>
+  <div class="what">Rebuilt from <span class="k">board.db</span> after every fold. Generated, never edited, never committed.</div></div>
 </div>
 
 <div class="step">
@@ -230,10 +230,10 @@ ol.run li.git{border-left:4px solid var(--koke)}
 <li class="ign"><b>The raw attachments land in <span class="k">test-results/</span>.</b><p>Transient and ignored — the reporter reads them once, then they're trash.</p></li>
 <li class="home"><b>The reporter stores every attachment as a blob.</b><p>Frames, skeletons, patch replicas, fonts, the video — each written to <span class="k">blobs/</span> under the sha256 of its own bytes. Anything unchanged since last run already exists and costs nothing. <span class="tag">T7</span></p></li>
 <li class="home"><b>The beat's starting page becomes the shared base.</b><p>The before replica, header stripped, stored once — a second beat starting from the same page hashes to the same blob, so one screen state is one file no matter how many beats use it. <span class="tag">A3′</span></p></li>
-<li class="home"><b>The fold: this screen's entry is written into <span class="k">index.json</span>.</b><p>Verdicts, coverage, claims, the source fingerprints, and every blob name — folded in beside the other screens, never replacing them. <span class="tag">T5</span></p></li>
+<li class="home"><b>The fold: this screen's rows are written into <span class="k">board.db</span>.</b><p>Verdicts, coverage, claims, the source fingerprints, and every blob name — folded in beside the other screens' rows, never replacing them. <span class="tag">T5</span></p></li>
 <li class="home"><b>The run record lands and old ones are pruned.</b><p><span class="k">runs.json</span> plus <span class="k">runs/&lt;id&gt;/</span> (log, shots, video); only the last N are kept.</p></li>
 <li class="home"><b>The garbage collector sweeps.</b><p>It computes the set of blobs the index and the kept runs still name; everything else under <span class="k">blobs/</span> is deleted. This is the entire retention policy. <span class="tag">T2</span></p></li>
-<li class="ign"><b><span class="k">board.html</span> is regenerated</b> from the fresh <span class="k">index.json</span>, and the server hands out exactly four kinds of thing: the board page, the authored <span class="k">spec/**</span>, <span class="k">/blob/&lt;sha&gt;</span>, and <span class="k">/runs/&lt;id&gt;/</span> — nothing else. <span class="tag">T8</span></li>
+<li class="ign"><b><span class="k">board.html</span> is regenerated</b> from the fresh <span class="k">board.db</span>, and the server hands out exactly four kinds of thing: the board page, the authored <span class="k">spec/**</span>, <span class="k">/blob/&lt;sha&gt;</span>, and <span class="k">/runs/&lt;id&gt;/</span> — nothing else. <span class="tag">T8</span></li>
 </ol>
 <p><b>What you (and the agent) then read back, per moment:</b> the Expected cell is the base blob with the moment's patch grafted on; the Actual cell is the ringed frame; a failed claim shows its expected and got, and the skeleton beside it is what the agent fixes the app from. All of it lives until that screen's next run — only the latest proves anything.</p>
 <p><b>And if you edit the PRD afterwards</b> (back to step 3): nothing is written — the edited text's fingerprint stops matching the fold's, and the requirement reads Changed / unproven on the next build.</p>
