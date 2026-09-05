@@ -2,7 +2,6 @@ import { writeFileSync, copyFileSync, mkdirSync, existsSync, readFileSync, rmSyn
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { join, relative, basename, extname } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
 import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, fontEvidencePath, facesCssPath, deriveFacesCss, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, parseFontFacesAttachment, focusFromLayouts, valueMeta, valueLanded, claimSlot, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
@@ -462,49 +461,13 @@ export function noteReplica (row, rel, gapLines, screen, id, beat, phase) {
   } catch { /* an unreadable replica is not a verdict */ }
 }
 
-// DERIVE THE SCHEMATICS AT EVERY FOLD (2026-09-02). The drawing beside a requirement is drawn from
-// the harvest's layout skeletons — so it is a BY-PRODUCT OF THIS RUN, exactly like the frames, and
-// it has to land with them. It did not: `node tools/viz-derive.mjs` was a by-hand command, so every
-// run left the committed drawings made from the PREVIOUS geometry — the demo's ring, dim wash and
-// callout had silently vanished from every schematic, and their cardspots were empty, which
-// un-frames the callout on the proof side too. Now the fold spawns the viz pass for the screens it
-// just folded.
-//
-// A child process, never an import: viz-derive is a top-level script, and the reporter must not take
-// on spec-store's module state (the same reason the server spawns build()). Bounded, and swallowed —
-// a drawing is not proof, so a derive that fails is logged and the run stands (rule 3 cuts the other
-// way here: never fake a green, and never fake a RED either).
-//
-// WHICH screens (2026-09-03). Not the test FILES' screens — a COMPOSED FLOW crosses screens, so one
-// run of spec/init/test.spec.ts lands fresh skeletons on the BOARD screen (its flow tags board:R1
-// and board:R9) while byScreen names only init. Deriving byScreen alone left the board's drawings a
-// harvest behind their own sources on every such run, and `npm run proof mirror` said exactly that:
-// "the layout pin has moved: the harvest is newer than the drawing". A drawing is a by-product of
-// the harvest it is drawn from, so the screens to redraw are the ones the EVIDENCE landed on, union
-// the ones that ran. Pure, unit-tested in tools/reporter-derive.test.mjs.
-export function screensToDraw (byScreen, evidence) {
-  const out = new Set(Object.keys(byScreen || {}))
-  for (const qid of Object.keys(evidence || {})) {
-    const i = String(qid).indexOf(':')
-    if (i > 0) out.add(String(qid).slice(0, i))     // never invent a screen for an unqualified id
-  }
-  return [...out]
-}
-
-// Pure seam, exported for tools/reporter-derive.test.mjs: `exec` is execFileSync in production.
-const VIZ_DERIVE = fileURLToPath(new URL('../tools/viz-derive.mjs', import.meta.url))
-export function deriveSchematics (screens, exec) {
-  // `_`-prefixed pseudo-screens (the auth setup file) are not rows and have no drawings
-  const list = [...new Set((screens || []).map(String).filter(s => s && !s.startsWith('_')))]
-  if (!list.length) return false
-  try {
-    exec(process.execPath, [VIZ_DERIVE, ...list], { stdio: 'inherit', timeout: 120000 })
-    return true
-  } catch (err) {
-    console.error('schematic derive failed:', (err && err.message) || err)
-    return false
-  }
-}
+// THE SKETCH DERIVE IS GONE (retired by the human, 2026-09-05). The fold used to spawn
+// tools/viz-derive.mjs for every screen it had just folded, so a committed drawing was always made
+// from the harvest beside it. There is no drawing to make: an un-harvested requirement shows its
+// Given/When→Then words and an honest "no Expected yet", and a harvested one's Expected picture is
+// the HTML replica the capture already wrote beside its frames. `screensToDraw` and
+// `deriveSchematics` went with it, and so did tools/reporter-derive.test.mjs, which pinned exactly
+// the child-process call this comment describes.
 
 export default class ResultsIndexReporter {
   onBegin (_config, suite) { this.suite = suite }
@@ -727,11 +690,6 @@ export default class ResultsIndexReporter {
       let evidence = {}
       try { evidence = harvestEvidence(evidenceHarvest, ranAt) } catch (err) { console.error('evidence harvest failed:', err) }
       try { foldByScreen(byScreen, { partial, evidence }) } catch (err) { console.error('results-index fold failed:', err) }
-      // …and the DRAWINGS from that same harvest, so the schematic beside a requirement is never a
-      // pass behind the frames beside it. Deterministic output: a re-derive whose geometry did not
-      // move rewrites nothing (viz-derive compares bodies).
-      deriveSchematics(screensToDraw(byScreen, evidence), execFileSync)
-
       // Record a "recent runs" entry — but ONLY when the SERVER did not start this run. A board-started
       // run sets BOARD_RECORD and the server writes a richer entry itself (with per-test shots), so
       // recording here too would double it. A plain `npm run e2e` or the crawl's own test run sets no

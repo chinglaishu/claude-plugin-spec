@@ -96,14 +96,12 @@ test('the golden-data seed template is part of the skeleton', () => {
   assert.ok(FILES.includes('spec/_seed.ts'), 'spec/_seed.ts must be a vendored skeleton file')
 })
 
-test('the viz pass shell is part of the skeleton', () => {
-  // Task 4 review, finding M2: tools/viz.mjs (the pure archetype kit) is vendored — the
-  // every-relative-import-is-vendored guard below catches ITS absence because spec-store.mjs imports
-  // it. But tools/viz-derive.mjs is a CLI entry point nothing vendored imports, so that guard is
-  // blind to it: without this assertion a scaffolded project silently has no hands to run the viz
-  // pass at all, and "redraw is instant and free" has nothing to redraw with.
-  assert.ok(FILES.includes('tools/viz-derive.mjs'), 'tools/viz-derive.mjs must be a vendored skeleton file')
-})
+// (Deleted 2026-09-05 with the SKETCH it guarded — "the viz pass shell is part of the skeleton"
+// pinned that tools/viz-derive.mjs stayed on the vendored FILES list, because it was a CLI entry
+// point nothing vendored imports and so was invisible to the every-relative-import-is-vendored
+// guard below. The human retired the sketch: there is no viz pass to give a scaffolded project
+// hands to run, and the file is gone. tools/viz.mjs stays vendored on the guard's own terms —
+// build-board, proof-integrity and spec/_base.ts all import it for `layoutHash`.)
 
 // The relative-path specifiers a vendored file actually imports. Extracted so the meta-test below can
 // pin that the detector SEES the multi-line brace form — a regression an earlier line-anchored rewrite

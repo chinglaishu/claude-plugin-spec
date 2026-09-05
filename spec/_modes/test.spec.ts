@@ -1,12 +1,10 @@
 import { test, expect, checkReq } from '../_base'
-import type { Locator } from '@playwright/test'
 import { readdirSync, rmSync, statSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readScreen } from '../../tools/spec-store.mjs'
 import { reqHash, meaningText } from '../../tools/reqhash.mjs'
 import { parseBehavior } from '../../tools/behavior.mjs'
-import { deriveSchematic } from '../../tools/viz.mjs'
 import { build } from '../../tools/build-board.mjs'
 
 // The ENGINE of the board's computed state (board R4/R8). A requirement's state is COMPUTED — proven or
@@ -54,26 +52,11 @@ function makeScreen (name: string, body = 'One behaviour, asserted by a test.', 
   return { name, dir, prd }
 }
 
-// HOW MANY ROWS SHOW THE REQUIREMENT'S DRAWING (2026-09-04, rule 4). These fixtures are screens with
-// NO harvest of their own, and such a screen BORROWS a sibling's captured page to stand its sketch
-// in (board R18) — a path that was silently dead until `chromeSource` was fixed to look for the file
-// name the capture actually writes. So the drawing is no longer always a direct `<svg>` in the row:
-// where a lender exists it is inside that row's `iframe.repframe` srcdoc, which is exactly what R18
-// requires. What these tests are about — the drawing is paired into every beat row — is unchanged;
-// only where to look for it is.
-async function sketchRows (rows: Locator): Promise<number> {
-  const n = await rows.count()
-  let seen = 0
-  for (let i = 0; i < n; i++) {
-    const cell = rows.nth(i).locator('.sbframe')
-    if (await cell.locator('svg').count()) { seen++; continue }
-    const doc = await cell.locator('iframe.repframe')
-      .evaluate(f => String((f as HTMLIFrameElement).srcdoc || '')).catch(() => '')
-    if (/<svg[\s>]/.test(doc)) seen++
-  }
-  return seen
-}
-
+// (The `sketchRows` helper — how many rows show the requirement's DRAWING, inline or inside a
+// borrowed page — went with the SKETCH on 2026-09-05, CLAUDE.md rule 4. No row draws anything from
+// a requirement's sentence any more: a beat row's Expected cell is the replica the app rendered, or
+// the honest "no Expected yet". These probe screens harvest nothing, so every one of their rows is
+// the honest blank, and that is what the legs below read.)
 // A fresh, far-future passing result for this screen's R1 — fed straight to readScreen, so no
 // _results-index.json on disk is touched. Far-future so it is never counted stale against the source.
 const passResult = (name: string) =>
@@ -268,22 +251,16 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     'Supporting prose under the shape.\n\n' +
     '## R2 — A prose-only requirement\n\nOnly prose here — no triple, so no block.'
   const { name, dir } = makeScreen('probe-behavior', body, { evidence: true })
-  // a committed drawing (derived exactly as the viz pass does) so R1 leads with the STORYBOARD —
-  // the behavior paired with its still (board R13, 2026-08-25 #2). R2 stays prose-only, no drawing.
-  const d = deriveSchematic(parseBehavior(body))!
-  mkdirSync(join(dir, 'viz'), { recursive: true })
-  writeFileSync(join(dir, 'viz', 'R1.svg'), d.svg)
   const restore = injectIndex(name, passWithEvidence(name))
   try {
     const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
     await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
 
-    // default FOCUS view: the STORYBOARD leads the reading card — each beat paired with its drawn
-    // still, above the collapsed prose (board R13, 2026-08-25 #2 — the behavior and its drawing folded together)
+    // default FOCUS view: the STORYBOARD leads the reading card — each beat on its own row above the
+    // collapsed prose (board R13, 2026-08-25 #2 — the behavior and its picture folded together)
     const fst = dt.locator('.fread .fstory')
     await expect(fst.locator('.sbrow')).toHaveCount(3)          // given + 2 × (When → Then)
-    await expect.poll(() => sketchRows(fst.locator('.sbrow')),
-      { message: 'a parked still paired into each row' }).toBe(3)
+    await expect(fst.locator('.sbrow .sbframe')).toHaveCount(3) // …each with an Expected cell of its own
     await expect(fst).toContainText('a list with two items')
     await expect(fst).toContainText('you press Undo')
     // THE STORYBOARD carries the beat NUMBERS and a heavier rule opening each beat after the first;
@@ -384,14 +361,14 @@ test('renders — a beats block leads the requirement, the List reads it, and th
   } finally { restore() }
 })
 
-// ── Task 12: the schematic on first sight, the beats scrolling inside the card ──
-// The human (2026-08-24): on first sight the schematic was not shown. The Focus page FITS the
+// ── Task 12: the first beat row on first sight, the beats scrolling inside the card ──
+// The human (2026-08-24): on first sight the picture was not shown. The Focus page FITS the
 // viewport — the requirement card's beats/prose region scrolls INTERNALLY (.fbeats) between a
-// fixed card header and the pinned in-full footer, and the schematic card below keeps its
-// intrinsic height, fully visible on load at a 640px-tall viewport and up. This fixture is TALL
+// fixed card header and the pinned in-full footer, and the first row below keeps its intrinsic
+// height, fully visible on load at a 640px-tall viewport and up. This fixture is TALL
 // on purpose (three beats of wrapping text): under the superseded layout (the left column
 // scrolling as one, Task 8 fix round 1) it pushed the drawing below the fold at BOTH heights.
-test('renders — Focus fits the viewport: the Expected picture on first sight, the beats scrolling inside the card', async ({ page }) => {
+test('renders — Focus fits the viewport: the first beat row on first sight, the beats scrolling inside the card', async ({ page }) => {
   // Task 14 (×0.8 --scale, 2026-08-24): the scaled chrome fits MORE — the original seven ~100-char
   // rows all single-lined in the wider reading column and the region stopped overflowing at 900px,
   // so "the beats region overflows" went red with the behaviour intact (rule 4: the fixture had
@@ -416,11 +393,6 @@ test('renders — Focus fits the viewport: the Expected picture on first sight, 
   // (Lengthened for Task 14 so it still wraps to two lines in the wider scaled column.)
   const { name, dir } = makeScreen('probe-tall', body,
     { title: 'Ticking the long-running items one by one recounts the header and strikes each finished row through where it stands in the working list' })
-  // a COMMITTED drawing, derived exactly as the viz pass does — the thing that must be on first sight
-  const d = deriveSchematic(parseBehavior(body))!
-  expect(d.archetype).toBe('toggle-and-recount')
-  mkdirSync(join(dir, 'viz'), { recursive: true })
-  writeFileSync(join(dir, 'viz', 'R1.svg'), d.svg)
 
   const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
   await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
@@ -428,10 +400,12 @@ test('renders — Focus fits the viewport: the Expected picture on first sight, 
   const story = ov.locator('.fread .fstory')
   const scroll = ov.locator('.fread .fscroll')
 
-  // ON FIRST SIGHT, before ANY interaction: the storyline LEADS with the Given row and its drawn
-  // still — the paired drawing is on screen from the first paint (Task 12, generalized to the
-  // storyline) — and the card's header is pinned above it
-  await expect.poll(() => sketchRows(story.locator('.sbrow').first())).toBe(1)
+  // ON FIRST SIGHT, before ANY interaction: the storyline LEADS with the Given row and its Expected
+  // cell — whole, on screen from the first paint (Task 12, generalized to the storyline) — and the
+  // card's header is pinned above it. (This used to count the row's drawn SKETCH; the sketch is
+  // retired — the human, 2026-09-05 — so what must be on first sight is the row itself and the cell
+  // that says, honestly, that nothing has been harvested for it yet.)
+  await expect(story.locator('.sbrow').first().locator('.sbframe .noschem')).toHaveCount(1)
   await expect(story.locator('.sbrow').first()).toBeInViewport({ ratio: 1 })
   await expect(ov.locator('.fread > .frmeta')).toBeInViewport({ ratio: 1 })
   // the story+proof+prose region scrolls INTERNALLY (the storyline packs what used to be several
@@ -461,10 +435,10 @@ test('renders — Focus fits the viewport: the Expected picture on first sight, 
   expect(pb.y + pb.height, 'the Focus page fits the viewport').toBeLessThanOrEqual(vp.height)
   await expect(dt.locator('.dtfoot .fpager')).toBeInViewport()
 
-  // at the 640px floor the storyline STILL leads with the Given row's drawn still on first sight,
-  // the header still pinned — a drawing paired from the first paint at any height
+  // at the 640px floor the storyline STILL leads with the Given row on first sight, the header
+  // still pinned — the row is paired from the first paint at any height
   await page.setViewportSize({ width: 1440, height: 640 })
-  await expect.poll(() => sketchRows(story.locator('.sbrow').first())).toBe(1)
+  await expect(story.locator('.sbrow').first().locator('.sbframe')).toHaveCount(1)
   await expect(ov.locator('.fread > .frmeta')).toBeInViewport({ ratio: 1 })
   // …and it is never a heading over nothing (M-3): the first storyboard row sits inside the region,
   // near the top (below the sticky toolbar, never pushed off)
@@ -477,151 +451,22 @@ test('renders — Focus fits the viewport: the Expected picture on first sight, 
   await page.setViewportSize({ width: 1440, height: 900 })
 })
 
-// ── the drawn schematic fills the Focus slot (requirement schematics, task 4) ──
-// The schematic is AUTHORED-side content: derived once from the behavior text (tools/viz.mjs,
-// pure), committed at spec/<screen>/viz/<id>.svg, hash-pinned — so this test needs no injected
-// index at all. It proves the three contract points the brief names: the slot renders the drawn
-// loop for a requirement whose committed drawing matches its text; loop · stills is a CLIENT-side
-// preference (stills = the same drawing frozen per beat phase, nothing stored in the tree); and a
-// drawing whose text has moved past it renders QUIET GREY with the dated ≠ note — honest, never a
-// wrong picture. A requirement with no drawing keeps the placeholder line.
-test('renders — the Expected picture fills the Focus slot: loop, stills per beat, grey when the text moves', async ({ page }) => {
-  const body =
-    '- **Given** a list with two items\n- **When** you press Clear\n- **Then** the list shows zero items\n' +
-    '- **When** you press Undo\n- **Then** the two items return\n\n' +
-    'Prose under the shape.\n\n' +
-    '## R2 — A prose-only requirement\n\nOnly prose — no behavior block, so no drawing to derive.'
-  const { name, dir, prd } = makeScreen('probe-viz', body)
-  // derive + commit the drawing EXACTLY as the viz pass does (tools/viz-derive.mjs): the SVG
-  // carries its own data-viz-hash stamp, so enrichReqs reads it fresh
-  const d = deriveSchematic(parseBehavior(body))!
-  expect(d.archetype).toBe('press-and-clear')
-  mkdirSync(join(dir, 'viz'), { recursive: true })
-  writeFileSync(join(dir, 'viz', 'R1.svg'), d.svg)
-  const vizat = d.svg.match(/data-viz-hash="(.{16})"/)![1].slice(0, 6)
-
-  const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
-  await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
-  const schem = dt.locator('.focusov .fread .fstory')
-
-  // the STORYLINE is the default: each beat paired with its drawn still — no placeholder line, no
-  // stale banner (fresh); the derived hash rides the slot (data-vizhash) for traceability
-  // The honesty CAPTION row ("schematic · the idea, not the real UI") is GONE with the 2026-08-28
-  // redesign — the drawing mirrors the real screen now, so the disclaimer would be false — and what
-  // names the cells instead is the three-label header row over them.
-  await expect(schem.locator('.storycap')).toHaveCount(0)
-  await expect(schem).not.toContainText('the idea, not the real UI')
-  // (reordered 2026-08-30, rule 4 — the human removed the column-order toggle and fixed the story
-  // BEHAVIOUR FIRST, board R21, so the header names its three cells in that one order now)
-  // …and the human RENAMED the two pictures on 2026-09-03 (Schematic → Expected, Proof → Actual),
-  // because the picture beside a proof is now a real HTML replica of the app's own component rather
-  // than a house-style drawing. This assertion still demanded the old names — a stale test, not a
-  // broken board (rule 4, rule 6: the decision is the human's, the wording follows it).
-  await expect(schem.locator('.sbwrap .sbhead .sbhc')).toHaveText(['behavior', 'expected', 'actual'])
-  await expect(schem).not.toContainText('no Expected yet')
-  await expect(schem).toHaveAttribute('data-vizhash', vizat)
-  await expect(schem).not.toContainText('≠')
-  await expect(schem.locator('.sbstale')).toHaveCount(0)          // fresh — no stale banner at all
-
-  // STORYBOARD: given + one row per beat, NO toggle (the human, 2026-08-26) — the given is a parked
-  // still, each When->Then row LOOPS its own beat
-  await expect(schem.locator('.medbar')).toHaveCount(0)
-  await expect(schem.locator('[data-sm]')).toHaveCount(0)
-  await expect(schem.locator('.sbrow')).toHaveCount(3)            // given + 2 beats
-  await expect.poll(() => sketchRows(schem.locator('.sbrow'))).toBe(3)
-  await expect(schem.locator('.sbrow').nth(0)).toHaveClass(/bgiven/)
-  await expect(schem.locator('.sbrow').nth(1).locator('.sbtext')).toContainText('When')
-  await expect(schem.locator('.sbrow').nth(1).locator('.sbtext')).toContainText('Then')
-  await expect(schem.locator('.viz')).toHaveCount(0)             // no single whole-animation drawing
-  // …AND EACH ROW SHOWS ITS OWN BEAT (corrected 2026-09-04, rule 4). This pinned `data-loop` on the
-  // two beat rows and none on the Given — the free-running drawing a requirement with NO UI used to
-  // get. Such a screen now BORROWS a sibling's captured page to stand its sketch in (board R18), a
-  // path that was silently dead until `chromeSource` looked for the file name the capture actually
-  // writes; a borrowed page PARKS its sketch rather than free-running it. The fact this leg is about
-  // — one still per row, and the rows are not three copies of one frame — is unchanged, and is now
-  // read off the park point each row's own page is held at.
-  const parks = async () => schem.locator('.sbrow .sbframe iframe.repframe').evaluateAll(
-    fs => fs.map(f => (/animation-delay:\s*([\d.-]+)s/.exec(String((f as HTMLIFrameElement).srcdoc || '')) || [])[1] || ''))
-  await expect.poll(async () => (await parks()).length,
-    { message: 'one borrowed page per row' }).toBe(3)
-  const held = await parks()
-  expect(new Set(held).size, 'three different park points — never one frame three times: ' + JSON.stringify(held)).toBe(3)
-
-  // a requirement with NO drawing keeps the honest placeholder line — reworded with the pictures
-  // themselves on 2026-09-03 (Schematic → Expected), which this had not followed
-  await page.goto('/#/' + name + '/R2')
-  await expect(dt.locator('.focusov .fread .fstory')).toContainText('no Expected yet')
-
-  // THE TEXT MOVES PAST THE DRAWING → quiet grey + the dated stale banner. The committed SVG stays
-  // byte-identical; only prd.md changes — staleness is COMPUTED from the pin, never stored. A goto
-  // between two hashes is a SAME-DOCUMENT navigation (the documented trap), so the rebuilt
-  // board.html would never load — force a real reload, re-asserting build() per retry like settleAt.
-  writeFileSync(join(dir, 'prd.md'), prd.replace('the list shows zero items', 'the list shows an empty state'))
-  await expect(async () => {
-    build()
-    await page.reload()
-    await expect(dt.locator('.viewseg')).toBeVisible({ timeout: 2000 })
-    await expect(dt.locator('.reqpane .req[data-r="R1"] .schematic[data-stale="1"]')).toHaveCount(1, { timeout: 2000 })
-  }).toPass({ timeout: 60000 })
-  await page.goto('/#/' + name + '/R1')
-  const stale = dt.locator('.focusov .fread .fstory')
-  await expect(stale).toHaveClass(/\bisstale\b/)
-  await expect.poll(() => sketchRows(stale.locator('.sbrow')),
-    { message: 'the old drawing, greyed per row — shown, not hidden' }).toBe(3)
-  await expect(stale.locator('.sbstale')).toBeVisible()
-  await expect(stale.locator('.sbstale')).toContainText('stale — text changed')
-  // the drawings are derived AT THE FOLD since 0.36.0 (the reporter spawns viz-derive), so the banner
-  // promises the next fold, not a by-hand pass (rule 4: the wording moved with the mechanism)
-  await expect(stale.locator('.sbstale')).toContainText('redrawn at the next fold')
-  await expect(stale).toHaveAttribute('data-vizhash', vizat)      // the derived hash still rides the slot for traceability
-})
-
-// ── REDUCED MOTION PARKS THE STORYLINE (restored 2026-09-04, final re-review, rules 3 and 6) ──────
-// The storyline's rows move: a drawn beat cell LOOPS its own scenes (tools/board/client.js
-// `frameCell` — `data-loop`), and under `prefers-reduced-motion: reduce` every one of them parks on
-// its result instead. That accessibility fact had exactly one test, in the leg above, and the
-// storyline redesign deleted it under a comment saying nothing was lost: `data-loop` was then
-// asserted NOWHERE in the tree while client.js:2182,2185 still gated on `reduced`.
+// (TWO WHOLE TESTS WERE DELETED HERE ON 2026-09-05, CLAUDE.md rule 4 — a test of a retired
+// feature is deleted with it, and the human retired the SKETCH.
 //
-// It could not simply be put back where it was, and that is worth writing down: the fixture above is
-// a screen with NO captured markup at all, so it BORROWS a sibling's page (board R18) and its cells
-// are documents in sandboxed frames with a parked sketch inside them — nothing there loops, under
-// any media setting. The loop lives on the INLINE drawn cell, which a row gets when the screen has a
-// picture of its own and therefore no borrowed chrome (tools/spec-store.mjs `hasAnyReplica` →
-// build-board's CHROME map → `canPair`). So this fixture commits one empty replica file: enough to
-// refuse the loan, not enough to be a harvest, which is exactly the shape `frameCell` draws for.
-test('renders — reduced motion parks every drawn row: the beats loop, and under reduce nothing does', async ({ page }) => {
-  const body =
-    '- **Given** a list with two items\n- **When** you press Clear\n- **Then** the list shows zero items\n' +
-    '- **When** you press Undo\n- **Then** the two items return\n'
-  const { name, dir } = makeScreen('probe-motion', body)
-  const d = deriveSchematic(parseBehavior(body))!
-  mkdirSync(join(dir, 'viz'), { recursive: true })
-  writeFileSync(join(dir, 'viz', 'R1.svg'), d.svg)
-  // a screen with captured markup of its own is never lent someone else's page — one file is the
-  // whole of that condition, and it keeps the drawing INLINE in the row (see the note above)
-  mkdirSync(join(dir, 'evidence'), { recursive: true })
-  writeFileSync(join(dir, 'evidence', 'R1.b1.before.expected.html'), '<div class="rep r0"></div>')
-
-  const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
-  await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
-  const schem = dt.locator('.focusov .fread .fstory')
-  await expect(schem.locator('.sbrow')).toHaveCount(3)                       // given + 2 beats
-  await expect(schem.locator('.sbrow .sbframe svg')).toHaveCount(3)          // drawn inline, not borrowed
-  await expect(schem.locator('.sbrow').nth(0).locator('.sbframe[data-loop]')).toHaveCount(0)  // the given is a parked still
-  await expect(schem.locator('.sbframe[data-loop]')).toHaveCount(2)          // both beat rows loop
-
-  // …and under reduce, none of them does. A hash change is a same-document navigation (the
-  // documented trap), so the reader is rebuilt by a real reload with the media emulated.
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  try {
-    await page.reload()
-    await expect(dt.locator('.viewseg')).toBeVisible()
-    await expect(schem.locator('.sbrow')).toHaveCount(3)                     // the rows are all still there…
-    await expect(schem.locator('.sbrow .sbframe svg')).toHaveCount(3)        // …and so is every drawing
-    await expect(schem.locator('.sbframe[data-loop]')).toHaveCount(0)        // parked, not looping
-  } finally { await page.emulateMedia({ reducedMotion: null }) }
-})
+//   · "the Expected picture fills the Focus slot: loop, stills per beat, grey when the text moves"
+//     proved the drawn slot end to end: a committed spec/<screen>/viz/R1.svg rendered per row, one
+//     park point per row, the `data-vizhash` stamp, and the quiet grey + "redrawn at the next fold"
+//     banner once the prd text moved past the drawing's pin. Every surface it named is gone — the
+//     derive pass, `data-vizhash`, the drawing's own staleness. The one fact that outlives it, that
+//     a requirement with NO picture keeps the honest "no Expected yet" line, is proven by board R18's
+//     second beat (spec/board/test.spec.ts) on the real pipeline rather than on a fixture.
+//   · "reduced motion parks every drawn row: the beats loop, and under reduce nothing does" proved
+//     that a drawn beat cell carries `data-loop` and drops it under prefers-reduced-motion. Only the
+//     SKETCH's cell ever looped (client.js `frameCell`); it is deleted, nothing in the storyline
+//     sets `data-loop` any more, and the replica cell beside a proof is stepped by the row's one
+//     stepper, never by an animation. Asserting the absence here would pin a class that no code can
+//     produce — which is not an accessibility guarantee, only a green over nothing.)
 
 // ── the board RENDERS Changed (board R4's fifth word) ──────────────────────
 // The board's own requirements are never naturally Changed (a fresh fold re-stamps their pins from

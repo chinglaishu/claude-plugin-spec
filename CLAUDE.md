@@ -98,9 +98,11 @@ spec/<screen>/steps.ts       the screen's COMPOSABLE BEATS (the beat-function co
                              metadata beside exported step functions — perform the When, assert the exact Then
                              from a threaded state, update it; the caller's checkReq wraps the call
 spec/<screen>/evidence/      the harvest (the before/after frame pair + its window, ONE `.expected.html` REPLICA per moment — the Actual half is the photograph beside it (the human, 2026-09-04) — and the screen's `_fonts/`) — COMMITTED here and in scaffolded projects (D2 2026-08-22); deterministic paths overwrite in place, superseded files pruned at the fold (tools/evidence.mjs), which also sweeps the retired `.actual.html` half
-spec/<screen>/viz/*.svg      SKETCHES ONLY — the house-style drawing of a requirement that has NOT been harvested yet.
-                             Derived by tools/viz-derive.mjs, which since phase 4a also DELETES the committed drawing of
-                             any requirement that now has a replica: the picture beside a proof is the app's own markup
+                             (spec/<screen>/viz/*.svg — the SKETCH, a house-style drawing of a requirement that had NOT
+                             been harvested — is RETIRED, ruled by the human 2026-09-05. An un-harvested requirement
+                             shows its Given/When→Then prose and an honest "no Expected yet"; the only picture beside a
+                             proof is the app's own markup. The derive shell, the archetype kit, the `viz` field on a
+                             requirement and the borrowed page a sketch stood in all went with it.)
 spec/<screen>/state.json     pre-redesign relic (old accept pin, approvedPrdText) — unused since the gate was removed (board R8, 2026-07-30); still on disk, not yet deleted
 spec/_design.css             ONE design system, inlined into board.html
 spec/_base.ts                checkReq(id, fn) / coverReqs(...) — how a test tags the requirements it proves
@@ -138,10 +140,11 @@ tools/build-board.mjs        renders board.html (home cards + the per-screen det
                              the composer, over the hidden baked panes). Draws only — no reading logic.
 tools/behavior.mjs           pure: parses a requirement's behavior block (Given + When→Then beats)
 tools/reqhash.mjs            pure: the shared requirement-text hash (Changed-drift, evidence, schematics)
-tools/viz.mjs                pure: behavior chain → archetype → the drawn schematic SVG (+ still phases)
-tools/viz-derive.mjs         the viz pass's shell: derives/commits spec/<screen>/viz/*.svg. RUN AT EVERY FOLD
-                             by spec/_results-reporter.mjs (deriveSchematics) — a drawing is a by-product of
-                             the harvest it is drawn from; the command stays for a by-hand pass
+tools/viz.mjs                pure: THE LAYOUT PIN (`layoutHash` — read by proof-integrity, build-board and _base.ts)
+                             + the retired drawn UI mirror and its guard (renderWireframe/mirrorGaps/frameGroup/
+                             gapSummary, still called by checkMirrors, which finds no committed wireframe) + the
+                             captured-colour → dye-token mapper (DYES/dyeOf, pinned against _design.css). The
+                             ARCHETYPE KIT that drew the sketch was deleted 2026-09-05 with the sketch itself
 tools/replica-gate.mjs       pure: THE REPLICA'S GUARD (phase 3, 2026-09-03) — replicaGaps (the live skeleton against the
                              rendered replica's own skeleton, 1.5 px), claimGaps (a failed claim's value must be IN the
                              Expected), replicaAttrs/withReplicaAttrs/textOf/replicaNote. Read by BOTH the in-page gate at
@@ -208,12 +211,9 @@ npm run test:tools     # the pure-function unit tests (coverage, prd-render, upd
 npm run staff          # the kg-staff briefing for a screen
 npm run proof          # proof-integrity check (`lint` = existence + authored intent, `mirror` = the pictures,
                        # `perturb` = the assertions still fail when the thing they prove is broken)
-node tools/viz-derive.mjs [screen…]   # derive the SKETCHES by hand (the reporter runs it at every fold). It writes a
-                                      # drawing only for a requirement with NO replica, and DELETES the committed
-                                      # drawing of one that has gained a harvest — the picture beside a proof has been
-                                      # the app's own markup since 2026-09-03, so a drawing there would be a second,
-                                      # drifting answer. It reports NO mirror gaps any more: the replica's own gate does
-                                      # that (tools/replica-gate.mjs), in the page, at capture time.
+# (`node tools/viz-derive.mjs` is GONE — the sketch it derived was retired by the human 2026-09-05,
+#  and the fold no longer spawns it. Nothing on the board is derived by hand any more: the Expected
+#  picture is captured by the run, gated in the same page pass, and committed beside its frame.)
 ```
 
 `BOARD_URL=http://host:port` drives an already-running site and starts/stops nothing. `BOARD_PORT`
@@ -266,10 +266,12 @@ change.
   inside the beat's window. `proveVisible` reads an input's/textarea's/select's **value** (rendered
   text for everything else), which is what makes that assertion writable at all. A beat's focus rect
   is now the **union** of its rings (`focusFromLayouts`), so one camera (board R19) frames the whole
-  beat instead of cropping its earlier scenes away. The drawing draws the same scenes from the same
-  skeletons and publishes their park points as `data-viz-subphases`, and the row's proof loop
-  **steps the drawing** (`_onFrame` → `frameCell._drive`, marked `data-driven`), so both halves of a
-  row are always on the same moment of the same beat. **ONE STEPPER PER ROW, over the two pictures
+  beat instead of cropping its earlier scenes away. The Expected cell renders the same moments from the same
+  skeletons, and the row's proof loop **steps it** (`_onFrame` → the cell's own `_step`), so both
+  halves of a row are always on the same moment of the same beat. *(Until 2026-09-05 the Expected
+  half of an un-harvested row was a DRAWING that published its own park points as
+  `data-viz-subphases` and was driven through them by `frameCell._drive` / `data-driven`. The human
+  retired the sketch; `frameCell`, its park points and the driven-frame rAF went with it.)* **ONE STEPPER PER ROW, over the two pictures
   (2026-09-02, the human: "schematic and proof should share same stepper (as their steps must be
   same???)").** A beat is one ordered list of MOMENTS — every value it proved, then its result — and
   the two cells are renderings of that one list, so a row has exactly one `.mstrip` (`momentStrip`),
@@ -278,8 +280,9 @@ change.
   `data-ev-beats`), the last segment the beat's Then. The `‹ n / N ›` that sat in the words' gutter
   (`sceneRail`/`.tourstep`, 2026-09-01) is GONE with the two clocks it read from — and a drawing whose
   park points do not match the harvest's moment count no longer free-runs: it PARKS and the storyline's
-  stale banner says "behind the harvest". A row with no proof loop at all still walks (or scrubs) its
-  drawing — nothing is beside it to disagree with. The words are sentence-first (`.sbmark` numeral +
+  stale banner says "behind the harvest". A row with no proof loop at all has one moment on both
+  sides and nothing to step; a row with no harvest at all has no picture to step either — it shows
+  its words and the honest "no Expected yet" (the sketch is retired, the human 2026-09-05). The words are sentence-first (`.sbmark` numeral +
   `.sbwhen`/`.sbthen`/`.sbgiven` with the keyword as the sentence's `.lead`); `.sbstep`/`.sbk`/`.sbeye`
   are gone, and NO keyboard hint lives in the reader at all — not per row and not in its footer
   either (corrected 2026-09-02, rule 6: the pager's `.fpk` legend went with the human's "remove the
@@ -386,8 +389,8 @@ change.
   2026-09-02; the drawn mirror it was written for was retired at phase 4a, 2026-09-03). Twice the
   drawn kit quietly stopped drawing something the harvest had measured, and only a person's eye on a
   beat row caught it. The drawing is gone — `tools/viz.mjs` `mirrorGaps` and `renderWireframe` still
-  exist for the SKETCH, `tools/viz-derive.mjs` no longer calls either and instead DELETES the
-  committed drawing of any requirement that has gained a replica, and
+  exist, but nothing calls them to DRAW any more: `tools/viz-derive.mjs` was deleted with the SKETCH
+  (retired by the human 2026-09-05), and
   `tools/proof-integrity.mjs checkMirrors` returns nothing ("no committed wireframe drawings —
   replicas gated instead"). What stands in its place is `checkReplicas`, and the rule is the same:
   in the SAME page pass as the capture (`spec/_moment.mjs` `gateInPage`, final review C1, 2026-09-04

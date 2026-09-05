@@ -22,13 +22,15 @@ export const FILES = [
   // pure requirement-text hashing (two scopes) — imported by spec-store.mjs for the Changed-drift
   // pin (board R4's fifth word), so the vendored store cannot load without it (guard-caught too).
   'tools/reqhash.mjs',
-  // pure requirement-schematic derivation (task 4, 2026-08-22): the archetype kit + vizHash/vizStale
-  // — imported by spec-store.mjs (enrichReqs attaches r.viz, the committed drawing's staleness), so
-  // the vendored store cannot load without it (the same guard-caught class of miss).
+  // the wireframe-mirror kit and THE LAYOUT PIN (`layoutHash`) — imported by tools/build-board.mjs,
+  // tools/proof-integrity.mjs and spec/_base.ts, so a vendored board can load none of the three
+  // without it (the same guard-caught class of miss). The archetype SKETCH it also used to hold was
+  // retired by the human 2026-09-05, and `tools/viz-derive.mjs` — the CLI that committed one — went
+  // off this list with it.
   'tools/viz.mjs',
   // the ONE overlay geometry (2026-08-30): the ring's inset and the callout's placement, imported
-  // by BOTH tools/viz.mjs (the drawing) and spec/_base.ts (the burn-in). A scaffolded project that
-  // got one and not the other would have a schematic and a photograph that no longer mirror.
+  // by BOTH tools/viz.mjs and spec/_base.ts (the burn-in). A scaffolded project that got one and
+  // not the other would have two pictures that no longer mirror.
   'tools/overlay-geometry.mjs',
   // …and the ONE callout TEXT rule beside it (2026-08-30): which single sentence a scene's card
   // says. Imported by BOTH tools/viz.mjs and spec/_base.ts for the same reason the geometry is —
@@ -40,11 +42,6 @@ export const FILES = [
   // which screens gate CI without keeping a second opinion. Guard-caught (spec-store imports it),
   // and a scaffolded project needs it to choose its own gate at all.
   'tools/ci-select.mjs',
-  // the viz pass's shell (task 4 review M2, fix round 1, 2026-08-22): the CLI a scaffolded project
-  // runs to derive/commit its own schematics ("redraw is instant and free"). NOT caught by the
-  // every-relative-import-is-vendored guard below — it's a CLI entry point, nothing vendored imports
-  // it — so it must be listed directly or a scaffolded project has no hands to run the viz pass at all.
-  'tools/viz-derive.mjs',
   // pure evidence-harvest logic (Task 15, D2): the proves-step window + ffmpeg frame args + the
   // per-requirement fold/prune — imported by both spec-store.mjs (foldEvidence) and the results reporter, so a
   // scaffolded project can load neither without it (the same guard-caught class of miss).

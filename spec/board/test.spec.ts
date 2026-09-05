@@ -1277,7 +1277,7 @@ import { replicaAttrs } from '../../tools/replica-gate.mjs'
 import { layoutHash } from '../../tools/viz.mjs'
 // phase 7: a screen with a PRD, its derived sketch and NOTHING else — the state every screen starts
 // in, which none of this repo's own four screens is in any more (they are all harvested)
-import { makeSketchScreen, screenRows } from '../_fixture'
+import { makeNoUiScreen } from '../_fixture'
 
 // The board's own harvested SPECIMENS (rewritten 2026-09-03 with the human's Expected View decision:
 // the drawn ui-mirror is retired, so a specimen is no longer "a requirement with a committed
@@ -1485,7 +1485,9 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
       const i = html.indexOf('data-r="R2"', scr); const j = html.indexOf('data-r="R3"', i)
       const seg = html.slice(i, j)
         .replace(/ data-ev-beats="[^"]*"/, '')
-        .replace(/<figure class="schematic"[\s\S]*?<\/figure>/, '')
+        // (a second replace stripped the baked `<figure class="schematic">` here — the SKETCH the
+        // reader would otherwise have shown instead of the honest blank. It is retired, the builder
+        // bakes no such figure, and the strip above is now the whole forcing. 2026-09-05.)
       await rt.fulfill({ body: html.slice(0, i) + seg + html.slice(j), contentType: 'text/html' })
     })
     await page.goto('/#/board/R2')
@@ -1577,68 +1579,47 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
       if (savedEv) await gapNode.evaluate((el, v) => el.setAttribute('data-ev-beats', v), savedEv)
     }
 
-    // …AND A SCREEN WITH NO UI AT ALL WEARS THE PRODUCT (phase 7, 2026-09-04). Same When as the two
-    // legs above — nothing was harvested for this requirement — and the same rule: never a guessed
-    // picture of a screen. What phase 7 adds is WHERE the fallback sketch stands. A drawing on bare
-    // paper says nothing about whose product it belongs to; the builder therefore names a SIBLING
-    // screen's captured Before page (tools/spec-store.mjs chromeFrom — same area first, then the
-    // screen with the most requirements) and the sketch is placed in the hole that page's shell
-    // leaves (tools/evidence.mjs contentRect), so the row shows the app's own header and rail around
-    // a labelled sketch. Nothing is invented: the chrome is a committed replica of a REAL screen and
-    // the cell says whose it is.
+    // …AND A SCREEN WITH NO UI AT ALL DRAWS NOTHING (THE SKETCH IS RETIRED — the human, 2026-09-05).
+    // Same When as the two legs above — nothing was harvested for this requirement — and the same
+    // rule, now with nothing standing between it and the reader: the row shows its Given/When→Then
+    // words and an honest "no Expected yet", and no picture at all.
+    //
+    // REWRITTEN 2026-09-05 (CLAUDE.md rule 4 — the requirement moved, so this leg was the wrong side).
+    // It used to assert phase 7's answer to the same When: the fallback SKETCH, an archetype drawing
+    // derived from the sentence, stood inside a sibling screen's captured page (chromeFrom + the hole
+    // contentRect measured in its shell) and captioned "◇ sketch · no UI yet · in <screen>'s chrome".
+    // The human retired the sketch, so every fact that leg claimed — the borrowed page, the archetype
+    // svg inside it, the .sbsk hole, the chrome caption — is about machinery that no longer exists.
+    // What it was really guarding is kept and asserted below: NEVER A GUESSED PICTURE OF A SCREEN.
     //
     // FORCED, because this repo has no such screen — all four of its own are harvested. The fixture
-    // is a scratch screen with a PRD and the archetype drawing the production pass derives from it,
-    // and nothing else; it is removed in a finally (the state guard snapshots screen dirs, and this
-    // leaves none behind).
+    // is a scratch screen with a PRD and nothing else; it is removed in a finally (the state guard
+    // snapshots screen dirs, and this leaves none behind).
     const skScreen = 'sketchchrome'
     try {
-      makeSketchScreen(skScreen)                 // writes the PRD + its derived sketch, rebuilds the board
+      makeNoUiScreen(skScreen)                   // writes the PRD alone, rebuilds the board
       await page.goto('/#/' + skScreen + '/R1')
       await page.reload()                        // a hash hop is not a fetch — read the freshly built board
       const sov = page.locator(`.dt[data-screen="${skScreen}"]:not([hidden]) .focusov`)
       await expect(sov.locator('.fread .frmeta .fid')).toHaveText('R1')
-      const skCell = sov.locator('.fread .fstory .sbframe.sbchrome').first()
-      // BOUNDED (and the red this leg was watched go red on): with no borrowed page there is no such
-      // cell, and `reveal` on a locator that matches nothing waits out the whole test instead of
-      // saying what is missing.
-      await expect(skCell, 'the no-UI row shows its sketch inside a sibling screen\'s page').toBeVisible()
-      await reveal(skCell)
-      // THE LENDER IS ONE OF THIS PROJECT'S OWN SCREENS, read off the tree (fix round 1, the review's
-      // I3 — this pinned ['board','conflicts','dispatch','init'] as a literal, which is the very
-      // thing screenRows/treeShape exist to stop: a fifth screen would have broken this leg).
-      const lender = await skCell.evaluate(el => String((el as HTMLElement).dataset.chrome || ''))
-      const rows = screenRows()
-      expect(rows.map(r => r.name), 'the chrome comes from a screen of this board').toContain(lender)
-      const sdoc = await skCell.locator('iframe.repframe')
-        .evaluate(f => String((f as HTMLIFrameElement).srcdoc || ''), undefined, { timeout: 8000 })
-      // BOTH halves in ONE page: the sibling's own committed replica root …
-      expect(sdoc, 'the lender\'s captured page is the chrome').toContain('data-replica-kit=')
-      // …and it is that screen's BEFORE moment — the one moment of a beat where nothing has been
-      // claimed yet, so the file IS what the screen really renders. (Corrected 2026-09-04, rule 4:
-      // this read `data-replica-side="actual"`, and there is no Actual replica any more — a moment's
-      // Actual half is its photograph. The FACT is unchanged: the borrowed chrome must be a real
-      // committed capture of a sibling screen's page, not a drawing of one.)
-      expect(sdoc, 'and it is a committed capture of that screen\'s own page').toContain('data-replica-side="expected"')
-      // … and the sketch drawn from THIS requirement's sentence, standing in it
-      expect(/<svg[^>]*data-viz-archetype="/.test(sdoc), 'the sketch is in the page').toBe(true)
-      expect(sdoc, 'and it stands in the hole the shell leaves, not over the whole page').toContain('class="sbsk"')
-      // inert on the same terms as every other picture: no script, no allow-* token
-      await expect(skCell.locator('iframe.repframe')).toHaveAttribute('sandbox', '')
-      expect(/<script/i.test(sdoc), 'the borrowed page carries no script either').toBe(false)
-      // the fact, CLAIMED: the cell says it is a sketch, and whose chrome it is wearing — a page that
-      // quietly wore another screen's shell as its own would be the guessed picture this requirement
-      // forbids. STRICT, and against THAT lender (fix round 1, the review's I2): this used to expect
-      // the screen's NAME while the cell renders its TITLE, and to match `in \S.*’s chrome`, so it
-      // recorded a green ✓ over two different strings AND passed for any lender at all — which is
-      // exactly the fact the leg exists to catch. The title comes off the cell (what the client
-      // rendered) and is checked against the tree's own title for the screen whose page is in the
-      // frame, so the caption, the seam and the disk must all name one screen.
-      const title = await skCell.evaluate(el => String((el as HTMLElement).dataset.chrometitle || ''))
-      expect(title, 'the caption names the very screen whose page is in the frame')
-        .toBe((rows.find(r => r.name === lender) || { title: '' }).title)
-      await proveVisible(skCell.locator('.sbprov'), '◇ sketch · no UI yet · in ' + title + '’s chrome',
-        'A screen with no UI: its sketch, in a sibling\'s chrome', { soft: true })
+      const skStory = sov.locator('.fread .fstory')
+      // BOUNDED (and the red this leg was watched go red on): `reveal` on a locator that matches
+      // nothing waits out the whole test instead of saying what is missing.
+      await expect(skStory.locator('.sbframe .noschem').first(),
+        'the no-UI row says it has no Expected picture yet').toBeVisible()
+      await reveal(skStory)
+      // the WORDS are what a no-UI row has, and it has all of them
+      await expect(skStory.locator('.sbrow .sbtext .sbwhen').first()).toBeVisible()
+      await expect(skStory.locator('.sbrow').first().locator('.sbtext')).toContainText('Given')
+      // …and NO PICTURE of any kind: no drawing derived from the sentence, no borrowed page standing
+      // in for one. Claimed as the absences they are — each passes exactly while the thing is gone.
+      await proveVisible(skStory.locator('.sbframe svg'), MISSING,
+        'A screen with no UI: nothing is drawn from its sentence', { soft: true })
+      await proveVisible(skStory.locator('.sbframe iframe.repframe'), MISSING,
+        '…and no page is borrowed to stand a picture in', { soft: true })
+      await proveVisible(skStory.locator('.sbframe .noschem').first(), 'no Expected yet',
+        'It says so, in the reader’s own words',
+        { match: (shown: string) => shown.startsWith('no Expected yet'), soft: true })
     } finally {
       rmSync('spec/' + skScreen, { recursive: true, force: true })
       build()                                    // the board back to the true tree, with no fixture row on it

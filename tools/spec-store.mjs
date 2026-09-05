@@ -9,12 +9,11 @@ import { createHash } from 'node:crypto'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { aggregateCoverage, deriveReqState, deriveReqStatus, qualify } from './coverage.mjs'
-import { foldEvidence, contentRect, legacyActualReplicas } from './evidence.mjs'
+import { foldEvidence, legacyActualReplicas } from './evidence.mjs'
 import { parseBehavior } from './behavior.mjs'
 // pure: the beat-function metadata (GIVEN + BEATS) of a screen's steps.ts, read statically (Task 5)
 import { parseBeats } from './compose.mjs'
 import { reqHash, meaningText, isChanged } from './reqhash.mjs'
-import { vizHash, vizStale } from './viz.mjs'
 // the CI gate's PURE resolver — the same one .github/workflows/e2e.yml runs through
 // `node tools/ci-select.mjs`, so the board's CI mark and the gate can never disagree
 import { selectCiTests } from './ci-select.mjs'
@@ -451,34 +450,6 @@ export function sourceSnapshot () {
 // block ({given, beats}) a requirement may lead with, or null when it is prose-only. Attached here
 // (not in the builder) so every reader of a requirement sees the same parse; the builder only
 // draws it. It is authored text re-shaped, never a derived state.
-// `viz` (added 2026-08-22, requirement schematics — task 4) is the requirement's committed drawn
-// schematic, read from spec/<screen>/viz/<id>.svg where one exists. The file is AUTHORED content
-// (derived once from the behavior text by tools/viz.mjs, committed like code); what is COMPUTED
-// here is only its honesty: the stamp the drawing carries (data-viz-hash) against the current
-// behavior text's hash. A mismatch — the text moved past the drawing, or the behavior block was
-// removed entirely — reads `stale`, and the board renders it quiet grey with the dated ≠ note,
-// never a wrong picture passing for right. No viz file → null, exactly like behavior.
-function vizFor (screen, id, behavior) {
-  const p = join(SPEC, screen, 'viz', `${id}.svg`)
-  if (!existsSync(p)) return null
-  const svg = readFileSync(p, 'utf8').trim()
-  const attr = n => (svg.match(new RegExp(`data-viz-${n}="([^"]*)"`)) || [])[1] || ''
-  const hash = attr('hash')
-  const textHash = vizHash(behavior)
-  return {
-    svg,
-    hash,
-    textHash,
-    // task 4 review I1: one comparison authority — vizStale(hash, behavior) is the exact same
-    // check (hash !== vizHash(behavior)) that viz.mjs already exports and unit-pins; this used to
-    // recompute it inline as a second, un-pinned copy.
-    stale: vizStale(hash, behavior),
-    at: attr('at'),
-    archetype: attr('archetype'),
-    phases: attr('phases').split(/\s+/).filter(Boolean).map(Number)
-  }
-}
-
 const _aggCache = new WeakMap()
 function aggFor (results) {
   const key = results || {}
@@ -550,7 +521,7 @@ function enrichReqs (reqs, screen, results) {
     const pin = results?.[screen]?.provenHashes?.[r.id]
     const status = isChanged(folded, pin, r.body) ? 'changed' : folded
     const behavior = parseBehavior(r.body)
-    return { ...r, state: deriveReqState({ hasCurrentPass }), status, behavior, viz: vizFor(screen, r.id, behavior), tests }
+    return { ...r, state: deriveReqState({ hasCurrentPass }), status, behavior, tests }
   })
 }
 
@@ -897,74 +868,6 @@ export function allScreens () {
     .filter(n => !n.startsWith('_') && statSync(join(SPEC, n)).isDirectory())
     .map(n => readScreen(n, results))
     .filter(Boolean)
-}
-
-// ── A SCREEN WITH NO UI BORROWS A SIBLING'S CHROME (phase 7, 2026-09-04) ─────────────────────────
-// A screen nobody has tested yet harvests nothing, so it has no replica and its Expected cell falls
-// back to the archetype SKETCH. Standing on bare paper that sketch says nothing about WHOSE product
-// it belongs to; standing inside a sibling screen's captured page — the app's own header and rail
-// around it — it reads as this product's screen, not built yet. Two halves, kept apart on purpose:
-// `chromeSource` is the disk read (which captured page a screen can lend), `chromeFrom` is the
-// CHOICE, and the choice is pure so it can be pinned (tools/chrome-from.test.mjs).
-//
-// Only a screen with a committed BEFORE page can lend one: a before moment rang nothing, so its
-// replica is the whole page — the chrome — rather than one component cropped out of it.
-export function chromeSource (name) {
-  const dir = join(SPEC, name, 'evidence')
-  let files = []
-  try { files = readdirSync(dir) } catch { return null }
-  // deterministic: the first Before page by name that still has the skeleton it was measured with —
-  // the skeleton is what says where the shell ends and a screen's own words begin
-  for (const f of files.filter(n => n.endsWith('.before.expected.html')).sort()) {
-    const layName = f.replace(/\.expected\.html$/, '.layout.json')
-    if (!files.includes(layName)) continue
-    let lay = null
-    try { lay = JSON.parse(readFileSync(join(dir, layName), 'utf8')) } catch { continue }
-    // …AND THE PAGE'S OWN BOTTOM EDGE (fix round 1, the review's I1): the replica records the height
-    // of the DOCUMENT it was captured from, which on every real Before page is far taller than the
-    // viewport the skeleton measured. Without it contentRect reads the fold as the page's end and
-    // calls whatever crosses it a footer. Read from the file the chrome is rendered from, so the two
-    // can never describe different pages.
-    let doc = null
-    try {
-      const m = /data-replica-region="([^"]*)"/.exec(readFileSync(join(dir, f), 'utf8'))
-      const p = m ? m[1].trim().split(/\s+/).map(Number) : []
-      if (p.length === 4 && p.every(Number.isFinite)) doc = p[3]
-    } catch { /* an unreadable page lends nothing but its viewport — contentRect's own fallback */ }
-    const content = contentRect(lay, doc)
-    if (!content) continue
-    // (the layout PATH is deliberately not carried: nothing renders it — the shell is already read
-    // into `content` here, at build time — and a field nobody reads is a field that goes stale. The
-    // review's M1.)
-    return {
-      replica: `spec/${name}/evidence/${f}`,
-      vw: Number(lay.w),
-      vh: Number(lay.h),
-      content
-    }
-  }
-  return null
-}
-// Has this screen any captured markup of its own? A screen that has is never given someone else's
-// chrome — it has its own picture, and two kinds of picture down one requirement is a comparison of
-// nothing (the same rule the storyline's `hasReplicas` states on the client).
-export function hasAnyReplica (name) {
-  try { return readdirSync(join(SPEC, name, 'evidence')).some(f => f.endsWith('.expected.html')) } catch { return false }
-}
-// PURE. Same area first — a screen's siblings look like it — then the screen with the most
-// requirements (the most-worked-on screen is the most representative page of the product), then by
-// name so a tie can never render two different boards from one tree. `screens` are screen objects
-// carrying the `chrome` chromeSource read for each; one with none cannot lend.
-export function chromeFrom (screen, screens) {
-  const name = screen && screen.name
-  if (!name) return null
-  const lenders = (screens || []).filter(s => s && s.name !== name && s.chrome && s.chrome.replica)
-  if (!lenders.length) return null
-  const sameArea = lenders.filter(s => s.area === (screen.area || 'Other'))
-  const pool = sameArea.length ? sameArea : lenders
-  const pick = pool.slice().sort((a, b) =>
-    ((b.reqs || []).length - (a.reqs || []).length) || String(a.name).localeCompare(String(b.name)))[0]
-  return pick ? { screen: pick.name, title: pick.title || pick.name, ...pick.chrome } : null
 }
 
 // THE CI GATE, DERIVED — never stored (the human, 2026-08-30: "user need to be clear that they can

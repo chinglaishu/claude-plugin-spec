@@ -8,9 +8,7 @@ import { join, resolve, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync, existsSync } from 'node:fs'
 import {
-  ROOT, SPEC, esc, designCss, allScreens, sortedAreas, writeText, shotHash, readConfig, readRuns, ciGate,
-  // phase 7: whose captured page a screen with no UI of its own borrows, and which page that is
-  chromeFrom, chromeSource, hasAnyReplica
+  ROOT, SPEC, esc, designCss, allScreens, sortedAreas, writeText, shotHash, readConfig, readRuns, ciGate
 } from './spec-store.mjs'
 import { journey } from './journey.mjs'
 import { stripBehaviorLead } from './behavior.mjs'
@@ -378,58 +376,6 @@ export function renderBehavior (b) {
   return `<div class="behavior">${row('given', 'Given', b.given)}${beats}</div>`
 }
 
-// The drawn SCHEMATIC a requirement may carry (requirement schematics, 2026-08-18; task 4) —
-// r.viz is attached by enrichReqs from the committed spec/<screen>/viz/<id>.svg (derived by
-// tools/viz.mjs from the behavior text, hash-pinned, never a capture of the real UI). Baked here
-// into the hidden source row as a <figure> so the Focus reader (and the List's open row — the
-// same client builder) renders it without a fetch, with the loop · stills chrome built
-// client-side. The empty-string contract mirrors renderBehavior(null): no viz, no wrapper, no
-// change anywhere the drawing is absent. Defense in depth: the file is committed content, but the
-// builder still refuses to inline anything that is not a plain <svg> (a script, a stray payload) —
-// board.html must never gain executable content this way.
-// `layoutStale` is the SECOND way a drawing stops being true (the human, 2026-09-02: "make sure the
-// gap between schematic and proof will not exist again"). data-stale says the requirement was
-// reworded; this says the APP MOVED — the harvest on disk no longer hashes to the geometry pin the
-// drawing was made with, so the picture is of an older screen than the frames beside it. Baked as a
-// mark, never a colour: the storyline's one stale banner reads both.
-export function renderSchematic (r, layoutStale = false) {
-  const v = r && r.viz
-  if (!v) return ''
-  const svg = String(v.svg || '').trim()
-  // task 4 review M1: the <script>/shape checks alone miss an inline on*= event handler attribute
-  // or a javascript:/data: URI riding in an href — both execute once this is inlined into the live
-  // DOM (and again via innerHTML in client.js buildSchematic). Refuse those too, so the filter
-  // actually delivers the contract this comment states.
-  if (!svg.startsWith('<svg') || !svg.endsWith('</svg>') || /<script\b/i.test(svg) ||
-    /\son\w+\s*=/i.test(svg) || /\bhref\s*=\s*["']?\s*(?:javascript|data):/i.test(svg)) return ''
-  // A WIREFRAME IS NEVER BAKED (phase 4a, 2026-09-03 — the human's Expected View decision). The
-  // drawn ui-mirror is retired: a harvested requirement's Expected cell is its HTML replica, and a
-  // drawing of the same component beside it would be a second, worse answer to what the app looks
-  // like. Nothing derives one any more (tools/viz-derive.mjs deletes a committed one at the fold),
-  // so this is the belt to that braces — a stale file left in a tree by hand never reaches the page.
-  // An ARCHETYPE sketch still bakes: it is the no-UI case, and it claims nothing about the app.
-  if (/data-viz-kind="wireframe"/.test(svg)) return ''
-  const stale = v.stale ? ' data-stale="1"' : ''
-  const lstale = layoutStale ? ' data-viz-layout-stale="1"' : ''
-  const at = v.at ? ` data-vizat="${esc(v.at)}"` : ''
-  return `<figure class="schematic" data-phases="${esc((v.phases || []).join(' '))}"` +
-    ` data-vizhash="${esc(v.hash || '')}" data-texthash="${esc(v.textHash || '')}"${at}${stale}${lstale}>${svg}</figure>`
-}
-
-// HAS THE APP MOVED PAST THIS DRAWING? Derived at every build, never stored: the pin the mirror was
-// drawn with (data-viz-layout) against the layoutHash of the harvest that is on disk RIGHT NOW —
-// the same skeletons the proof cell beside it is showing. A drawing with no geometry pin (an
-// archetype, drawn from the sentence) claims nothing about the app and can never be layout-stale;
-// nor can a requirement whose harvest is gone, which is board R18's "no picture" case instead.
-function layoutStaleOf (r, screen) {
-  const v = r && r.viz
-  if (!v || !v.svg) return false
-  const pin = (String(v.svg).match(/data-viz-layout="([^"]*)"/) || [])[1] || ''
-  if (!pin) return false
-  const lays = harvestOf(SPEC, screen, r.id)
-  return lays.length ? pin !== layoutHash(lays) : false
-}
-
 // The run-all control for this screen, in the detail bar. Run (headless) is the default; per-test
 // Run/Watch buttons and the SSE-streamed run panel live on the test rows (R10).
 const runAll = name =>
@@ -636,30 +582,6 @@ const evAttrs = (s, r) => {
   if (out && e.at) out += ` data-ev-at="${esc(String(e.at).slice(0, 10))}"`
   return out
 }
-// THE CHROME A NO-UI SCREEN BORROWS (phase 7, 2026-09-04), decided once per build and keyed by
-// screen name — `chromeFrom` is the pure choice and `chromeSource` the disk read (spec-store), this
-// only carries the answer to the rows. A screen that has captured markup of its own is never in
-// here: it has its own picture, and a borrowed page beside it would be a second answer to "what does
-// this look like".
-const CHROME = new Map()
-// …baked onto the requirement row exactly on the frames' own terms: only a file that is really on
-// disk rides, content-hash-busted because a re-harvest of the LENDING screen overwrites it in place.
-// Only a row that actually has a sketch to put in the chrome gets one — the same sketch the builder
-// would bake, asked through renderSchematic so a refused drawing cannot leave a chrome behind it.
-const chromeAttr = (s, r) => {
-  const c = CHROME.get(s.name)
-  if (!c || !renderSchematic(r)) return ''
-  const abs = join(ROOT, c.replica)
-  if (!existsSync(abs)) return ''
-  return ` data-ev-chrome="${esc(JSON.stringify({
-    screen: c.screen,
-    title: c.title,
-    replica: c.replica + '?h=' + shotHash(abs),
-    vw: c.vw,
-    vh: c.vh,
-    content: c.content
-  }))}"`
-}
 const reqRow = (r, s) => {
   // A proven requirement names NO tests here — the E2E column already shows the flow that proves it,
   // so a "proven by …" line would just repeat it. An UNPROVEN one still says so plainly (board R6):
@@ -677,9 +599,9 @@ const reqRow = (r, s) => {
   // data-fam: the requirement's family NAME (board R17) — the Focus counter reads `<family> · n of N`
   // off the baked row; absent on a screen with no families, so the counter reads as before
   const fam = (s.families || []).find(f => f.ids.includes(r.id))
-  return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}" data-beats="${beats}"${fam ? ` data-fam="${esc(fam.name)}" data-famn="${esc(fam.n == null ? '' : fam.n)}"` : ''}${evAttrs(s, r)}${chromeAttr(s, r)}>
+  return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}" data-beats="${beats}"${fam ? ` data-fam="${esc(fam.name)}" data-famn="${esc(fam.n == null ? '' : fam.n)}"` : ''}${evAttrs(s, r)}>
     <div class="h">${reqChip(r.status)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
-    <div class="body">${renderBehavior(r.behavior)}${renderSchematic(r, layoutStaleOf(r, s.name))}${renderBody(prose)}${covers}</div>
+    <div class="body">${renderBehavior(r.behavior)}${renderBody(prose)}${covers}</div>
   </div>`
 }
 const reqPane = s => `<div class="pane reqpane">
@@ -1770,21 +1692,6 @@ export const islandJson = data => JSON.stringify(data)
 export function build () {
   FACES.clear()                    // gathered per build, keyed by the harvest's own content hash
   const screens = allScreens()
-  // WHOSE CHROME (phase 7): read every screen's lendable Before page once, then decide per screen
-  // that has none of its own. Derived at every build, never stored — a screen that gains its own
-  // harvest loses the borrowed page on the next build, with nothing to clean up.
-  CHROME.clear()
-  // …and ONLY when somebody needs one (the review's M2). Reading every screen's lendable page is a
-  // readdir, a skeleton parse and a replica read each; on a settled board no screen lacks a replica,
-  // and build() runs on every watch tick.
-  const needsChrome = screens.filter(s => !hasAnyReplica(s.name))
-  if (needsChrome.length) {
-    const lenders = screens.map(s => ({ name: s.name, area: s.area, title: s.title, reqs: s.reqs, chrome: chromeSource(s.name) }))
-    for (const s of needsChrome) {
-      const c = chromeFrom(s, lenders)
-      if (c) CHROME.set(s.name, c)
-    }
-  }
   const areas = sortedAreas(screens)
   // The getting-started journey, derived once for this build (board R12) — read from the tree, so a
   // step cannot claim a fact that is not in spec/. It no longer draws a rail (cut at the human's
@@ -2504,7 +2411,6 @@ export function build () {
   .fstory .sbframe .repscale { position:absolute; left:0; top:0; transform-origin:0 0; }
   .fstory .sbframe .repframe { display:block; width:100%; height:100%; border:0;
     background:var(--paper); pointer-events:none; }
-  .fstory .sbframe.whole .viz { width:100%; }
   /* the still is the drawing PARKED at its phase — every animation paused, delay set from --ph;
      durations are calc(<X>s / var(--spd,1)) (tools/viz.mjs) so the parked delay divides by the SAME
      var, keeping |delay|/duration (the frame shown) identical at every speed */
@@ -2716,33 +2622,21 @@ export function build () {
   }
   /* stale: the SAME drawing, quiet grey — shown, never hidden, never passing for right; the banner
      names it (bengara-tint carries the warning hue, the word carries the meaning) */
-  .fstory.isstale .sbframe svg, .fstory.isstale .viz svg { filter:grayscale(1) opacity(.45); }
+  .fstory.isstale .sbframe svg { filter:grayscale(1) opacity(.45); }
   .fstory .sbstale { display:flex; flex-direction:column; gap:2px; padding:var(--s2) var(--s3);
     background:var(--bengara-tint); border-bottom:1px solid var(--hair); }
   .fstory .sbstale b { font-size:var(--t-sm); color:var(--ink-2); font-weight:500; }
   .fstory .sbstale span { font-size:var(--t-xs); color:var(--ink-3); }
 
-  /* the no-pair fallback: the animated whole, inside the same bordered .sbwrap. Also where a
-     no-schematic requirement shows its honest placeholder line, never an empty frame. */
-  .fstory .sbwrap .viz { position:relative; height:calc(320px * var(--scale));
-    display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--paper); }
-  .fstory .sbwrap .viz svg { display:block; width:100%; height:100%; }
-  .fstory .sbwrap .viz .staleov { position:absolute; inset:0; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:4px; text-align:center; padding:0 var(--s5);
-    background:rgba(253,252,249,.85); /* the .wmark scrim family — paper at .85 so the note reads AA */ }
-  .fstory .sbwrap .viz .staleov b { font-size:var(--t-sm); color:var(--ink-2); font-weight:500; }
-  .fstory .sbwrap .viz .staleov span { font-size:var(--t-xs); color:var(--ink-3); }
+  /* THE HONEST EMPTY STATE: a requirement with no harvest yet shows its Given/When→Then words and
+     this one quiet line where the Expected picture would be — never a drawing of what it might look
+     like. (The .viz rules that held the SKETCH here, and its .staleov overlay, went with the sketch:
+     retired by the human 2026-09-05.) */
   .fstory .noschem { padding:var(--s4); font-size:var(--t-xs); color:var(--ink-3); text-align:center; }
 
   /* the authored prose, ALWAYS shown (the human, 2026-08-28 — the "Full requirement" toggle is
      gone): a dashed rule is all that separates it from the beats above it. */
   /* (.fbody.fprose's dashed divider went with the prose block, 2026-09-02) */
-
-  /* the parked frames need no motion query — the client parks every one of them; the animated whole
-     is the only thing left that moves, and a reduced-motion viewer gets it held still */
-  @media (prefers-reduced-motion: reduce) {
-    .fstory .sbwrap .viz svg * { animation-play-state:paused !important; }
-  }
 
   /* THE PROOF BAND IS GONE (the human, 2026-09-02: "remove the full flow video from focus mode").
      Its rules — .fmedia / .fmbar / .fmbody / .fmpanel / .fstrip / .fcell / .fcap / .xva / .frecwrap /

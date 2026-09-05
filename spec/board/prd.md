@@ -327,7 +327,7 @@ header, and the cut frames live on the test's evidence.*
 - **When** its Expected picture renders
 - **Then** it is the app's OWN markup for the region the assertion ringed — captured, sanitised and committed beside the frame, re-rendered on paper at the app's own coordinates, with the requirement's claim applied to the element the check read
 - **When** no UI was ever harvested for it
-- **Then** it falls back to a labelled sketch drawn from the sentence, or to the labelled beats under an honest "no Expected yet" — never a guessed picture of a screen
+- **Then** it shows the labelled beats under an honest "no Expected yet" — no drawing, and never a guessed picture of a screen
 - **When** the requirement's text moves past the harvest
 - **Then** the storyline says so with its stale banner — there is no per-cell caption *(removed 2026-09-02, the human: "avoid useless things"; the ⋯ menu's "the Expected picture doesn't match my app" prompt is still the R15-pattern escape, and it still carries the picture's provenance into the prompt)*
 - **When** the app moves past the picture, or the gate finds something the harvest measured that the picture does not carry
@@ -363,6 +363,17 @@ on the harvest. `npm run proof mirror` refuses a committed replica that has a ga
 gated, whose pin no longer hashes the skeleton beside it, or that ran out of bytes; the storyline's
 stale banner reads all four reasons. A gapped replica is still written and still shown, because a
 gapped picture beats no picture — but it is never shown as current.
+
+**THE SKETCH IS RETIRED** *(the human, 2026-09-05)*. The second beat above used to end "…falls back
+to a labelled sketch drawn from the sentence, or to the labelled beats under an honest 'no Expected
+yet'". The sketch was a house-style animated SVG derived from the requirement's own sentence,
+committed at `spec/<screen>/viz/<id>.svg` and shown wherever nothing had been harvested — latterly
+inside a sibling screen's borrowed page so it wore the product's own chrome. The human ruled it
+retired: a requirement with no harvest shows its Given/When→Then words and the honest blank, full
+stop. What the sketch existed to avoid is unchanged and is now the whole rule — **never a guessed
+picture of a screen**. The derive pass (`tools/viz-derive.mjs`), the archetype kit, the `viz` field
+on a requirement and the borrowed chrome all went with it; the only picture beside a proof is the
+replica the app itself rendered.
 
 *Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
 reviewed in this session — canon as written, and theirs to reword or remove like any other.

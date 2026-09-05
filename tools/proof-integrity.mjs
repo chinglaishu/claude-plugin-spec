@@ -983,9 +983,12 @@ function runMirror () {
   // gate saying which guard is actually standing, not an apology for an empty pass.
   if (!rows.length) console.log('no committed wireframe drawings — replicas gated instead')
   if (bad) {
-    console.log('\nA committed picture no longer matches the harvest it was measured against. Re-derive it')
-    console.log('(node tools/viz-derive.mjs <screen>); if the gaps survive the redraw, the renderer has')
-    console.log('stopped drawing something the app measured — fix that, never the guard.')
+    // There is no derive pass to point at any more: `node tools/viz-derive.mjs` was deleted with the
+    // SKETCH (retired by the human, 2026-09-05), and nothing writes a wireframe. Any row reaching
+    // here is a file left in a tree by hand — say that, rather than naming a command that is gone.
+    console.log('\nA committed drawing no longer matches the harvest it was measured against — and')
+    console.log('nothing derives one any more. Delete the stale spec/<screen>/viz/<id>.svg: the Expected')
+    console.log('picture beside a proof is the replica the capture committed, gated below.')
   }
   // …and the REPLICAS, in the same format after the drawings (phase 3, 2026-09-03): the row's other
   // picture is gated the same way, and for the same reason.
