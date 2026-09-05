@@ -2112,6 +2112,13 @@ const B = window.__BOARD__ || {}
           if (!(sh.base && sh.repSide === 'expected' && path && window.SBGraft)) { paintLone(); return }
           repFetch(sh.base).then(function (baseText) {
             if (mine !== seq || !fr.isConnected) return
+            // A THROW HERE MUST NOT STRAND THE CELL. This runs a document parse and a graft over
+            // bytes the board did not write; anything that goes wrong in it leaves the moment with
+            // no picture AND no readout — a silent blank, which is the one outcome this cell is not
+            // allowed to have (rule 3). The lone painting is always reachable.
+            try { graftAndShow(baseText) } catch (e) { fr.dataset.repwhy = String(e && e.message || e); paintLone() }
+          })
+          function graftAndShow (baseText) {
             const baseHtml = repBody(baseText)
             if (!baseHtml) { paintLone(); return }
             const p = new DOMParser().parseFromString(
@@ -2139,7 +2146,7 @@ const B = window.__BOARD__ || {}
             fr.dataset.repside = sh.repSide
             fr.dataset.repsrc = sh.rep
             fr.dataset.repmoment = String(j)
-          })
+          }
         })
       }
       for (const sh of shots) if (sh.rep) repFetch(sh.rep)      // prefetch the row, once

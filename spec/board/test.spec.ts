@@ -894,7 +894,11 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
       const b = bs.filter((x: any) => Number(x.n) === 1)[0] || {}
       const vals = (b.values || []).filter((v: any) => v && v.frame)
       const out = []
-      if (b.before && !vals.length) out.push(b.replicaExpectedBefore || '')
+      // phase 8 (2026-09-05): the beat's opening picture is its BASE — the shared, content-addressed
+      // Given — and `replicaExpectedBefore` only on a legacy entry. This mirrors tools/board/client.js
+      // `pair()`, which is what the cell actually steps through; reading the retired field alone made
+      // this walk claim a moment the reader never shows. Correctly broken by that change (rule 4).
+      if (b.before && !vals.length) out.push(b.base || b.replicaExpectedBefore || '')
       for (const v of vals) out.push(v.replicaExpected || '')
       if (b.after) out.push(b.replicaExpectedAfter || '')
       return out
@@ -2009,7 +2013,7 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
       const rid = el.closest('.fread')!.querySelector('.frmeta .fid')!.textContent!.trim()
       const src = document.querySelector('.dt[data-screen="board"] .reqpane .req[data-r="' + rid + '"]')
       const b = JSON.parse(src!.getAttribute('data-ev-beats') || '[]').find((x: any) => Number(x.n) === 1) || {}
-      return [b.replicaExpectedBefore, b.replicaExpectedAfter,
+      return [b.base, b.replicaExpectedBefore, b.replicaExpectedAfter,
         ...(b.values || []).flatMap((v: any) => [v && v.replicaExpected])].filter(Boolean)
     })
     await hudCheck('the Expected cell shows THIS beat\'s own moment', 'a moment of beat 1',
@@ -2593,7 +2597,11 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
       const b = JSON.parse(src!.getAttribute('data-ev-beats') || '[]').find((x: any) => Number(x.n) === 1) || {}
       const vals = (b.values || []).filter((v: any) => v && v.frame)
       const out: string[] = []
-      if (b.before && !vals.length) out.push(b.replicaExpectedBefore || '')
+      // phase 8 (2026-09-05): the beat's opening picture is its BASE — the shared, content-addressed
+      // Given — and `replicaExpectedBefore` only on a legacy entry. This mirrors tools/board/client.js
+      // `pair()`, which is what the cell actually steps through; reading the retired field alone made
+      // this walk claim a moment the reader never shows. Correctly broken by that change (rule 4).
+      if (b.before && !vals.length) out.push(b.base || b.replicaExpectedBefore || '')
       for (const v of vals) out.push(v.replicaExpected || '')
       if (b.after) out.push(b.replicaExpectedAfter || '')
       return out
