@@ -3,278 +3,224 @@
 <title>specboard — the user flow as a data map: what each step creates, and where it lives</title>
 <style>
 :root{--paper:#f6f2ea;--card:#fdfcf9;--ink:#2b2a27;--mute:#6f6a60;--line:#d9d2c3;--indigo:#3f4f7a;--indigo-tint:#e6eaee;--koke:#5b6b3c;--koke-tint:#eaece1;--bengara:#8a4a3c;--bengara-tint:#f2e8e4;--yamabuki:#8a6412;--yamabuki-tint:#f6eeda;--tint:#ecebe3}
-body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 -apple-system,Helvetica,Arial,sans-serif;padding:32px 40px;max-width:1180px}
-h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:40px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 -apple-system,Helvetica,Arial,sans-serif;padding:32px 40px;max-width:1080px}
+h1{font-size:22px;margin:0 0 4px}
+h2{font-size:17px;margin:44px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
 .sub{color:var(--mute);margin:0 0 20px}
-p{margin:8px 0;max-width:900px}
-.k{font:12.5px ui-monospace,Menlo,monospace;background:var(--tint);padding:1px 5px;border-radius:4px}
-svg{max-width:100%;height:auto;display:block;background:var(--card);border:1px solid var(--line);border-radius:6px;margin:12px 0}
-svg text{font:12px -apple-system,Helvetica,Arial,sans-serif;fill:var(--ink)}
-svg .t{font-size:10.5px;fill:var(--mute)}
-svg .h{font-weight:600;font-size:13px}
-svg .m{font:11px ui-monospace,Menlo,monospace}
-svg .box{fill:#fff;stroke:var(--ink);stroke-width:1.2}
-svg .soft{fill:var(--tint);stroke:var(--line)}
-svg .gitb{fill:var(--koke-tint);stroke:var(--koke)}
-svg .greyb{fill:#f1eee7;stroke:#b9b3a6}
-svg .cacheb{fill:var(--yamabuki-tint);stroke:var(--yamabuki)}
-svg .cloudb{fill:var(--indigo-tint);stroke:var(--indigo)}
-svg .redb{fill:var(--bengara-tint);stroke:var(--bengara)}
-svg .lane{fill:none;stroke:var(--line)}
-svg .rowg{fill:var(--koke-tint);opacity:.35}
-svg .rowy{fill:var(--yamabuki-tint);opacity:.45}
-svg .rowi{fill:var(--indigo-tint);opacity:.45}
-svg .rowx{fill:#f1eee7;opacity:.6}
-svg .arr{stroke:var(--ink);stroke-width:1.2;fill:none;marker-end:url(#a)}
-svg .dep{stroke:var(--indigo);stroke-width:1.2;fill:none;marker-end:url(#ai)}
-svg .old{stroke:var(--bengara);stroke-width:1.2;fill:none;stroke-dasharray:4 3}
-svg .tag{font-size:10px;fill:var(--indigo);font-weight:600}
-svg .chip{stroke-width:1}
-table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:6px;font-size:13px}
-th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-th{font-size:11.5px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
-tr:last-child td{border-bottom:0}
-td.n{font-weight:600;white-space:nowrap}
-tr.ph td{background:var(--tint);font-weight:600;font-size:12.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.03em}
-.chip{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:4px;border:1px solid;font-weight:600;white-space:nowrap}
+p{margin:8px 0;max-width:860px}
+.k{font:12.5px ui-monospace,Menlo,monospace;background:var(--tint);padding:1px 5px;border-radius:4px;white-space:nowrap}
+.chip{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:4px;border:1px solid;font-weight:600;white-space:nowrap;vertical-align:1px}
 .chip.git{color:var(--koke);border-color:#bcc4a8;background:var(--koke-tint)}
 .chip.home{color:var(--yamabuki);border-color:#dfc98c;background:var(--yamabuki-tint)}
 .chip.ign{color:var(--mute);border-color:var(--line);background:#f1eee7}
 .chip.ci{color:var(--indigo);border-color:#b9c4ce;background:var(--indigo-tint)}
 .chip.none{color:var(--bengara);border-color:#d8c0b6;background:var(--bengara-tint)}
-.dec{background:var(--card);border-left:3px solid var(--indigo);padding:10px 14px;margin:10px 0;font-size:14px}
+.tag{font-size:10.5px;color:var(--indigo);font-weight:600}
+
+/* the five homes, as cards */
+.homes{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:14px 0}
+.homecard{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:6px;padding:10px 14px}
+.homecard h3{margin:0 0 4px;font-size:14px}
+.homecard p{margin:2px 0;font-size:13px;color:var(--mute);max-width:none}
+.homecard.git{border-left-color:var(--koke)} .homecard.git h3{color:var(--koke)}
+.homecard.ign{border-left-color:#b9b3a6}
+.homecard.home{border-left-color:var(--yamabuki)} .homecard.home h3{color:var(--yamabuki)}
+.homecard.ci{border-left-color:var(--indigo)} .homecard.ci h3{color:var(--indigo)}
+.homecard.none{border-left-color:var(--bengara)} .homecard.none h3{color:var(--bengara)}
+
+/* the overview grid */
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);font-size:13px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+tr:last-child td{border-bottom:0}
+.grid td,.grid th{border-right:1px solid var(--line);font-size:12.5px}
+.grid td:last-child,.grid th:last-child{border-right:0}
+.grid .rowhead{font-weight:600;white-space:nowrap}
+.grid .rowhead small{display:block;font-weight:400;color:var(--mute)}
+.grid .mono{font:11.5px ui-monospace,Menlo,monospace}
+.grid .dash{color:var(--mute)}
+.grid tr.g td{background:#f7f8f2}
+.grid tr.x td{background:#f5f3ee}
+.grid tr.y td{background:#faf6ea}
+.grid tr.i td{background:#f1f3f6}
+
+/* per-step file lists */
+.step{background:var(--card);border:1px solid var(--line);border-radius:6px;margin:14px 0;overflow:hidden}
+.step>header{padding:10px 16px;background:var(--tint);display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.step>header b{font-size:15px}
+.step>header span{color:var(--mute);font-size:13px}
+.file{display:grid;grid-template-columns:270px 110px 1fr;gap:4px 16px;padding:10px 16px;border-top:1px solid var(--line);align-items:start}
+.file .name{font:12.5px ui-monospace,Menlo,monospace;word-break:break-all}
+.file .name .tag{display:block;margin-top:3px;font-family:-apple-system,Helvetica,Arial,sans-serif}
+.file .what{font-size:13.5px}
+.file .what small{display:block;color:var(--mute);margin-top:2px;font-size:12.5px}
+.stepnote{padding:8px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--mute)}
+
+/* the run sequence */
+ol.run{counter-reset:n;list-style:none;margin:12px 0;padding:0;max-width:900px}
+ol.run li{position:relative;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:10px 14px 10px 52px;margin:8px 0}
+ol.run li::before{counter-increment:n;content:counter(n);position:absolute;left:14px;top:10px;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--paper);font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center}
+ol.run li b{font-size:14px}
+ol.run li p{margin:3px 0 0;font-size:13px;color:var(--mute);max-width:none}
+ol.run li.home{border-left:4px solid var(--yamabuki)}
+ol.run li.ign{border-left:4px solid #b9b3a6}
+ol.run li.git{border-left:4px solid var(--koke)}
+
+.dec{background:var(--card);border-left:3px solid var(--indigo);padding:10px 14px;margin:12px 0;font-size:14px;max-width:860px}
 .dec b{color:var(--indigo)}
+.dec.warn{border-left-color:var(--bengara)}.dec.warn b{color:var(--bengara)}
 .note{font-size:12.5px;color:var(--mute)}
 </style>
 
 <h1>specboard — the user flow as a data map</h1>
-<p class="sub">2026-09-05 · the five steps of <span class="k">storage-userflow-2026-09-05.html</span> §1, plus the install before them, drawn as WHAT EACH STEP CREATES and WHERE IT LIVES once the one plan has landed (<span class="k">plan-storage-then-expected-2026-09-05.html</span>: storage A → 0.45.0, Expected phase 8 → 0.46.0) · plan task ids in indigo</p>
+<p class="sub">2026-09-05 · the user flow, one step at a time: what each step creates and where it lives once the one plan has landed (<span class="k">plan-storage-then-expected-2026-09-05.html</span>: storage A → 0.45.0, then Expected phase 8 → 0.46.0). Plan task ids appear as small indigo tags. Rewritten in plain language 2026-09-05 on the human's request.</p>
 
-<h2>1 · The grid — steps across, homes down, files in the cells</h2>
-<svg viewBox="0 0 1436 750" xmlns="http://www.w3.org/2000/svg">
-<text x="296.0" y="30" text-anchor="middle" class="h">0 · install</text><text x="296.0" y="46" text-anchor="middle" class="t">kg-init scaffolds the folder</text>
-<text x="501.0" y="30" text-anchor="middle" class="h">1 · it doesn't work</text><text x="501.0" y="46" text-anchor="middle" class="t">a page nobody can debug</text>
-<text x="706.0" y="30" text-anchor="middle" class="h">2 · show me what you think</text><text x="706.0" y="46" text-anchor="middle" class="t">kg-deep drafts the PRD</text>
-<text x="911.0" y="30" text-anchor="middle" class="h">3 · that's not what I meant</text><text x="911.0" y="46" text-anchor="middle" class="t">the person edits, picks a side</text>
-<text x="1116.0" y="30" text-anchor="middle" class="h">4 · now hold the app to it</text><text x="1116.0" y="46" text-anchor="middle" class="t">the test runs, the fold lands</text>
-<text x="1321.0" y="30" text-anchor="middle" class="h">5 · keep it true</text><text x="1321.0" y="46" text-anchor="middle" class="t">every later run · CI · a team</text>
-<line x1="194" y1="56" x2="194" y2="744" class="lane"/>
-<line x1="399" y1="56" x2="399" y2="744" class="lane"/>
-<line x1="604" y1="56" x2="604" y2="744" class="lane"/>
-<line x1="809" y1="56" x2="809" y2="744" class="lane"/>
-<line x1="1014" y1="56" x2="1014" y2="744" class="lane"/>
-<line x1="1219" y1="56" x2="1219" y2="744" class="lane"/>
-<rect x="6" y="62" width="1424" height="124" class="rowg"/>
-<text x="14" y="80" class="h">app repo · specboard/</text>
-<text x="14" y="96" class="h" fill="#5b6b3c">committed</text>
-<text x="14" y="112" class="t">KB · the life of the feature</text>
-<text x="14" y="126" class="t">read by the person, the agent</text>
-<text x="14" y="140" class="t">in the checkout, and by CI</text>
-<text x="14" y="160" class="tag">T4 · T11 · T12 · T14</text>
-<rect x="198" y="70" width="152" height="20" rx="4" class="gitb chip"/><text x="204" y="84" class="m">spec/_specboard.json</text>
-<text x="198" y="107" class="t">release · project id · app path</text>
-<rect x="198" y="110" width="196" height="20" rx="4" class="gitb chip"/><text x="204" y="124" class="m">.gitignore · spec/.gitignore</text>
-<text x="198" y="147" class="t">keep the vendored code and every</text>
-<text x="198" y="161" class="t">derived file out of git (T12)</text>
-<text x="501.0" y="128.0" text-anchor="middle" class="t">nothing</text>
-<rect x="608" y="70" width="152" height="20" rx="4" class="gitb chip"/><text x="614" y="84" class="m">spec/&lt;screen&gt;/prd.md</text>
-<text x="608" y="107" class="t">Given / When → Then beats,</text>
-<text x="608" y="121" class="t">canon on write (init R3)</text>
-<text x="608" y="135" class="t">a KB of text — the sketch is drawn</text>
-<text x="608" y="149" class="t">FROM it, never kept beside it</text>
-<rect x="813" y="70" width="124" height="20" rx="4" class="gitb chip"/><text x="819" y="84" class="m">prd.md  (edited)</text>
-<rect x="813" y="96" width="179" height="20" rx="4" class="gitb chip"/><text x="819" y="110" class="m">_conflict-decisions.json</text>
-<text x="813" y="133" class="t">the human's side of a conflict,</text>
-<text x="813" y="147" class="t">keyed by content</text>
-<text x="813" y="161" class="t">drift = reqhash vs the fold's</text>
-<text x="813" y="175" class="t">srcHashes — computed, not stored</text>
-<rect x="1018" y="70" width="172" height="20" rx="4" class="gitb chip"/><text x="1024" y="84" class="m">test.spec.ts · steps.ts</text>
-<rect x="1018" y="96" width="110" height="20" rx="4" class="gitb chip"/><text x="1024" y="110" class="m">narration.json</text>
-<text x="1018" y="133" class="t">authored text: checkReq tags,</text>
-<text x="1018" y="147" class="t">soft claims, composable beats</text>
-<text x="1018" y="161" class="t">CI runs these from the clone</text>
-<text x="1223" y="81" class="t">nothing new — the same test re-runs</text>
-<rect x="1223" y="84" width="172" height="20" rx="4" class="gitb chip"/><text x="1229" y="98" class="m">.github/workflows/*.yml</text>
-<text x="1223" y="121" class="t">optional, from the template (T15)</text>
-<rect x="6" y="190" width="1424" height="104" class="rowx"/>
-<text x="14" y="208" class="h">app repo · specboard/</text>
-<text x="14" y="224" class="h" fill="#6f6a60">ignored</text>
-<text x="14" y="240" class="t">per machine · regenerable</text>
-<text x="14" y="254" class="t">kept out by the folder's own .gitignore</text>
-<text x="14" y="274" class="tag">T12</text>
-<rect x="198" y="198" width="165" height="20" rx="4" class="greyb chip"/><text x="204" y="212" class="m">tools/ · node_modules/</text>
-<text x="198" y="235" class="t">45 MB of vendored plugin</text>
-<rect x="198" y="238" width="131" height="20" rx="4" class="greyb chip"/><text x="204" y="252" class="m">spec/_config.json</text>
-<text x="198" y="275" class="t">app url, ports, a sign-in script</text>
-<rect x="403" y="198" width="172" height="20" rx="4" class="greyb chip"/><text x="409" y="212" class="m">crawl.png · _crawl.json</text>
-<text x="403" y="235" class="t">the Init inventory, if used —</text>
-<text x="403" y="249" class="t">rows and a picture, no PRD</text>
-<text x="706.0" y="246.0" text-anchor="middle" class="t">nothing</text>
-<text x="911.0" y="246.0" text-anchor="middle" class="t">nothing</text>
-<rect x="1018" y="198" width="172" height="20" rx="4" class="greyb chip"/><text x="1024" y="212" class="m">board.html  (generated)</text>
-<text x="1018" y="235" class="t">at every fold, from index.json</text>
-<rect x="1018" y="238" width="193" height="20" rx="4" class="greyb chip"/><text x="1024" y="252" class="m">screen.png · test-results/</text>
-<text x="1018" y="275" class="t">a test's own cover; Playwright scratch</text>
-<text x="1223" y="209" class="t">the same, overwritten</text>
-<rect x="6" y="298" width="1424" height="258" class="rowy"/>
-<text x="14" y="316" class="h">~/.specboard/&lt;id&gt;/</text>
-<text x="14" y="332" class="h" fill="#8a6412">the data home</text>
-<text x="14" y="348" class="t">never in any git</text>
-<text x="14" y="362" class="t">10–50 MB per screen</text>
-<text x="14" y="376" class="t">latest wins · last N runs</text>
-<text x="14" y="390" class="t">read by the board (the person) and</text>
-<text x="14" y="404" class="t">the agent (the failed claim + the</text>
-<text x="14" y="418" class="t">skeleton it fixes from)</text>
-<text x="14" y="438" class="tag">T1–T3 · T5 · T7–T10 · A3′</text>
-<text x="198" y="317" class="t">the directory is named by the</text>
-<text x="198" y="331" class="t">manifest id; created at the first write</text>
-<text x="501.0" y="431.0" text-anchor="middle" class="t">nothing</text>
-<rect x="608" y="306" width="158" height="20" rx="4" class="cacheb chip"/><text x="614" y="320" class="m">viz/&lt;screen&gt;/&lt;id&gt;.svg</text>
-<text x="608" y="343" class="t">the SKETCH of a requirement with</text>
-<text x="608" y="357" class="t">no harvest yet — a cache, redrawn</text>
-<text x="608" y="371" class="t">at every fold (T9), DELETED once</text>
-<text x="608" y="385" class="t">a replica exists</text>
-<text x="813" y="317" class="t">nothing written — the board compares</text>
-<text x="813" y="331" class="t">the edit against index.json's</text>
-<text x="813" y="345" class="t">srcHashes and reads Changed /</text>
-<text x="813" y="359" class="t">unproven at build time</text>
-<rect x="1018" y="306" width="165" height="20" rx="4" class="cacheb chip"/><text x="1024" y="320" class="m">index.json  (the fold)</text>
-<text x="1018" y="343" class="t">verdicts · coverage · claims · srcHashes</text>
-<rect x="1018" y="346" width="179" height="20" rx="4" class="cacheb chip"/><text x="1024" y="360" class="m">results.json · runs.json</text>
-<rect x="1018" y="372" width="172" height="20" rx="4" class="cacheb chip"/><text x="1024" y="386" class="m">runs/&lt;id&gt;/  the records</text>
-<rect x="1018" y="398" width="152" height="20" rx="4" class="cacheb chip"/><text x="1024" y="412" class="m">blobs/&lt;sha256&gt;.&lt;ext&gt;</text>
-<text x="1018" y="435" class="t">frames png · skeletons json</text>
-<text x="1018" y="449" class="t">patch replicas html · fonts + faces css</text>
-<text x="1018" y="463" class="t">video webm</text>
-<rect x="1018" y="466" width="172" height="20" rx="4" class="cloudb chip"/><text x="1024" y="480" class="m">blobs/…html  = the BASE</text>
-<text x="1018" y="503" class="t">one per screen state, header stripped,</text>
-<text x="1018" y="517" class="t">shared by every beat from it (A3′)</text>
-<text x="1018" y="531" class="t">gc at the fold: a blob lives while</text>
-<text x="1018" y="545" class="t">index.json or runs.json names it (T2)</text>
-<text x="1223" y="317" class="t">the same files, latest wins</text>
-<rect x="1223" y="320" width="172" height="20" rx="4" class="cacheb chip"/><text x="1229" y="334" class="m">index.json  (re-folded)</text>
-<text x="1223" y="357" class="t">a screen's run folds in, never</text>
-<text x="1223" y="371" class="t">replaces the others</text>
-<rect x="1223" y="374" width="158" height="20" rx="4" class="cacheb chip"/><text x="1229" y="388" class="m">runs/  last N, pruned</text>
-<rect x="1223" y="400" width="179" height="20" rx="4" class="cacheb chip"/><text x="1229" y="414" class="m">blobs/  unchanged = free</text>
-<text x="1223" y="437" class="t">an unchanged frame or base is the</text>
-<text x="1223" y="451" class="t">same sha: nothing rewritten; what</text>
-<text x="1223" y="465" class="t">nothing names is deleted</text>
-<rect x="6" y="560" width="1424" height="88" class="rowi"/>
-<text x="14" y="578" class="h">CI runner</text>
-<text x="14" y="594" class="h" fill="#3f4f7a">artifact · 14 days</text>
-<text x="14" y="610" class="t">read by the PR reviewer</text>
-<text x="14" y="630" class="tag">T15</text>
-<text x="296.0" y="608.0" text-anchor="middle" class="t">nothing</text>
-<text x="501.0" y="608.0" text-anchor="middle" class="t">nothing</text>
-<text x="706.0" y="608.0" text-anchor="middle" class="t">nothing</text>
-<text x="911.0" y="608.0" text-anchor="middle" class="t">nothing</text>
-<text x="1116.0" y="608.0" text-anchor="middle" class="t">nothing</text>
-<rect x="1223" y="568" width="158" height="20" rx="4" class="cloudb chip"/><text x="1229" y="582" class="m">specboard-harvest.zip</text>
-<text x="1223" y="605" class="t">the runner's own data home;</text>
-<text x="1223" y="619" class="t">the verdict is the check on the commit</text>
-<rect x="6" y="652" width="1424" height="88" class="rowi"/>
-<text x="14" y="670" class="h">team store</text>
-<text x="14" y="686" class="h" fill="#3f4f7a">later, when a team asks</text>
-<text x="14" y="702" class="t">bucket + Postgres · a hosted board</text>
-<text x="14" y="722" class="tag">not in this plan</text>
-<text x="296.0" y="700.0" text-anchor="middle" class="t">nothing</text>
-<text x="501.0" y="700.0" text-anchor="middle" class="t">nothing</text>
-<text x="706.0" y="700.0" text-anchor="middle" class="t">nothing</text>
-<text x="911.0" y="700.0" text-anchor="middle" class="t">nothing</text>
-<text x="1018" y="671" class="t">one switch on the same fold: blobs</text>
-<text x="1018" y="685" class="t">to a private bucket, index.json</text>
-<text x="1018" y="699" class="t">imported into Postgres</text>
-<rect x="1223" y="660" width="172" height="20" rx="4" class="cloudb chip" stroke-dasharray="3 2"/><text x="1229" y="674" class="m">bucket/blobs · db.index</text>
-<text x="1223" y="697" class="t">the SAME shapes, shipped</text>
-<text x="1223" y="711" class="t">(storage.where = bucket, T16)</text>
-</svg>
-<p>Two readings fall straight out of the grid. <b>Everything a person or an agent writes stays in the top row</b> — it is small, it is the requirement, and both the coding agent in the checkout and CI need it exactly there. <b>Everything a run derives lands in the third row</b> — big, regenerable, latest-wins — and reaches git nowhere, not in the app repo and not on a branch (the git shipper goes with T16). The two rows in between and below are the folder's own scratch and the copies of the third row that leave the machine.</p>
+<h2>1 · First, the five places a file can live</h2>
+<p>Every file in this document lands in exactly one of these. The whole design is one sentence: <b>git keeps only what a person or an agent wrote; everything a test run produces lives in a per-project directory under your home folder, and reaches git nowhere.</b></p>
+<div class="homes">
+  <div class="homecard git"><h3>Committed — <span class="k">specboard/</span> in the app repo</h3>
+    <p>The authored text: requirements, tests, the human's rulings, the manifest. Kilobytes. Lives as long as the feature does. This is what your coding agent and CI read from the checkout.</p></div>
+  <div class="homecard ign"><h3>Ignored — also in <span class="k">specboard/</span>, kept out of git</h3>
+    <p>The vendored plugin code (~45&nbsp;MB) and per-machine scratch like ports and a sign-in script. All of it regenerable; the folder's own <span class="k">.gitignore</span> keeps it out.</p></div>
+  <div class="homecard home"><h3>The data home — <span class="k">~/.specboard/&lt;project-id&gt;/</span></h3>
+    <p>Everything a run produces: the fold, the run records, and every photograph, skeleton and replica — each stored once under the hash of its own bytes (<span class="k">blobs/&lt;sha256&gt;.&lt;ext&gt;</span>). 10–50&nbsp;MB per screen, latest run wins, never in any git.</p></div>
+  <div class="homecard ci"><h3>CI artifact / team store — copies that leave the machine</h3>
+    <p>CI zips its runner's data home and keeps it 14 days for reviewers. Later, when a team asks, the same files go to a bucket + database instead — not in this plan.</p></div>
+  <div class="homecard none" style="grid-column:1/-1"><h3>Never stored — the drift itself</h3>
+    <p>Proven / unproven / Changed is <b>computed</b> on every build by comparing the current requirement text against what the last run pinned. There is no status field anywhere, so there is nothing to go stale or to lie.</p></div>
+</div>
 
-<h2>2 · One run at step 4 — what lands, in order</h2>
-<svg viewBox="0 0 1120 300" xmlns="http://www.w3.org/2000/svg">
-  <rect x="20" y="40" width="150" height="60" rx="8" class="box gitb"/>
-  <text x="95" y="62" text-anchor="middle" class="h">test.spec.ts</text>
-  <text x="95" y="80" text-anchor="middle" class="t">+ steps.ts · committed</text>
-  <path d="M170 70 L200 70" class="arr"/>
-
-  <rect x="200" y="40" width="170" height="60" rx="8" class="box soft"/>
-  <text x="285" y="62" text-anchor="middle" class="h">Playwright · checkReq</text>
-  <text x="285" y="80" text-anchor="middle" class="t">photographs each moment</text>
-  <path d="M370 70 L400 70" class="arr"/>
-
-  <rect x="400" y="40" width="170" height="60" rx="8" class="box greyb"/>
-  <text x="485" y="62" text-anchor="middle" class="h">test-results/</text>
-  <text x="485" y="80" text-anchor="middle" class="t">the attachments — transient, ignored</text>
-  <path d="M570 70 L600 70" class="arr"/>
-
-  <rect x="600" y="20" width="500" height="120" rx="10" class="box cacheb"/>
-  <text x="620" y="42" class="h">the reporter's fold → ~/.specboard/&lt;id&gt;/</text>
-  <text x="620" y="62" class="t">1 · putBlob every attachment: frames, skeletons, patch replicas, fonts, the faces sheet, the video (T7)</text>
-  <text x="620" y="78" class="t">2 · the beat's BEFORE replica, header stripped → the base blob; a second beat from the same page hits the same sha (A3′)</text>
-  <text x="620" y="94" class="t">3 · foldByScreen: this screen's entry into index.json — verdicts, coverage, claims, srcHashes, every blob rel (T5)</text>
-  <text x="620" y="110" class="t">4 · recordRunEntry: runs.json + runs/&lt;id&gt;/ (run.log, shots, video); older records pruned to N</text>
-  <text x="620" y="126" class="t">5 · gcBlobs: keep = referencedBlobs(index, runs); everything else under blobs/ is deleted (T2)</text>
-
-  <path d="M850 140 L850 170" class="arr"/>
-  <rect x="600" y="170" width="240" height="56" rx="8" class="box cacheb"/>
-  <text x="720" y="192" text-anchor="middle" class="h">viz-derive (T9)</text>
-  <text x="720" y="210" text-anchor="middle" class="t">deletes the sketch of every requirement that now has a replica</text>
-  <rect x="860" y="170" width="240" height="56" rx="8" class="box greyb"/>
-  <text x="980" y="192" text-anchor="middle" class="h">build-board → board.html</text>
-  <text x="980" y="210" text-anchor="middle" class="t">generated, ignored; reads index.json</text>
-
-  <path d="M980 226 L980 250" class="arr"/>
-  <rect x="600" y="250" width="500" height="40" rx="8" class="box cloudb"/>
-  <text x="850" y="275" text-anchor="middle" class="t">the board serves board.html · spec/** (authored) · /blob/&lt;sha&gt;.&lt;ext&gt; · /runs/&lt;id&gt;/… — four kinds, nothing else (T8)</text>
-
-  <rect x="20" y="170" width="550" height="120" rx="8" class="box soft"/>
-  <text x="40" y="192" class="h">what the person and the agent read back, per moment</text>
-  <text x="40" y="212" class="t">Expected = base blob + patch blob grafted (A4′) · Actual = the frame blob with its ring · the failed claim's expected / got · the skeleton json</text>
-  <text x="40" y="230" class="t">the agent fixes the app FROM the failed claim and the skeleton; the person reads the beat row on the board</text>
-  <text x="40" y="256" class="t">lifetime: until the next run of that screen — only the latest proves anything; a re-run with nothing changed costs no bytes</text>
-  <text x="40" y="274" class="t">a PRD edit after this run: reqhash ≠ srcHashes → Changed / unproven, computed at build, nothing written</text>
-</svg>
-
-<h2>3 · Every item, one table</h2>
-<table>
-<tr><th style="width:44px">step</th><th style="width:250px">what is created</th><th style="width:150px">lives in</th><th style="width:110px">size</th><th style="width:150px">lives for</th><th>who reads it · plan task</th></tr>
-<tr class="ph"><td colspan="6">0 · install — kg-init</td></tr>
-<tr><td class="n">0</td><td><span class="k">spec/_specboard.json</span> — release, project id, app path</td><td><span class="chip git">committed</span></td><td>&lt; 1 KB</td><td>the life of the project</td><td>update.mjs (the decision table), store.mjs (names the data home) · T4</td></tr>
-<tr><td class="n">0</td><td><span class="k">.gitignore</span> + <span class="k">spec/.gitignore</span> of the folder</td><td><span class="chip git">committed</span></td><td>&lt; 1 KB</td><td>the life of the project</td><td>git · T12</td></tr>
-<tr><td class="n">0</td><td><span class="k">tools/</span>, <span class="k">board.html</span>, <span class="k">node_modules/</span> — the vendored plugin</td><td><span class="chip ign">ignored</span></td><td>45 MB</td><td>until the next kg-update</td><td>node · T12</td></tr>
-<tr><td class="n">0</td><td><span class="k">spec/_config.json</span> — app url, ports, a sign-in script</td><td><span class="chip ign">ignored</span></td><td>&lt; 1 KB</td><td>per machine</td><td>the server and the tests; may carry a credential, so never committed</td></tr>
-<tr class="ph"><td colspan="6">1 · it doesn't work</td></tr>
-<tr><td class="n">1</td><td><span class="k">crawl.png</span>, <span class="k">_crawl.json</span> — the Init inventory (optional)</td><td><span class="chip ign">ignored</span></td><td>MB</td><td>until the next crawl</td><td>the Init page; rows with no PRD</td></tr>
-<tr class="ph"><td colspan="6">2 · show me what you think it does — kg-deep</td></tr>
-<tr><td class="n">2</td><td><span class="k">spec/&lt;screen&gt;/prd.md</span> — Given / When → Then beats, frontmatter</td><td><span class="chip git">committed</span></td><td>KB</td><td>the life of the feature</td><td>the person on the board; the agent in the checkout, like CLAUDE.md</td></tr>
-<tr><td class="n">2</td><td><span class="k">viz/&lt;screen&gt;/&lt;id&gt;.svg</span> — the sketch, drawn from the PRD</td><td><span class="chip home">data home</span></td><td>KB</td><td>until the requirement has a replica — then deleted</td><td>the board · T9</td></tr>
-<tr class="ph"><td colspan="6">3 · that's not what I meant</td></tr>
-<tr><td class="n">3</td><td><span class="k">prd.md</span> edits</td><td><span class="chip git">committed</span></td><td>KB</td><td>the life of the feature</td><td>same as step 2; the reqhash moves, the fold's srcHashes do not → Changed</td></tr>
-<tr><td class="n">3</td><td><span class="k">spec/_conflict-decisions.json</span> — the side the human picked, keyed by content</td><td><span class="chip git">committed</span></td><td>KB</td><td>the life of the feature</td><td>spec-store when it derives conflicts · T11/T12 (was ignored)</td></tr>
-<tr><td class="n">3</td><td>the drift itself (Changed / unproven / not-reached)</td><td><span class="chip none">never stored</span></td><td>—</td><td>—</td><td>derived at every build from the tree + index.json</td></tr>
-<tr class="ph"><td colspan="6">4 · now hold the app to it — the test and its harvest</td></tr>
-<tr><td class="n">4</td><td><span class="k">test.spec.ts</span>, <span class="k">steps.ts</span>, <span class="k">narration.json</span></td><td><span class="chip git">committed</span></td><td>KB</td><td>the life of the feature</td><td>Playwright, here and in CI; the agent</td></tr>
-<tr><td class="n">4</td><td><span class="k">test-results/</span> — the run's attachments</td><td><span class="chip ign">ignored</span></td><td>MB</td><td>the run</td><td>the reporter, once · T7</td></tr>
-<tr><td class="n">4</td><td><span class="k">screen.png</span> — a test's own cover</td><td><span class="chip ign">ignored</span></td><td>&lt; 1 MB</td><td>until the next run</td><td>the board's card, as a fallback</td></tr>
-<tr><td class="n">4</td><td><span class="k">index.json</span> — the fold: verdicts, coverage, claims, srcHashes, every blob rel</td><td><span class="chip home">data home</span></td><td>KB–MB</td><td>always the latest per screen; folded, never replaced</td><td>spec-store (THE authority on state), the board, the gates · T5</td></tr>
-<tr><td class="n">4</td><td><span class="k">results.json</span> — the raw Playwright report</td><td><span class="chip home">data home</span></td><td>KB</td><td>the last CLI run</td><td>the reporter · T10</td></tr>
-<tr><td class="n">4</td><td><span class="k">runs.json</span>, <span class="k">runs/&lt;id&gt;/</span> — run.log, shots, video</td><td><span class="chip home">data home</span></td><td>MB per run</td><td>the last N runs</td><td>the run panel, the whole-log link · T7/T8</td></tr>
-<tr><td class="n">4</td><td><span class="k">blobs/&lt;sha256&gt;.png</span> — before / value / after frames, ringed, 1280 px</td><td><span class="chip home">data home</span></td><td>100–300 KB each</td><td>while any record names it</td><td>the Actual cell; the agent · T7</td></tr>
-<tr><td class="n">4</td><td><span class="k">blobs/&lt;sha256&gt;.json</span> — the layout skeleton of each frame</td><td><span class="chip home">data home</span></td><td>10–50 KB each</td><td>while any record names it</td><td>the gate's pin; the agent fixes from it · T7</td></tr>
-<tr><td class="n">4</td><td><span class="k">blobs/&lt;sha256&gt;.html</span> — the moment's patch replica (Expected)</td><td><span class="chip home">data home</span></td><td>≤ the byte cap</td><td>while any record names it</td><td>the Expected cell · T7</td></tr>
-<tr><td class="n">4</td><td><span class="k">blobs/&lt;sha256&gt;.html</span> — the BASE: the Given, whole page, header stripped, one per screen state</td><td><span class="chip home">data home</span></td><td>≤ the byte cap, once per state</td><td>while any beat names it</td><td>the Expected cell (grafted under the patch); the gate grades it once · A3′ A4′ A5′</td></tr>
-<tr><td class="n">4</td><td><span class="k">blobs/&lt;sha256&gt;.woff2</span> + <span class="k">.css</span> — the fonts and the faces sheet</td><td><span class="chip home">data home</span></td><td>KB, deduped</td><td>while any record names it</td><td>the replica srcdoc · T6/T7</td></tr>
-<tr><td class="n">4</td><td><span class="k">blobs/&lt;sha256&gt;.webm</span> — the screen's video</td><td><span class="chip home">data home</span></td><td>MB</td><td>while the screen's entry names it</td><td>the whole-requirement proof band · T7</td></tr>
-<tr><td class="n">4</td><td><span class="k">board.html</span> — regenerated</td><td><span class="chip ign">ignored</span></td><td>MB</td><td>until the next fold</td><td>the browser</td></tr>
-<tr class="ph"><td colspan="6">5 · keep it true — every later run, CI, a team</td></tr>
-<tr><td class="n">5</td><td>the same fold and blobs, latest wins; unchanged bytes are the same sha and cost nothing; what nothing names is gc'd</td><td><span class="chip home">data home</span></td><td>bounded by N runs</td><td>until the next run</td><td>same as step 4 · T2</td></tr>
-<tr><td class="n">5</td><td>the CI check (green / red on the commit)</td><td><span class="chip ci">the CI host</span></td><td>—</td><td>with the commit</td><td>branch protection · T15</td></tr>
-<tr><td class="n">5</td><td><span class="k">specboard-harvest</span> — the runner's data home, zipped</td><td><span class="chip ci">CI artifact</span></td><td>MB</td><td>14 days</td><td>a reviewer: download, <span class="k">SPECBOARD_HOME=&lt;dir&gt; npm run board</span> · T15</td></tr>
-<tr><td class="n">5</td><td>the blobs in a private bucket; index.json in Postgres; a read-only hosted board</td><td><span class="chip ci">team store</span></td><td>the same</td><td>a retention the team picks</td><td>teammates without the checkout — not in this plan</td></tr>
-<tr><td class="n">—</td><td>run shots on a git branch (<span class="k">storage.where = git</span>)</td><td><span class="chip none">removed</span></td><td>—</td><td>—</td><td>the anti-pattern: a cache that git keeps forever · T16</td></tr>
+<h2>2 · The map at a glance — steps across, homes down</h2>
+<p>Read a column top to bottom to see everything one step creates. Details for every cell are in section 3.</p>
+<table class="grid">
+<tr><th style="width:150px">where it lives</th><th>0 · install</th><th>1 · it doesn't work</th><th>2 · show me what you think</th><th>3 · that's not what I meant</th><th>4 · now hold the app to it</th><th>5 · keep it true</th></tr>
+<tr class="g"><td class="rowhead">committed<small>specboard/ in git</small></td>
+  <td class="mono">_specboard.json<br>.gitignore ×2</td>
+  <td class="dash">—</td>
+  <td class="mono">&lt;screen&gt;/prd.md</td>
+  <td class="mono">prd.md (edited)<br>_conflict-decisions.json</td>
+  <td class="mono">test.spec.ts<br>steps.ts<br>narration.json</td>
+  <td class="mono">workflows/*.yml<br><span class="dash">(optional)</span></td></tr>
+<tr class="x"><td class="rowhead">ignored<small>specboard/, out of git</small></td>
+  <td class="mono">tools/ · node_modules/<br>_config.json</td>
+  <td class="mono">crawl.png · _crawl.json</td>
+  <td class="dash">—</td>
+  <td class="dash">—</td>
+  <td class="mono">board.html · screen.png<br>test-results/</td>
+  <td class="dash">same, overwritten</td></tr>
+<tr class="y"><td class="rowhead">data home<small>~/.specboard/&lt;id&gt;/</small></td>
+  <td class="dash">directory named,<br>created at first write</td>
+  <td class="dash">—</td>
+  <td class="dash">— (nothing; the sketch<br>was retired, see §3)</td>
+  <td class="dash">— (drift is computed)</td>
+  <td class="mono">index.json · runs/ ·<br>blobs/&lt;sha&gt;.*<br>(frames, skeletons,<br>Expected html, fonts, video)</td>
+  <td class="dash">same files, latest wins;<br>unchanged bytes cost nothing;<br>unnamed blobs deleted</td></tr>
+<tr class="i"><td class="rowhead">leaves the machine<small>CI · later a team store</small></td>
+  <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+  <td class="mono">specboard-harvest.zip<br><span class="dash">team store: later</span></td></tr>
 </table>
 
-<div class="dec"><b>The one rule the grid encodes.</b> A file goes in git only if a person or an agent needs it in the checkout — the requirement, the test, the human's rulings, the manifest. Everything a run produces is addressed by its content in the data home, kept while something names it, and copied out only as a CI artifact or, later, to a team store. Nothing derived is committed anywhere.</div>
-<p class="note">Sizes are the measurements in <span class="k">storage-paths-2026-09-05.html</span> (850 MB of history here, 99 MB on dojostack, 10–50 MB per screen) and the flow page; per-file sizes are typical, not limits. Step numbering follows the flow page; step 0 is the install the flow page leaves implicit.</p>
+<h2>3 · Each step of the flow, in plain words</h2>
+
+<div class="step">
+<header><b>Step 0 · Install</b><span><span class="k">kg-init</span> scaffolds the <span class="k">specboard/</span> folder into your app repo</span></header>
+<div class="file"><div class="name">spec/_specboard.json<span class="tag">T4 · T12</span></div><div><span class="chip git">committed</span></div>
+  <div class="what">The folder's ID card: which specboard release is vendored, the project's id, and where the app is.
+  <small>The project id is what names the data-home directory — <span class="k">~/.specboard/&lt;id&gt;/</span> — so two checkouts of the same project share one harvest. Under 1&nbsp;KB, lives forever.</small></div></div>
+<div class="file"><div class="name">.gitignore + spec/.gitignore<span class="tag">T12</span></div><div><span class="chip git">committed</span></div>
+  <div class="what">Keep the vendored code and every derived file out of git — the folder itself IS committed, its machinery is not.</div></div>
+<div class="file"><div class="name">tools/ · node_modules/ · board.html</div><div><span class="chip ign">ignored</span></div>
+  <div class="what">The vendored plugin: about 45&nbsp;MB of code that runs the board.
+  <small>Replaced wholesale by the next <span class="k">kg-update</span>; never worth committing.</small></div></div>
+<div class="file"><div class="name">spec/_config.json</div><div><span class="chip ign">ignored</span></div>
+  <div class="what">This machine's settings: the app's URL, ports, maybe a sign-in script.
+  <small>Can carry a credential, so it must never be committed.</small></div></div>
+</div>
+
+<div class="step">
+<header><b>Step 1 · "It doesn't work"</b><span>a page nobody can debug — the reason you reach for the tool</span></header>
+<div class="file"><div class="name">crawl.png · _crawl.json</div><div><span class="chip ign">ignored</span></div>
+  <div class="what">If you run the Init crawler: a screenshot and a row per route it found. An inventory only — no requirements are written.
+  <small>A few MB, overwritten by the next crawl. This step often creates nothing at all.</small></div></div>
+</div>
+
+<div class="step">
+<header><b>Step 2 · "Show me what you think it does"</b><span><span class="k">kg-deep</span> studies the real screen and drafts the requirements</span></header>
+<div class="file"><div class="name">spec/&lt;screen&gt;/prd.md</div><div><span class="chip git">committed</span></div>
+  <div class="what">The requirements themselves: for each one, a Given / When → Then. Canon the moment it is written — you edit or delete it exactly like text you wrote yourself.
+  <small>A few KB of plain text; lives as long as the feature. Read by you on the board, and by the coding agent in the checkout the same way it reads CLAUDE.md.</small></div></div>
+<div class="stepnote"><b style="color:var(--bengara)">Retired (ruled by the human, 2026-09-05):</b> there used to be a <b>sketch</b> here — a small drawn SVG cartoon of the requirement, shown only while it had never been harvested. It was the last SVG the tool still drew (everything beside a real proof has been the app's own HTML since 2026-09-03), so it is gone: an un-harvested requirement shows its Given/When→Then prose and an honest "no harvest yet", and nothing is written until the first test run. Drafting a PRD therefore creates exactly one file.</div>
+</div>
+
+<div class="step">
+<header><b>Step 3 · "That's not what I meant"</b><span>you edit the text, and you pick sides in conflicts — the only decisions that are yours</span></header>
+<div class="file"><div class="name">spec/&lt;screen&gt;/prd.md (edited)</div><div><span class="chip git">committed</span></div>
+  <div class="what">Your corrections, in the same file. Nothing else is written for an edit.</div></div>
+<div class="file"><div class="name">spec/_conflict-decisions.json<span class="tag">T11 · T12</span></div><div><span class="chip git">committed</span></div>
+  <div class="what">When two requirements contradict each other and you pick the canonical side, the ruling is recorded here, keyed by the text's content so it survives renames.</div></div>
+<div class="file"><div class="name">the drift itself</div><div><span class="chip none">never stored</span></div>
+  <div class="what">Editing a requirement makes it read <b>Changed</b> immediately — not because anything was written, but because the edited text's fingerprint no longer matches the one the last run pinned into the fold. Computed on every build.</div></div>
+</div>
+
+<div class="step">
+<header><b>Step 4 · "Now hold the app to it"</b><span>the test runs, photographs every claim, and the fold lands in the data home — the busiest step; section 4 shows it in order</span></header>
+<div class="file"><div class="name">test.spec.ts · steps.ts · narration.json</div><div><span class="chip git">committed</span></div>
+  <div class="what">The authored test: which requirements it tags (<span class="k">checkReq</span>), the soft claims for every fact the Then names, the composable beats. Runs identically on your machine and in CI's clone.</div></div>
+<div class="file"><div class="name">test-results/ · screen.png</div><div><span class="chip ign">ignored</span></div>
+  <div class="what">Playwright's scratch: the run's raw attachments, read once by the reporter and then worthless; plus the screen's fallback cover photo.</div></div>
+<div class="file"><div class="name">index.json<span class="tag">T5</span></div><div><span class="chip home">data home</span></div>
+  <div class="what">The <b>fold</b> — the one file the whole board derives from: every requirement's verdicts, coverage, claims, the source fingerprints, and the name of every blob a beat uses.
+  <small>Each screen's run folds its entry in; it never replaces the other screens'. THE authority on state (<span class="k">spec-store.mjs</span> reads only this).</small></div></div>
+<div class="file"><div class="name">runs.json · runs/&lt;id&gt;/<span class="tag">T7 · T8</span></div><div><span class="chip home">data home</span></div>
+  <div class="what">One record per run: the log, shots, video. Only the last N runs are kept; older ones are pruned.</div></div>
+<div class="file"><div class="name">blobs/&lt;sha256&gt;.png<span class="tag">T7</span></div><div><span class="chip home">data home</span></div>
+  <div class="what">The <b>Actual</b>: every photographed moment — before, each asserted value, after — with its ring and callout burned in, 1280&nbsp;px wide.
+  <small>100–300&nbsp;KB each. The file's name is the hash of its bytes, so an unchanged frame on the next run is the same file and costs nothing.</small></div></div>
+<div class="file"><div class="name">blobs/&lt;sha256&gt;.json<span class="tag">T7</span></div><div><span class="chip home">data home</span></div>
+  <div class="what">Each frame's <b>layout skeleton</b> — the measured boxes and words. The gate pins the replica to it, and it is what the coding agent fixes the app from when a claim fails.</div></div>
+<div class="file"><div class="name">blobs/&lt;sha256&gt;.html — the patch<span class="tag">T7 · A4′</span></div><div><span class="chip home">data home</span></div>
+  <div class="what">The <b>Expected</b> for one moment: the ringed component as the app's own HTML, with every claim of the requirement applied — what the screen <i>should</i> show, even when the app got it wrong.</div></div>
+<div class="file"><div class="name">blobs/&lt;sha256&gt;.html — the base<span class="tag">A3′ · A5′</span></div><div><span class="chip home">data home</span></div>
+  <div class="what">The whole page at the beat's Given, one per screen state, <b>shared</b>: every beat that starts from the same page points at the same blob. The reader grafts each moment's patch onto it so the Expected sits in its real surroundings; the gate grades each base once.</div></div>
+<div class="file"><div class="name">blobs/&lt;sha256&gt;.woff2 + .css<span class="tag">T6</span></div><div><span class="chip home">data home</span></div>
+  <div class="what">The app's fonts, stored once each, plus the stylesheet that names them — so a replica renders in the app's own type.</div></div>
+<div class="file"><div class="name">blobs/&lt;sha256&gt;.webm<span class="tag">T7</span></div><div><span class="chip home">data home</span></div>
+  <div class="what">The screen's run video, for the whole-requirement proof band.</div></div>
+<div class="file"><div class="name">board.html (regenerated)</div><div><span class="chip ign">ignored</span></div>
+  <div class="what">Rebuilt from <span class="k">index.json</span> after every fold. Generated, never edited, never committed.</div></div>
+</div>
+
+<div class="step">
+<header><b>Step 5 · "Keep it true"</b><span>every later run, CI on every push, and — one day — a team</span></header>
+<div class="file"><div class="name">every later run</div><div><span class="chip home">data home</span></div>
+  <div class="what">Writes the same files; the latest fold wins. Unchanged bytes hash to the same name and are simply not rewritten; a blob no record names any more is deleted by the garbage collector.
+  <small>So the data home stays bounded by "last N runs", forever. <span class="tag">T2</span></small></div></div>
+<div class="file"><div class="name">.github/workflows/…yml<span class="tag">T15</span></div><div><span class="chip git">committed</span></div>
+  <div class="what">Optional, from the template: CI clones the repo, runs the suite from the committed tests, and the verdict is the green/red check on the commit.</div></div>
+<div class="file"><div class="name">specboard-harvest.zip<span class="tag">T15</span></div><div><span class="chip ci">CI artifact</span></div>
+  <div class="what">The runner's own data home, zipped and kept 14 days. A reviewer downloads it and runs <span class="k">SPECBOARD_HOME=&lt;dir&gt; npm run board</span> to see exactly what CI saw.</div></div>
+<div class="file"><div class="name">bucket + database + hosted board</div><div><span class="chip ci">team store</span></div>
+  <div class="what">Later, when a team asks: the same blobs to a private bucket, the same fold into Postgres, a read-only hosted board. One switch on the same pipeline — deliberately not in this plan.</div></div>
+<div class="file"><div class="name">run shots on a git branch</div><div><span class="chip none">removed</span></div>
+  <div class="what">The old <span class="k">storage.where&nbsp;=&nbsp;git</span> option is retired: a cache that git keeps forever is the exact anti-pattern this design removes. <span class="tag">T16</span></div></div>
+</div>
+
+<h2>4 · One test run, in order</h2>
+<p>Step 4 zoomed in: what actually happens between "the test starts" and "the board shows the fresh proof". Colour = where that step writes.</p>
+<ol class="run">
+<li class="git"><b>Playwright runs the committed test.</b><p><span class="k">checkReq</span> photographs the page around every assertion — before, each claimed value with its ring painted, after — and captures each moment's layout skeleton and Expected replica in the same instant.</p></li>
+<li class="ign"><b>The raw attachments land in <span class="k">test-results/</span>.</b><p>Transient and ignored — the reporter reads them once, then they're trash.</p></li>
+<li class="home"><b>The reporter stores every attachment as a blob.</b><p>Frames, skeletons, patch replicas, fonts, the video — each written to <span class="k">blobs/</span> under the sha256 of its own bytes. Anything unchanged since last run already exists and costs nothing. <span class="tag">T7</span></p></li>
+<li class="home"><b>The beat's starting page becomes the shared base.</b><p>The before replica, header stripped, stored once — a second beat starting from the same page hashes to the same blob, so one screen state is one file no matter how many beats use it. <span class="tag">A3′</span></p></li>
+<li class="home"><b>The fold: this screen's entry is written into <span class="k">index.json</span>.</b><p>Verdicts, coverage, claims, the source fingerprints, and every blob name — folded in beside the other screens, never replacing them. <span class="tag">T5</span></p></li>
+<li class="home"><b>The run record lands and old ones are pruned.</b><p><span class="k">runs.json</span> plus <span class="k">runs/&lt;id&gt;/</span> (log, shots, video); only the last N are kept.</p></li>
+<li class="home"><b>The garbage collector sweeps.</b><p>It computes the set of blobs the index and the kept runs still name; everything else under <span class="k">blobs/</span> is deleted. This is the entire retention policy. <span class="tag">T2</span></p></li>
+<li class="ign"><b><span class="k">board.html</span> is regenerated</b> from the fresh <span class="k">index.json</span>, and the server hands out exactly four kinds of thing: the board page, the authored <span class="k">spec/**</span>, <span class="k">/blob/&lt;sha&gt;</span>, and <span class="k">/runs/&lt;id&gt;/</span> — nothing else. <span class="tag">T8</span></li>
+</ol>
+<p><b>What you (and the agent) then read back, per moment:</b> the Expected cell is the base blob with the moment's patch grafted on; the Actual cell is the ringed frame; a failed claim shows its expected and got, and the skeleton beside it is what the agent fixes the app from. All of it lives until that screen's next run — only the latest proves anything.</p>
+<p><b>And if you edit the PRD afterwards</b> (back to step 3): nothing is written — the edited text's fingerprint stops matching the fold's, and the requirement reads Changed / unproven on the next build.</p>
+
+<h2>5 · The one rule the whole map encodes</h2>
+<div class="dec"><b>A file goes in git only if a person or an agent wrote it</b> — the requirement, the test, your rulings, the manifest. Everything a run produces is stored by its content in the data home, kept exactly as long as something names it, and copied out only as a CI artifact or, later, to a team store. Nothing derived is committed anywhere, ever.</div>
+<p class="note">Sizes come from the measurements in <span class="k">storage-paths-2026-09-05.html</span> (850&nbsp;MB of harvest history in this repo before the change, 99&nbsp;MB on dojostack, 10–50&nbsp;MB per screen); per-file sizes are typical, not limits. Step numbering follows <span class="k">storage-userflow-2026-09-05.html</span>; step 0 is the install that page leaves implicit. Task ids point into <span class="k">plan-storage-then-expected-2026-09-05.html</span>.</p>
 </body>
