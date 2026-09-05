@@ -14,14 +14,14 @@
 import { cpSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { FILES, MANIFEST, POINTER, hashFile, readVersion, buildManifest, mergeManifest, resolveProject } from './_skeleton.mjs'
+import { FILES, DEPS, MANIFEST, POINTER, hashFile, readVersion, buildManifest, mergeManifest, resolveProject } from './_skeleton.mjs'
 
 // Pure decision + file effects, so it can be proven against throwaway dirs. `base` is the shipped
 // manifest ({version, files}) or null; `files` is the set to walk (the real skeleton by default).
 export function updateProject ({ dest, src, base, files = FILES, dryRun = false }) {
   const version = readVersion(src)
   const baseVer = base?.version ?? 'unknown'
-  const report = { added: [], updated: [], upToDate: [], skipped: [], conflicts: [], hasConflicts: false }
+  const report = { added: [], updated: [], upToDate: [], skipped: [], conflicts: [], deps: [], hasConflicts: false }
   const newFiles = { ...(base?.files || {}) }
   const ops = [] // deferred, so a dry run computes the plan and writes nothing
 
@@ -53,6 +53,32 @@ export function updateProject ({ dest, src, base, files = FILES, dryRun = false 
       else delete newFiles[rel]
       backup(rel)
       ops.push(() => cpSync(join(src, rel), join(dest, rel + '.new')))
+    }
+  }
+
+  // THE STORE'S DEPENDENCIES (the data home, 2026-09-06). The vendored code is only half of what a
+  // board needs to open its store: better-sqlite3 is the default db driver and pg the team's, and a
+  // project that gained tools/store*.mjs without them throws on its first read of the fold. The
+  // scaffold puts them in a NEW project's package.json; an existing board is only ever UPDATED, so
+  // the update has to install them too. The release's pins win for these two — they are part of the
+  // vendored code's contract, and a native module resolving to a build specboard is not tested
+  // against is the failure, not the safeguard. Nothing else in package.json is touched, and a
+  // directory with no package.json is not a scaffolded project: it is left exactly as it is.
+  const pkgPath = join(dest, 'package.json')
+  if (existsSync(pkgPath)) {
+    let pkg = null
+    try { pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) } catch { pkg = null }
+    if (pkg) {
+      const missing = Object.keys(DEPS).filter(k => !pkg.dependencies || pkg.dependencies[k] !== DEPS[k])
+      if (missing.length) {
+        report.deps = missing
+        ops.push(() => {
+          // re-read at write time: a dry run must have written nothing, and the ops run after the copies
+          const cur = JSON.parse(readFileSync(pkgPath, 'utf8'))
+          cur.dependencies = { ...(cur.dependencies || {}), ...DEPS }
+          writeFileSync(pkgPath, JSON.stringify(cur, null, 2) + '\n')
+        })
+      }
     }
   }
 
@@ -110,6 +136,7 @@ if (resolve(process.argv[1] || '') === fileURLToPath(import.meta.url)) {
   line('updated', rep.updated)
   line('up to date', rep.upToDate)
   line('unchanged (local edits kept)', rep.skipped)
+  if (rep.deps.length) console.log(`  dependencies installed into package.json: ${rep.deps.join(', ')} — run \`npm install\` in ${dest}`)
   if (rep.conflicts.length) {
     console.log('  CONFLICTS — your edits kept, new version written alongside; merge then delete the .new:')
     for (const c of rep.conflicts) console.log(`    ${c.file}   (new → ${c.new})`)

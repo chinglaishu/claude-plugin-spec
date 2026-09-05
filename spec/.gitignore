@@ -3,8 +3,13 @@ _dir-snapshot.*.json
 _run-report.json
 _runs/
 _conflicts.json
-_conflict-decisions.json
 _config.json
 _crawl.json
 crawl.png
 _auth-state.json
+_results.json
+_results-index.json
+_runs.json
+*/evidence/
+*/viz/
+*/screen.png

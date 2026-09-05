@@ -10,7 +10,7 @@ import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { updateProject } from './update.mjs'
-import { FILES } from './_skeleton.mjs'
+import { FILES, DEPS } from './_skeleton.mjs'
 
 const h = s => createHash('sha256').update(s).digest('hex')
 const w = (root, rel, body) => {
@@ -253,4 +253,47 @@ test('projectId, db and media survive an update', () => {
   assert.equal(manifest(dest).projectId, 'tsumiki-3f9a1c')
   assert.equal(manifest(dest).db, 'remote')
   assert.equal(manifest(dest).media, 'cloud')
+})
+
+// THE STORE'S TWO DEPENDENCIES REACH AN EXISTING PROJECT TOO (the data home, 2026-09-06). The
+// scaffold writes better-sqlite3 and pg into a NEW project's package.json, but an already-scaffolded
+// board — dojostack's, the demo's — is updated, never re-scaffolded, and update.mjs had no opinion
+// about package.json at all. The result would be a project holding every store module and unable to
+// open its store: "the sqlite driver needs better-sqlite3 (npm install)" on the board's first page.
+// So the update installs the release's pins the same way the scaffold does (the release's version
+// wins for these two: better-sqlite3 is a native module and the store is vendored code, so a project
+// resolving a build specboard is not tested against is the breakage, not the fix). A project with no
+// package.json at all is left alone — it is not a scaffolded project.
+test('an update gives an existing project the store dependencies it cannot open its store without', () => {
+  const { src, dest } = scratch()
+  w(src, 'a.mjs', 'NEW'); w(dest, 'a.mjs', 'OLD')
+  w(dest, 'package.json', JSON.stringify({ name: 'p', dependencies: { zod: '1.0.0' } }))
+  const rep = updateProject({ dest, src, base: { version: '1.0.0', files: { 'a.mjs': h('OLD') } }, files: ['a.mjs'] })
+  const pkg = JSON.parse(read(dest, 'package.json'))
+  assert.equal(pkg.dependencies['better-sqlite3'], DEPS['better-sqlite3'])
+  assert.equal(pkg.dependencies.pg, DEPS.pg)
+  assert.equal(pkg.dependencies.zod, '1.0.0', 'the project\'s own dependencies are untouched')
+  assert.deepEqual(rep.deps, ['better-sqlite3', 'pg'], 'the report names what it installed, so the skill can say "npm install"')
+})
+
+test('an update that changes no dependency reports none, and a project with no package.json is left alone', () => {
+  const { src, dest } = scratch()
+  w(src, 'a.mjs', 'NEW'); w(dest, 'a.mjs', 'OLD')
+  w(dest, 'package.json', JSON.stringify({ name: 'p', dependencies: { ...DEPS } }))
+  const rep = updateProject({ dest, src, base: { version: '1.0.0', files: { 'a.mjs': h('OLD') } }, files: ['a.mjs'] })
+  assert.deepEqual(rep.deps, [])
+
+  const b = scratch()
+  w(b.src, 'a.mjs', 'NEW'); w(b.dest, 'a.mjs', 'OLD')
+  const rep2 = updateProject({ dest: b.dest, src: b.src, base: { version: '1.0.0', files: { 'a.mjs': h('OLD') } }, files: ['a.mjs'] })
+  assert.deepEqual(rep2.deps, [])
+  assert.equal(existsSync(join(b.dest, 'package.json')), false, 'an update never invents a package.json')
+})
+
+test('a dry run installs nothing', () => {
+  const { src, dest } = scratch()
+  w(src, 'a.mjs', 'NEW'); w(dest, 'a.mjs', 'OLD')
+  w(dest, 'package.json', JSON.stringify({ name: 'p' }))
+  updateProject({ dest, src, base: { version: '1.0.0', files: { 'a.mjs': h('OLD') } }, files: ['a.mjs'], dryRun: true })
+  assert.equal('dependencies' in JSON.parse(read(dest, 'package.json')), false)
 })

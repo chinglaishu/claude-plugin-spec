@@ -7,7 +7,7 @@
 // board finds the app repo back — for the project's own seed/auth helpers and its .claude/ skills).
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, writeFileSync, realpathSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, realpathSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname, resolve } from 'node:path'
 import { resolveProject, appRoot, mergeManifest, POINTER, MANIFEST } from './_skeleton.mjs'
@@ -71,7 +71,7 @@ test('mergeManifest carries the `app` path across an update like it carries `pro
 // THE RULE (the human, 2026-09-04, second decision): the board lives INSIDE the app repo in a folder
 // named `specboard/`, ignored wholesale by the app's git and versioned by its own — so no pointer is
 // needed; the folder name is the convention. `.specboard` stays as the override for any other place.
-import { NESTED, boardIgnoreLines } from './_skeleton.mjs'
+import { NESTED, boardIgnoreLines, FILES, DEPS } from './_skeleton.mjs'
 
 test('the nested folder is named specboard', () => { assert.equal(NESTED, 'specboard') })
 
@@ -95,10 +95,32 @@ test('resolveProject: a bare specboard/ folder with no manifest is not a project
   assert.equal(resolveProject(b), b)
 })
 
-test('the app repo ignores the whole folder; the folder ignores its own scratch, never the harvest', () => {
-  assert.ok(boardIgnoreLines().includes('node_modules/'))
-  assert.ok(boardIgnoreLines().includes('spec/.auth/'))
-  assert.ok(boardIgnoreLines().every(l => !/evidence|board\.html|_results-index/.test(l)))
+// THE LAYOUT FLIP (decision A, the human 2026-09-05/06). Corrected in place, rule 6: this test used
+// to assert the 2026-09-04 shape — the app's git ignores the whole folder, and the folder's own
+// ignore list never touches the harvest. Both halves changed for one reason: nothing derived exists
+// in the folder any more (it lives in ~/.specboard/<projectId>/), so there is nothing left in
+// specboard/ worth hiding from the app repo — only authored files and a byte copy of the plugin.
+// The folder is COMMITTED and hides its own machinery; the scaffold stops writing `/specboard/` into
+// the app's .gitignore.
+test('the folder ignores its vendored code and its generated board; the app repo is no longer told to ignore the folder', () => {
+  const lines = boardIgnoreLines()
+  assert.ok(lines.includes('node_modules/'))
+  assert.ok(lines.includes('spec/.auth/'))
+  assert.ok(lines.includes('board.html'))
+  for (const f of FILES) assert.ok(lines.includes('/' + f), `vendored but not ignored inside the folder: ${f}`)
+  assert.equal(lines.includes('/specboard/'), false)
+})
+
+// THE TWO NATIVE-ISH DEPENDENCIES (the data home, 2026-09-06). The default db driver is
+// better-sqlite3 and the team's is pg; a vendored board that got the store modules but not these
+// cannot open its own store — it throws "the sqlite driver needs better-sqlite3 (npm install)" the
+// first time anything reads the fold. They are runtime `dependencies`, not devDependencies: the
+// board server needs them, not just the suite.
+test('a scaffolded project is given the store\'s two dependencies, pinned as this repo pins them', () => {
+  assert.equal(DEPS['better-sqlite3'], '12.11.1')
+  assert.equal(DEPS.pg, '8.23.0')
+  const own = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+  assert.deepEqual(DEPS, own.dependencies, 'the scaffold must ship the versions this repo itself runs')
 })
 
 // THE PROJECT'S IDENTITY AND ITS TWO SWITCHES (the data home, 2026-09-06). The manifest is where a

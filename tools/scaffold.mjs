@@ -2,8 +2,11 @@
 // to run the board on YOUR code is to vendor the skeleton into your repo — then `npm run board`
 // there reads your spec/, writes your board.html, and runs your tests, with no path juggling.
 //
-//   node <plugin>/tools/scaffold.mjs [appRepo]                  → <appRepo>/specboard/  (THE RULE: ignored by the
-//                                                                 app's git; local-only, single user)
+//   node <plugin>/tools/scaffold.mjs [appRepo]                  → <appRepo>/specboard/  (THE RULE: COMMITTED
+//                                                                 into the app repo — authored files only; the
+//                                                                 folder's own .gitignore keeps the vendored
+//                                                                 code out, and everything a run derives lives
+//                                                                 in ~/.specboard/<projectId>/)
 //   node <plugin>/tools/scaffold.mjs [appRepo] --dir <boardDir>  → anywhere else; the app repo gets a one-line
 //                                                                 .specboard pointer
 //   node <plugin>/tools/scaffold.mjs [appRepo] --flat            → the old vendored-in layout
@@ -18,16 +21,18 @@ import { join, resolve, dirname, relative, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 import { createServer } from 'node:net'
-import { FILES, SCRIPTS, DEV, MANIFEST, POINTER, NESTED, SPEC_IGNORE, ROOT_IGNORE, boardIgnoreLines, buildManifest, mergeManifest, newProjectId, resolveProject } from './_skeleton.mjs'
+import { FILES, SCRIPTS, DEV, DEPS, MANIFEST, POINTER, NESTED, SPEC_IGNORE, ROOT_IGNORE, boardIgnoreLines, buildManifest, mergeManifest, newProjectId, resolveProject } from './_skeleton.mjs'
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
 const force = args.includes('--force')
-// THE RULE (2026-09-04): the positional argument is the APP REPO (default: the current directory) and
-// the board goes into `<appRepo>/specboard/` — a folder the app's git ignores wholesale (one appended
-// line). It is LOCAL-ONLY, single user, and deliberately NOT a git repo of its own (the human declined
-// that): sharing across a team is the next step — the board's files stored in the cloud. Two escapes: `--dir <boardDir>` puts the board anywhere else (the app
-// repo then gets the one-line `.specboard` pointer, since the folder name no longer finds it), and
+// THE RULE (2026-09-04, flipped 2026-09-06): the positional argument is the APP REPO (default: the
+// current directory) and the board goes into `<appRepo>/specboard/` — a folder the app repo COMMITS,
+// holding the authored spec and nothing else. The vendored code and the generated board are ignored
+// by the folder's own .gitignore, and everything a run derives lives in ~/.specboard/<projectId>/,
+// out of every git by location — which is what made ignoring the whole folder unnecessary, and what
+// takes a project's PRDs and tests off a single disk. Two escapes: `--dir <boardDir>` puts the board
+// anywhere else (the app repo then gets the one-line `.specboard` pointer, since the folder name no longer finds it), and
 // `--flat` is the old vendored-in layout (the board's files straight into the app repo). A repo that
 // already has a board (nested, pointed-to, or flat) is re-scaffolded IN PLACE — never given a second.
 const dirIdx = args.indexOf('--dir')
@@ -60,18 +65,22 @@ for (const rel of FILES) {
   copied.push(rel)
 }
 
-// spec/.gitignore — the transient run state never belongs in git. NOT _specboard.json: that is a
-// committable record of which release the project runs. The backup dirs and .new files an update
-// leaves behind ARE transient recovery/merge scratch, so they are ignored.
-// Neither list touches spec/<screen>/evidence/ or board.html — the harvest is committed (D2).
+// spec/.gitignore — the transient run state AND everything a run derives (the data home, decision A
+// 2026-09-05: the harvest, the fold, the run log and the raw report live in ~/.specboard/<projectId>/,
+// so git keeps only what a person wrote). NOT _specboard.json (the release, the project id and the
+// two store switches) and NOT _conflict-decisions.json (the human's rulings). The backup dirs and
+// .new files an update leaves behind ARE transient merge scratch, so they are ignored.
 const gi = join(DEST, 'spec/.gitignore')
 if (!existsSync(gi) || force) {
   writeFileSync(gi, [...SPEC_IGNORE, ''].join('\n'))
   copied.push('spec/.gitignore')
 }
-// Ignores. FLAT: the app repo's .gitignore gets the update scratch (a backup dir and .new files live at
-// the paths they shadow). NESTED / --dir: the board folder gets its OWN .gitignore (scratch + secrets,
-// never the harvest — kept for the day it is versioned or synced) and the app repo ignores the whole folder.
+// Ignores. FLAT: the app repo's .gitignore gets the update scratch (a backup dir and .new files live
+// at the paths they shadow). NESTED / --dir: the board folder gets its OWN .gitignore, which hides
+// the folder's MACHINERY — the vendored skeleton, board.html, node_modules, the scratch, the saved
+// session — and nothing a person wrote. The app repo's .gitignore is NOT touched any more
+// (2026-09-06): the folder is COMMITTED, because with the harvest gone to the data home what is left
+// inside it is the authored board, and ignoring that kept a project's PRDs and tests on one disk.
 const appendIgnore = (file, lines, header) => {
   const cur = existsSync(file) ? readFileSync(file, 'utf8') : ''
   const missing = lines.filter(p => !cur.split('\n').map(l => l.trim()).includes(p))
@@ -81,8 +90,7 @@ const appendIgnore = (file, lines, header) => {
 if (DEST === APP) {
   appendIgnore(join(APP, '.gitignore'), ROOT_IGNORE, '# specboard update scratch')
 } else {
-  appendIgnore(join(DEST, '.gitignore'), boardIgnoreLines(), `# specboard — the board for ${relative(DEST, APP) || '.'}`)
-  if (NESTED_HERE) appendIgnore(join(APP, '.gitignore'), ['/' + NESTED + '/'], '# specboard — the local spec board (single user, local only until the cloud step); never committed here')
+  appendIgnore(join(DEST, '.gitignore'), boardIgnoreLines(), `# specboard — the board for ${relative(DEST, APP) || '.'}: its VENDORED code and its generated board are ignored here; the authored spec beside them is committed`)
 }
 
 // The version manifest — the base-of-record update.mjs compares against. Written on every scaffold
@@ -149,9 +157,18 @@ if (!pkg.scripts.board || pkg.scripts.board === SCRIPTS.board) {
   pkg.scripts.board = `${SCRIPTS.board} --port ${boardPort}`
 }
 pkg.devDependencies = { ...(pkg.devDependencies || {}), ...DEV }
+// …and the store's two drivers as real dependencies (the data home, 2026-09-06): the board SERVER
+// opens board.db through better-sqlite3 (pg is the same interface pointed at a team's database), so
+// a project vendored without them cannot render a single page of its own board.
+pkg.dependencies = { ...(pkg.dependencies || {}), ...DEPS }
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
 
-console.log(`Scaffolded specboard into ${DEST}${DEST !== APP ? `  (the board for ${APP}${NESTED_HERE ? ', ignored by its git — local only' : ''})` : ''}`)
+console.log(`Scaffolded specboard into ${DEST}${DEST !== APP ? `  (the board for ${APP}${NESTED_HERE ? ' — committed there, authored files only' : ''})` : ''}`)
+if (NESTED_HERE) {
+  console.log('  specboard/ is meant to be COMMITTED: its .gitignore keeps the vendored code, board.html and')
+  console.log('  node_modules out, and every derived byte lives in ~/.specboard/<projectId>/. If your repo\'s')
+  console.log('  .gitignore still has a "/specboard/" line from an earlier release, remove it to commit the board.')
+}
 console.log(`  ${copied.length} file(s) written${skipped.length ? `, ${skipped.length} left alone (already present — pass --force to overwrite)` : ''}`)
 if (pkg.type !== 'module') console.log('  NOTE: your package.json is not "type":"module" — the tools are ESM.')
 console.log(`  board port: ${boardPort} (this project's own — recorded in ~/.specboard-ports.json)`)
