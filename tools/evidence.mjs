@@ -173,7 +173,14 @@ const FACES_CAP = 64000
 export function deriveFacesCss (rules, fonts) {
   const byUrl = new Map()
   for (const f of (Array.isArray(fonts) ? fonts : [])) {
-    if (f && f.url && f.hash && f.ext) byUrl.set(String(f.url), `${f.hash}.${f.ext}`)
+    // THE NAME THE FACE ACTUALLY LANDED UNDER (the data home, 2026-09-05/06). A face is a blob now,
+    // named by its content — `blob/<sha>.woff2` locally, `https://<bucket>/<sha>.woff2` in the
+    // cloud — and the sheet that declares it is a blob beside it, so ONE relative url (the src's own
+    // last segment) is right in both stores: `/blob/<sha>.css` resolves `<sha>.woff2` to
+    // `/blob/<sha>.woff2`, and the bucket resolves it the same way. Only a face with no landed src
+    // falls back to the `<hash>.<ext>` the harness named it by.
+    if (!f || !f.url || !(f.path || (f.hash && f.ext))) continue
+    byUrl.set(String(f.url), f.path ? String(f.path).split('?')[0].split('/').pop() : `${f.hash}.${f.ext}`)
   }
   const out = new Set()
   for (const r of (Array.isArray(rules) ? rules : [])) {

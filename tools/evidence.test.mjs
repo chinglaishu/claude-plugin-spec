@@ -532,3 +532,24 @@ test('a beat slot is claimed by the first test to fill it, and refuses another t
   assert.equal(claimSlot(slot, 'another test'), false, 'a second test does not get to interleave')
   assert.equal(slot.by, 'a test', 'the owner rides on the slot, and nothing else')
 })
+
+// …AND THE FACE IS A BLOB NOW (the data home, 2026-09-05/06). The fold lands each face through
+// putBlob and the sheet beside it, so the rule must name the BLOB's own file name — `<sha>.woff2` —
+// not the `<hash>.<ext>` the harness happened to call it. Both stores make that a sibling of the
+// sheet: `/blob/<sha>.css` and `/blob/<sha>.woff2` locally, `<bucket>/<sha>.css` and
+// `<bucket>/<sha>.woff2` in the cloud — so one relative url is right in both.
+test('deriveFacesCss names each face by the blob the fold landed it as, in either shape', async () => {
+  const { deriveFacesCss } = await import('./evidence.mjs')
+  const rules = [{ cssText: '@font-face{font-family:X;src:url(https://cdn/x.woff2)}', urls: ['https://cdn/x.woff2'] }]
+  const sha = 'f'.repeat(64)
+  assert.equal(
+    deriveFacesCss(rules, [{ url: 'https://cdn/x.woff2', hash: 'abc', ext: 'woff2', path: 'blob/' + sha + '.woff2' }]),
+    '@font-face{font-family:X;src:url(' + sha + '.woff2)}')
+  assert.equal(
+    deriveFacesCss(rules, [{ url: 'https://cdn/x.woff2', hash: 'abc', ext: 'woff2', path: 'https://bucket.test/specboard/' + sha + '.woff2' }]),
+    '@font-face{font-family:X;src:url(' + sha + '.woff2)}')
+  // a face with no landed path at all still declares itself by the name the harness gave it
+  assert.equal(
+    deriveFacesCss(rules, [{ url: 'https://cdn/x.woff2', hash: 'abc', ext: 'woff2' }]),
+    '@font-face{font-family:X;src:url(abc.woff2)}')
+})
