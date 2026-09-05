@@ -1,0 +1,197 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>specboard — the user flow, and what each step needs stored</title>
+<style>
+:root{--paper:#f6f2ea;--card:#fdfcf9;--ink:#2b2a27;--mute:#6f6a60;--line:#d9d2c3;--indigo:#3f4f7a;--indigo-tint:#e6eaee;--koke:#5b6b3c;--koke-tint:#eaece1;--bengara:#8a4a3c;--bengara-tint:#f2e8e4;--yamabuki:#8a6412;--yamabuki-tint:#f6eeda;--tint:#ecebe3}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 -apple-system,Helvetica,Arial,sans-serif;padding:32px 40px;max-width:1180px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:40px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.sub{color:var(--mute);margin:0 0 20px}
+p{margin:8px 0;max-width:820px}
+.chip{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:4px;border:1px solid;font-weight:600;white-space:nowrap}
+.chip.git{color:var(--koke);border-color:#bcc4a8;background:var(--koke-tint)}
+.chip.cache{color:var(--yamabuki);border-color:#dfc98c;background:var(--yamabuki-tint)}
+.chip.never{color:var(--bengara);border-color:#d8c0b6;background:var(--bengara-tint)}
+.chip.cloud{color:var(--indigo);border-color:#b9c4ce;background:var(--indigo-tint)}
+.chip.none{color:var(--mute);border-color:var(--line);background:var(--tint)}
+.k{font:12.5px ui-monospace,Menlo,monospace;background:var(--tint);padding:1px 5px;border-radius:4px}
+/* the flow: columns are steps, rows are facets */
+.flow{display:grid;grid-template-columns:110px repeat(5,1fr);gap:0;background:var(--card);border:1px solid var(--line);border-radius:6px;font-size:13px;overflow:hidden}
+.flow>div{padding:9px 10px;border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.flow>div:nth-child(6n){border-right:0}
+.flow>div:nth-last-child(-n+6){border-bottom:0}
+.flow .fac{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.03em;font-weight:600;background:var(--tint)}
+.flow .st{background:var(--tint)}
+.flow .st b{display:block;font-size:14px}
+.flow .st i{color:var(--mute);font-style:normal;font-size:12px}
+.flow .q{font-style:italic;color:var(--mute)}
+.flow .big{font-size:12.5px}
+.flow .em{color:var(--bengara);font-weight:600}
+svg{max-width:100%;height:auto;display:block;background:var(--card);border:1px solid var(--line);border-radius:6px;margin:12px 0}
+svg text{font:12.5px -apple-system,Helvetica,Arial,sans-serif;fill:var(--ink)}
+svg .t{font-size:11px;fill:var(--mute)}
+svg .h{font-weight:600;font-size:13.5px}
+svg .box{fill:#fff;stroke:var(--ink);stroke-width:1.4}
+svg .soft{fill:var(--tint);stroke:var(--line)}
+svg .gitb{fill:var(--koke-tint);stroke:var(--koke)}
+svg .cacheb{fill:var(--yamabuki-tint);stroke:var(--yamabuki)}
+svg .cloudb{fill:var(--indigo-tint);stroke:var(--indigo)}
+svg .gap{stroke:var(--bengara);stroke-width:1.4;fill:none;stroke-dasharray:5 4}
+svg .arr{stroke:var(--ink);stroke-width:1.3;fill:none;marker-end:url(#a)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}
+.tree{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font:12.5px/1.55 ui-monospace,Menlo,monospace;white-space:pre;overflow:auto}
+.tree b{font-weight:600}
+.tree .g{color:var(--koke)}.tree .y{color:var(--yamabuki)}.tree .r{color:var(--bengara);text-decoration:line-through}.tree .m{color:var(--mute)}
+.tree .cap{font:600 13px -apple-system,Helvetica,Arial,sans-serif;display:block;margin-bottom:6px}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:12px 0}
+.opt{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-size:13.5px}
+.opt.rec{border:1.5px solid var(--indigo)}
+.opt b.t{display:block;font-size:14px;margin-bottom:4px}
+.opt .fm{color:var(--bengara);font-size:12.5px}
+.opt ul{margin:6px 0 0;padding-left:18px}
+.opt li{margin:2px 0}
+.dec{background:var(--card);border-left:3px solid var(--indigo);padding:10px 14px;margin:10px 0;font-size:14px}
+.dec b{color:var(--indigo)}
+.note{font-size:12.5px;color:var(--mute)}
+.legend{font-size:12.5px;color:var(--mute);margin:8px 0 0}
+.legend .chip{margin-right:6px}
+</style>
+
+<h1>specboard — the user flow, and what each step needs stored</h1>
+<p class="sub">2026-09-05 · steps back from "local or cloud" to "who reads this file, and for how long" · supersedes the three-way-split sketch of earlier today; the measurements in <span class="k">storage-paths-2026-09-05.html</span> still stand</p>
+
+<p><b>The purpose, in one line.</b> A feature whose requirement has gone messy — every fix on the page triggers the next bug — and the plugin lets a person and the agent agree on what the feature should do <i>by picture</i>, then hold the app to that picture. Two gaps, in order: what the agent thinks versus what the person means, and what the picture shows versus what the app does.</p>
+
+<h2>1 · The flow — five steps, and what each one leaves behind</h2>
+<div class="flow">
+  <div class="fac"></div>
+  <div class="st"><b>1 · it doesn't work</b><i>a page the person cannot debug any more</i></div>
+  <div class="st"><b>2 · show me what you think it does</b><i>kg-deep drafts the Given / When / Then and the Expected</i></div>
+  <div class="st"><b>3 · that's not what I meant</b><i>the person edits the words, picks a side</i></div>
+  <div class="st"><b>4 · now hold the app to it</b><i>the test runs; Expected beside Actual, moment by moment</i></div>
+  <div class="st"><b>5 · keep it true</b><i>every later change re-proves it; optionally a PR check</i></div>
+
+  <div class="fac">the person sees</div>
+  <div class="q">the broken app</div>
+  <div>the words + the Expected sketch of each beat</div>
+  <div>the same words, now theirs; a conflict resolved</div>
+  <div>the beat rows: Expected · Actual · the failed claim named</div>
+  <div>green / red per requirement, over time; a PR check</div>
+
+  <div class="fac">what is created</div>
+  <div class="q">nothing</div>
+  <div><span class="k">prd.md</span> — KB of text<br><span class="note">the sketch is drawn <i>from</i> it; nothing to keep</span></div>
+  <div>PRD edits · <span class="k">_conflict-decisions.json</span></div>
+  <div><span class="k">test.spec.ts</span> · <span class="k">steps.ts</span> — KB<br><span class="em">the harvest</span>: frames · replicas · skeletons · claims · video — 10–50 MB per screen</div>
+  <div>one run per push: a verdict + coverage (KB) and its frames</div>
+
+  <div class="fac">who reads it</div>
+  <div class="q">—</div>
+  <div>the person, <b>and the agent</b> — it works inside the repo and reads the PRD the way it reads CLAUDE.md</div>
+  <div>the person, the agent</div>
+  <div>the person (the board) <b>and the agent</b> (the failed claim + the skeleton is what it fixes from)</div>
+  <div>CI reads only the verdict; teammates read the board</div>
+
+  <div class="fac">how long it must live</div>
+  <div class="q">—</div>
+  <div>the life of the feature — it <b>is</b> the requirement</div>
+  <div>the life of the feature</div>
+  <div>authored: life of the feature<br>harvest: <b>until the next run</b> — only the latest proves anything</div>
+  <div>verdict: with the commit · frames: days (a retention), unless the team wants the board</div>
+
+  <div class="fac">so it lives in</div>
+  <div class="q">—</div>
+  <div><span class="chip git">app repo</span></div>
+  <div><span class="chip git">app repo</span></div>
+  <div><span class="chip git">app repo</span> the test<br><span class="chip cache">data home</span> the harvest, last N</div>
+  <div><span class="chip git">app repo</span> the CI file<br><span class="chip none">CI artifact</span> frames · <span class="chip cloud">team store</span> only if shared</div>
+</div>
+<p class="legend"><span class="chip git">app repo</span> committed with the code &nbsp; <span class="chip cache">data home</span> <span class="k">~/.specboard/&lt;project&gt;/</span>, outside every git, regenerable &nbsp; <span class="chip none">CI artifact</span> kept by the CI host with a retention &nbsp; <span class="chip cloud">team store</span> a private bucket + a database, the cloud step</p>
+
+<h2>2 · The two gaps are two different storage questions</h2>
+<svg viewBox="0 0 1100 250" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2b2a27"/></marker></defs>
+  <rect x="40" y="40" width="260" height="90" rx="8" class="box soft"/>
+  <text x="170" y="72" text-anchor="middle" class="h">what the person means</text>
+  <text x="170" y="94" text-anchor="middle" class="t">in their head, until step 3 writes it down</text>
+
+  <rect x="420" y="40" width="260" height="90" rx="8" class="box gitb"/>
+  <text x="550" y="66" text-anchor="middle" class="h">what the agent understands</text>
+  <text x="550" y="88" text-anchor="middle" class="t">prd.md · Given / When / Then</text>
+  <text x="550" y="106" text-anchor="middle" class="t">the Expected, drawn from it</text>
+
+  <rect x="800" y="40" width="260" height="90" rx="8" class="box cacheb"/>
+  <text x="930" y="66" text-anchor="middle" class="h">what the app does</text>
+  <text x="930" y="88" text-anchor="middle" class="t">the Actual: frames · claims · skeletons</text>
+  <text x="930" y="106" text-anchor="middle" class="t">measured by the test, every run</text>
+
+  <path d="M300 85 L420 85" class="gap"/>
+  <path d="M680 85 L800 85" class="gap"/>
+  <text x="360" y="72" text-anchor="middle" class="h" fill="#8a4a3c" style="fill:#8a4a3c">gap A</text>
+  <text x="740" y="72" text-anchor="middle" class="h" style="fill:#8a4a3c">gap B</text>
+
+  <text x="360" y="160" text-anchor="middle">closed by <tspan font-weight="600">editing words</tspan> (steps 2–3)</text>
+  <text x="360" y="180" text-anchor="middle" class="t">needs only the repo: text, versioned with the code</text>
+  <text x="360" y="198" text-anchor="middle" class="t">a picture that is drawn from the text is never stored</text>
+
+  <text x="740" y="160" text-anchor="middle">closed by <tspan font-weight="600">fixing the app</tspan> (steps 4–5)</text>
+  <text x="740" y="180" text-anchor="middle" class="t">needs the harvest: big, regenerable, latest-wins</text>
+  <text x="740" y="198" text-anchor="middle" class="t">outside git; shared only when a team wants the board</text>
+
+  <text x="550" y="236" text-anchor="middle" class="t">the test file sits on the gap-B side but is authored text, so it lives with gap A's files — that is why CI can run it</text>
+</svg>
+
+<h2>3 · What changes on the user's codebase</h2>
+<div class="two">
+<div class="tree"><span class="cap">today — the whole folder ignored, everything on one disk</span><span class="m">&lt;app&gt;/.gitignore   /specboard/</span>
+&lt;app&gt;/specboard/
+  spec/&lt;screen&gt;/prd.md test.spec.ts steps.ts   <span class="y">← unversioned</span>
+  spec/&lt;screen&gt;/evidence/  viz/                <span class="y">10–50 MB / screen</span>
+  spec/_results-index.json _runs.json          <span class="y">the fold</span>
+  spec/_runs/                                  <span class="y">540 MB of videos</span>
+  tools/  board.html  node_modules/            <span class="y">45 MB of the plugin</span>
+</div>
+<div class="tree"><span class="cap">after — authored in git, everything else out of the tree</span><span class="g"><b>&lt;app&gt;/specboard/</b>                       committed, KB</span>
+<span class="g">  _specboard.json      project id · plugin pin · storage switch</span>
+<span class="g">  _config.json         how to reach the app</span>
+<span class="g">  _conflict-decisions.json</span>
+<span class="g">  &lt;screen&gt;/prd.md · test.spec.ts · steps.ts · narration.json</span>
+<span class="g">  .gitignore           node_modules/ tools/ board.html .auth/</span>
+<span class="g">&lt;app&gt;/.github/workflows/specboard.yml</span>      <span class="m">step 5, optional</span>
+
+<span class="y"><b>~/.specboard/&lt;project&gt;/</b>                 never in any git</span>
+<span class="y">  index.json           the fold: verdicts · coverage · claims · src hashes</span>
+<span class="y">  blobs/&lt;sha256&gt;       frames · replicas · skeletons · fonts · video</span>
+<span class="y">  runs/                last N run records; GC drops what none references</span>
+
+<span class="r">spec/&lt;screen&gt;/viz/</span>  <span class="m">drawn from the PRD when the board opens, not stored</span>
+<span class="r">storage.where = git</span>  <span class="m">shots on a branch is the anti-pattern; removed</span>
+</div>
+</div>
+<p>Two rules fall straight out of the flow. <b>The agent works inside the repo</b>, so the requirement must be there for it to read — that is what breaks the "prompts live in the platform's database" analogy from Langfuse: their consumer is a running app, ours is a coding agent sitting in the checkout. And <b>the harvest is read by two readers, the person and the agent</b>, so the data home must stay plain files an agent can open, whatever else it becomes for a team.</p>
+
+<h2>4 · What this changes in the storage plan</h2>
+<div class="cols">
+  <div class="opt rec"><b class="t">A · fold as a file + blobs by hash now; a database at the team step  <span class="chip cloud">recommended</span></b>
+    Steps 2–4 read the <i>latest</i> state and nothing else; step 5's CI reads a verdict. Nothing in the flow queries across runs on one laptop. A database earns its place when a <b>team</b> shares a board and wants history per commit — and there it is Postgres beside the bucket, the cloud step, not SQLite on a laptop.
+    <ul><li>MLflow's local default, exactly</li><li>no native dependency to install for a solo user</li><li>the agent keeps reading plain JSON + files</li><li>last N run indexes kept as files answers "what did it look like 3 runs ago"</li></ul>
+    <div class="fm">Failure mode: when the team step comes, the fold is imported into Postgres once — a migration we write then, against a schema this file already mirrors.</div>
+  </div>
+  <div class="opt"><b class="t">B · SQLite now, Postgres later (this morning's answer)</b>
+    The same split, with the fold in a per-project SQLite file from day one.
+    <ul><li>one query layer for local and cloud</li><li>history per run from the start</li></ul>
+    <div class="fm">Failure mode: better-sqlite3 is a native module every plugin user installs, and the reporter, spec-store, server and builder are rewritten before a single user has reached step 5. The flow does not ask for it.</div>
+  </div>
+  <div class="opt"><b class="t">C · keep the harvest in the repo</b>
+    What this repo and demo/todo do today.
+    <ul><li>a picture in every PR, zero infrastructure</li></ul>
+    <div class="fm">Failure mode: 850 MB of history here already; every plugin user clones it. The harvest lives until the next run — git keeps it forever.</div>
+  </div>
+</div>
+
+<div class="dec"><b>Unchanged from this morning:</b> authored files in the app repo (the folder's whole-tree ignore is reversed, the vendored code stays ignored inside it); the harvest in <span class="k">~/.specboard/&lt;project&gt;/</span>, content-addressed, GC'd to the last N; the cloud is one switch on the same fold; the git-branch shipper goes.</div>
+<div class="dec"><b>Changed:</b> the database moves from "now, SQLite" to "the team step, Postgres". The sketch (viz) is no longer a stored file at all. CI at step 5 needs nothing beyond the test in the repo and a verdict — the frames are a CI artifact with a retention, and the team store is opt-in.</div>
+
+<h2>5 · One decision</h2>
+<div class="dec"><b>D ·</b> Take A: the local fold stays a file and a blob directory, and the database arrives with the team store. <b>Recommend: yes.</b> If yes, the order is: (1) the data home + blob store + GC and the importer of today's harvest, pure and unit-tested; (2) the reporter, spec-store, server and builder read and write it, and this repo + demo/todo stop tracking their harvest; (3) scaffold, update and the skills flip the folder to committed-authored-only, and dojostack migrates; (4) the CI file for step 5; (5) the team store when a team asks.</div>
+<p class="note">The 850 MB history rewrite of this repo (storage-paths §9 step 2) stays its own decision; steps 1–3 above stop the growth without it.</p>
+</body>

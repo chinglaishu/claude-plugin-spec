@@ -1,0 +1,273 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>specboard — storage A, then Expected phase 8: the one plan</title>
+<style>
+:root{--paper:#f6f2ea;--card:#fdfcf9;--ink:#2b2a27;--mute:#6f6a60;--line:#d9d2c3;--indigo:#3f4f7a;--indigo-tint:#e6eaee;--koke:#5b6b3c;--koke-tint:#eaece1;--bengara:#8a4a3c;--bengara-tint:#f2e8e4;--yamabuki:#8a6412;--yamabuki-tint:#f6eeda;--tint:#ecebe3}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 -apple-system,Helvetica,Arial,sans-serif;padding:32px 40px;max-width:1180px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:40px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.sub{color:var(--mute);margin:0 0 20px}
+p{margin:8px 0;max-width:900px}
+.k{font:12.5px ui-monospace,Menlo,monospace;background:var(--tint);padding:1px 5px;border-radius:4px}
+.chip{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:4px;border:1px solid;font-weight:600;white-space:nowrap}
+.chip.todo{color:var(--mute);border-color:var(--line);background:var(--tint)}
+.chip.done{color:var(--koke);border-color:#bcc4a8;background:var(--koke-tint)}
+.chip.wait{color:var(--yamabuki);border-color:#dfc98c;background:var(--yamabuki-tint)}
+.chip.stop{color:var(--bengara);border-color:#d8c0b6;background:var(--bengara-tint)}
+.chip.rel{color:var(--indigo);border-color:#b9c4ce;background:var(--indigo-tint)}
+.chip.gone{color:var(--bengara);border-color:#d8c0b6;background:var(--bengara-tint);text-decoration:line-through}
+svg{max-width:100%;height:auto;display:block;background:var(--card);border:1px solid var(--line);border-radius:6px;margin:12px 0}
+svg text{font:12.5px -apple-system,Helvetica,Arial,sans-serif;fill:var(--ink)}
+svg .t{font-size:11px;fill:var(--mute)}
+svg .h{font-weight:600;font-size:13.5px}
+svg .box{fill:#fff;stroke:var(--ink);stroke-width:1.2}
+svg .soft{fill:var(--tint);stroke:var(--line)}
+svg .gitb{fill:var(--koke-tint);stroke:var(--koke)}
+svg .cacheb{fill:var(--yamabuki-tint);stroke:var(--yamabuki)}
+svg .cloudb{fill:var(--indigo-tint);stroke:var(--indigo)}
+svg .redb{fill:var(--bengara-tint);stroke:var(--bengara)}
+svg .arr{stroke:var(--ink);stroke-width:1.2;fill:none;marker-end:url(#a)}
+svg .dep{stroke:var(--indigo);stroke-width:1.2;fill:none;marker-end:url(#ai)}
+svg .old{stroke:var(--bengara);stroke-width:1.2;fill:none;stroke-dasharray:4 3;marker-end:url(#ar)}
+svg .tag{font-size:10.5px;fill:var(--indigo);font-weight:600}
+svg .stopt{font-size:10.5px;fill:var(--bengara);font-weight:600}
+svg .lane{fill:none;stroke:var(--line);stroke-dasharray:3 3}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:6px;font-size:13px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+tr:last-child td{border-bottom:0}
+td.n{font-weight:600;white-space:nowrap}
+tr.ph td{background:var(--tint);font-weight:600;font-size:12.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.03em}
+.dec{background:var(--card);border-left:3px solid var(--indigo);padding:10px 14px;margin:10px 0;font-size:14px}
+.dec b{color:var(--indigo)}
+.stop{border-left-color:var(--bengara)}.stop b{color:var(--bengara)}
+.note{font-size:12.5px;color:var(--mute)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}
+.tree{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font:12.5px/1.55 ui-monospace,Menlo,monospace;white-space:pre;overflow:auto}
+.tree .cap{font:600 13px -apple-system,Helvetica,Arial,sans-serif;display:block;margin-bottom:6px}
+.tree .g{color:var(--koke)}.tree .y{color:var(--yamabuki)}.tree .r{color:var(--bengara);text-decoration:line-through}.tree .m{color:var(--mute)}.tree .i{color:var(--indigo)}
+.legend{font-size:12.5px;color:var(--mute);margin:6px 0 0}
+</style>
+
+<h1>specboard — storage A, then Expected phase 8: the one plan</h1>
+<p class="sub">2026-09-05 · combines <span class="k">expected-base-patch-plan-2026-09-05.html</span> (phase 8 + residuals, approved "yes, agree") and <span class="k">storage-userflow-2026-09-05.html</span> §5 (decision A, recommended yes) · master worker plan <span class="k">docs/superpowers/plans/2026-09-05-storage-then-expected-phase8.md</span> · this page is the ONE status page for both; statuses change at every task's commit</p>
+
+<h2>1 · Why one plan, and why storage goes first</h2>
+<svg viewBox="0 0 1100 250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2b2a27"/></marker>
+    <marker id="ai" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3f4f7a"/></marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8a4a3c"/></marker>
+  </defs>
+  <text x="30" y="30" class="h">as two plans — they collide on one directory and one version number</text>
+  <rect x="30" y="44" width="300" height="78" rx="8" class="box redb"/>
+  <text x="180" y="66" text-anchor="middle" class="h">phase 8 · A3</text>
+  <text x="180" y="84" text-anchor="middle" class="t">writes spec/&lt;screen&gt;/evidence/_base/&lt;hash&gt;.html</text>
+  <text x="180" y="100" text-anchor="middle" class="t">refcount kept by hand in foldEvidence · ships 0.45.0</text>
+  <rect x="30" y="140" width="300" height="78" rx="8" class="box redb"/>
+  <text x="180" y="162" text-anchor="middle" class="h">storage A · T7 + T11</text>
+  <text x="180" y="180" text-anchor="middle" class="t">DELETES spec/&lt;screen&gt;/evidence/ from the repo</text>
+  <text x="180" y="196" text-anchor="middle" class="t">every derived file → blobs/&lt;sha256&gt; · ships 0.45.0</text>
+  <path d="M330 83 L400 130" class="old"/><path d="M330 179 L400 132" class="old"/>
+  <text x="408" y="136" class="stopt">✕ same dir, same release</text>
+
+  <text x="600" y="30" class="h">as one plan — a base IS a blob</text>
+  <rect x="600" y="44" width="470" height="56" rx="8" class="box cacheb"/>
+  <text x="620" y="66" class="h">1 · storage A first (T1–T16) → 0.45.0</text>
+  <text x="620" y="84" class="t">content address = the hash A3 wanted · gc by reference = the refcount A3 wanted</text>
+  <rect x="600" y="118" width="470" height="56" rx="8" class="box cloudb"/>
+  <text x="620" y="140" class="h">2 · phase 8 on the store (A1–A6) → 0.46.0</text>
+  <text x="620" y="158" class="t">A3 shrinks to "strip the header, putBlob"; A4 fetches /blob/…; A5 grades a base once</text>
+  <path d="M835 100 L835 118" class="arr"/>
+  <rect x="600" y="192" width="470" height="40" rx="8" class="box soft"/>
+  <text x="620" y="216" class="t">closed by the merge: B1 retired (no committed bytes to grade) · C5 ruled (A) · C6 half-open (vendoring needs no backend)</text>
+</svg>
+<p>Phase 8 needs a base <i>named by its content and kept while anything references it</i>. That is exactly what storage A builds for every derived file. Building A3 first would write a second, hand-refcounted store into a directory T11 removes a week later; building A first makes A3 three lines. So: storage A in full, then phase 8 rebased on it. The only phase-8 tasks that could run earlier are A1 and A2 (they touch the capture, not the fold) — the plan keeps them in order anyway, one tree, one harvest at a time.</p>
+
+<h2>2 · The order — one picture, six phases</h2>
+<svg viewBox="0 0 1100 470" xmlns="http://www.w3.org/2000/svg">
+  <!-- lanes -->
+  <rect x="20" y="20" width="95" height="430" rx="6" class="lane"/>
+  <rect x="130" y="20" width="140" height="430" rx="6" class="lane"/>
+  <rect x="285" y="20" width="190" height="430" rx="6" class="lane"/>
+  <rect x="490" y="20" width="160" height="430" rx="6" class="lane"/>
+  <rect x="665" y="20" width="170" height="430" rx="6" class="lane"/>
+  <rect x="850" y="20" width="230" height="430" rx="6" class="lane"/>
+  <text x="67" y="40" text-anchor="middle" class="t">phase 0</text>
+  <text x="200" y="40" text-anchor="middle" class="t">phase 1 · the store</text>
+  <text x="380" y="40" text-anchor="middle" class="t">phase 2 · the pipeline</text>
+  <text x="570" y="40" text-anchor="middle" class="t">phase 3 · scaffold + release</text>
+  <text x="750" y="40" text-anchor="middle" class="t">phase 4 · CI + retire</text>
+  <text x="965" y="40" text-anchor="middle" class="t">phase 5 · Expected phase 8</text>
+
+  <!-- phase 0 -->
+  <rect x="30" y="56" width="75" height="24" rx="5" class="box soft"/><text x="67" y="72" text-anchor="middle">B3 NUL</text>
+
+  <!-- phase 1 -->
+  <rect x="140" y="56" width="120" height="24" rx="5" class="box cacheb"/><text x="200" y="72" text-anchor="middle">T1 store.mjs</text>
+  <rect x="140" y="88" width="120" height="24" rx="5" class="box cacheb"/><text x="200" y="104" text-anchor="middle">T2 gc by ref</text>
+  <rect x="140" y="120" width="120" height="24" rx="5" class="box cacheb"/><text x="200" y="136" text-anchor="middle">T3 importer</text>
+  <rect x="140" y="152" width="120" height="24" rx="5" class="box gitb"/><text x="200" y="168" text-anchor="middle">T4 manifest id</text>
+
+  <!-- phase 2 -->
+  <rect x="295" y="56" width="170" height="24" rx="5" class="box cacheb"/><text x="380" y="72" text-anchor="middle">T5 spec-store roots</text>
+  <rect x="295" y="88" width="170" height="24" rx="5" class="box cacheb"/><text x="380" y="104" text-anchor="middle">T6 faces sheet</text>
+  <rect x="295" y="120" width="170" height="24" rx="5" class="box cacheb"/><text x="380" y="136" text-anchor="middle">T7 reporter lands blobs</text>
+  <rect x="295" y="152" width="170" height="24" rx="5" class="box cacheb"/><text x="380" y="168" text-anchor="middle">T8 /blob /runs routes</text>
+  <rect x="295" y="184" width="170" height="24" rx="5" class="box cacheb"/><text x="380" y="200" text-anchor="middle">T9 gates read index · B2</text>
+  <rect x="295" y="216" width="170" height="24" rx="5" class="box cacheb"/><text x="380" y="232" text-anchor="middle">T10 results.json</text>
+  <rect x="295" y="248" width="170" height="24" rx="5" class="box redb"/><text x="380" y="264" text-anchor="middle">T11 untrack ≈1,127 files</text>
+
+  <!-- phase 3 -->
+  <rect x="500" y="56" width="140" height="24" rx="5" class="box gitb"/><text x="570" y="72" text-anchor="middle">T12 skeleton lists</text>
+  <rect x="500" y="88" width="140" height="24" rx="5" class="box gitb"/><text x="570" y="104" text-anchor="middle">T13 skills + docs</text>
+  <rect x="500" y="120" width="140" height="24" rx="5" class="box cloudb"/><text x="570" y="136" text-anchor="middle" class="h">T14 ★ 0.45.0</text>
+  <text x="570" y="160" text-anchor="middle" class="stopt">stop · you push dojostack</text>
+
+  <!-- phase 4 -->
+  <rect x="675" y="56" width="150" height="24" rx="5" class="box cloudb"/><text x="750" y="72" text-anchor="middle">T15 CI artifact</text>
+  <text x="750" y="94" text-anchor="middle" class="t">B1 retired here</text>
+  <rect x="675" y="106" width="150" height="24" rx="5" class="box redb"/><text x="750" y="122" text-anchor="middle">T16 storage=git out</text>
+  <text x="750" y="146" text-anchor="middle" class="stopt">stop · if init's PRD names it</text>
+
+  <!-- phase 5 -->
+  <rect x="860" y="56" width="210" height="24" rx="5" class="box cloudb"/><text x="965" y="72" text-anchor="middle">A1 namespace classes</text>
+  <rect x="860" y="88" width="210" height="24" rx="5" class="box cloudb"/><text x="965" y="104" text-anchor="middle">A2 data-replica-path</text>
+  <rect x="860" y="120" width="210" height="24" rx="5" class="box cloudb"/><text x="965" y="136" text-anchor="middle">A3′ base = a blob (header stripped)</text>
+  <rect x="860" y="152" width="210" height="24" rx="5" class="box cloudb"/><text x="965" y="168" text-anchor="middle">A4′ graft reader, /blob/ base</text>
+  <rect x="860" y="184" width="210" height="24" rx="5" class="box cloudb"/><text x="965" y="200" text-anchor="middle">A5′ gate: a base graded once</text>
+  <rect x="860" y="216" width="210" height="24" rx="5" class="box cloudb"/><text x="965" y="232" text-anchor="middle" class="h">A6′ ★ 0.46.0</text>
+
+  <!-- dependencies -->
+  <path d="M105 68 C 200 68, 220 132, 295 132" class="dep"/>
+  <path d="M260 100 L295 68" class="dep"/>
+  <path d="M260 164 L500 68" class="dep"/>
+  <path d="M465 260 L500 132" class="dep"/>
+  <path d="M640 132 L675 68" class="dep"/>
+  <path d="M640 132 L675 118" class="dep"/>
+  <path d="M465 132 L860 132" class="dep"/>
+  <path d="M465 164 L860 164" class="dep"/>
+  <path d="M465 196 L860 196" class="dep"/>
+
+  <!-- bottom notes -->
+  <rect x="30" y="300" width="1040" height="130" rx="8" class="box soft"/>
+  <text x="50" y="324" class="h">what each arrow means</text>
+  <text x="50" y="346" class="t">B3 → T7: the reporter's source holds a raw NUL byte; fix it before rewriting that file so grep works on it · T2 → T5: gc replaces prune-by-path · T4 → T12: the manifest id names the data home a scaffold creates</text>
+  <text x="50" y="364" class="t">T11 → T14: nothing derived may be tracked when the release lands · T14 → T15/T16: CI and the retired option ride on the released skeleton</text>
+  <text x="50" y="382" class="t">T7 → A3′: a base is landed by the same putBlob as every other file · T8 → A4′: the reader fetches the base at /blob/&lt;sha&gt;.html · T9 → A5′: the gate already walks the index, A5′ adds one row kind</text>
+  <text x="50" y="410" class="t">three colours: <tspan fill="#8a6412" font-weight="600">data home</tspan> · <tspan fill="#5b6b3c" font-weight="600">app repo (authored, committed)</tspan> · <tspan fill="#3f4f7a" font-weight="600">release / CI / the Expected</tspan> · <tspan fill="#8a4a3c" font-weight="600">removes something</tspan></text>
+</svg>
+
+<h2>3 · Every task, one table</h2>
+<p class="legend">status: <span class="chip todo">to do</span> <span class="chip done">done</span> <span class="chip wait">waiting on the human</span> <span class="chip stop">stops for you</span> <span class="chip gone">retired</span> · size S = under an hour, M = a few hours, L = a day with its harvest</p>
+<table>
+<tr><th style="width:44px">#</th><th style="width:320px">task</th><th>files</th><th style="width:230px">proof it works</th><th style="width:34px">size</th><th style="width:96px">status</th></tr>
+<tr class="ph"><td colspan="6">Phase 0 · one residual first, so the reporter's file can be read</td></tr>
+<tr><td class="n">B3</td><td>a raw NUL byte in the reporter's video cache key becomes an escape</td><td><span class="k">spec/_results-reporter.mjs</span></td><td>the byte count is 0; <span class="k">file</span> no longer says data; reporter units green</td><td>S</td><td><span class="chip todo">to do</span></td></tr>
+<tr class="ph"><td colspan="6">Phase 1 · the store, pure and unit-tested — nothing in the pipeline changes yet</td></tr>
+<tr><td class="n">T1</td><td>the data home + the blob address<br><span class="note">dataHomeRoot · projectId · dataHome · blobName · putBlob · blobPath</span></td><td><span class="k">tools/store.mjs</span> (new)</td><td><span class="k">store.test.mjs</span> · 5 units</td><td>S</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">T2</td><td>gc by reference<br><span class="note">referencedBlobs walks any record · gcBlobs deletes what nothing names — this is phase 8's refcount too</span></td><td><span class="k">tools/store.mjs</span></td><td>+2 units</td><td>S</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">T3</td><td>the one-time importer<br><span class="note">a committed fold + its files → the data home; idempotent; never deletes in the repo; a missing file is reported, not invented</span></td><td><span class="k">tools/store-import.mjs</span> (new)</td><td><span class="k">store-import.test.mjs</span> · 4 units</td><td>M</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">T4</td><td>the manifest carries a project id<br><span class="note">newProjectId · mergeManifest carries it · scaffold writes it</span></td><td><span class="k">tools/_skeleton.mjs</span> · <span class="k">tools/scaffold.mjs</span></td><td><span class="k">sidecar.test.mjs</span> · <span class="k">update.test.mjs</span></td><td>S</td><td><span class="chip todo">to do</span></td></tr>
+<tr class="ph"><td colspan="6">Phase 2 · the pipeline reads and writes the store — this repo and demo/todo migrate</td></tr>
+<tr><td class="n">T5</td><td>spec-store: roots in the data home, <span class="k">resolveRel</span> the one door, gc replaces prune-by-path, <span class="k">chromeSource</span>/<span class="k">hasAnyReplica</span>/<span class="k">vizFor</span> read the index<br><span class="note">amended: <span class="k">momentsOf</span> reads a beat's <span class="k">base</span> as its before replica, so A3′ needs no second walker</span></td><td><span class="k">tools/spec-store.mjs</span></td><td><span class="k">store-paths.test.mjs</span> (new) + the existing fold/stale units</td><td>L</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">T6</td><td>a faces sheet names each face by its blob</td><td><span class="k">tools/evidence.mjs</span></td><td><span class="k">evidence.test.mjs</span></td><td>S</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">T7</td><td>the reporter lands blobs; run records under <span class="k">runs/&lt;id&gt;/</span></td><td><span class="k">spec/_results-reporter.mjs</span></td><td><span class="k">reporter-blobs.test.mjs</span> (new) + a real harvest of one screen on :4199 into a temp home; the index checked by eye for skeletons</td><td>L</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">T8</td><td>the server serves <span class="k">/blob/…</span> and <span class="k">/runs/…</span>; CSP on html blobs, CORS on font blobs; the log link follows</td><td><span class="k">tools/static-allow.mjs</span> (new) · <span class="k">serve-board.mjs</span> · <span class="k">client.js</span></td><td><span class="k">static-allow.test.mjs</span> + the board spec on :4199</td><td>M</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">T9</td><td>the replica gate and the sketch pass read the index and the data home<br><span class="note">+ B2 in the same file: a call into steps.ts opens a page, so the zero-claim waiver cannot be taken by a composed-flow block</span></td><td><span class="k">proof-integrity.mjs</span> · <span class="k">viz-derive.mjs</span></td><td><span class="k">proof-integrity.test.mjs</span> · <span class="k">npm run proof mirror</span> against the temp home; DECLARED count does not rise</td><td>M</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">T10</td><td>the raw json report lands in the data home</td><td><span class="k">playwright.board.ts</span></td><td>a CLI run leaves <span class="k">spec/_results.json</span> untouched</td><td>S</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">T11</td><td>this repo + demo/todo stop tracking the harvest<br><span class="note">import → ignore → git rm --cached (≈1,127 files) → delete working copies → rebuild → full suite + both gates → CLAUDE.md corrected in place</span></td><td><span class="k">.gitignore</span> ×2 · <span class="k">CLAUDE.md</span></td><td><span class="k">BOARD_PORT=4199 npm run e2e</span> green · a screenshot of one beat row</td><td>M</td><td><span class="chip todo">to do</span></td></tr>
+<tr class="ph"><td colspan="6">Phase 3 · scaffold, update, skills — release 0.45.0, dojostack migrates</td></tr>
+<tr><td class="n">T12</td><td>the skeleton's lists: vendored code ignored <i>inside</i> the folder, the folder committed; the scaffold stops writing <span class="k">/specboard/</span> into the app's ignore</td><td><span class="k">_skeleton.mjs</span> · <span class="k">scaffold.mjs</span></td><td><span class="k">skeleton-ignore.test.mjs</span> · <span class="k">sidecar.test.mjs</span> · a scaffold into a temp app</td><td>M</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">T13</td><td>the five skills and the storage doc say the rule, with the reason; memory updated</td><td><span class="k">skills/*/SKILL.md</span> · <span class="k">docs/storage-paths-2026-09-05.html</span></td><td>read-through</td><td>S</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">T14</td><td><span class="chip rel">0.45.0</span> the data home · demo/todo re-vendors · dojostack: update, import 99 MB, flip the ignore, commit authored files, restart :4174<br><span class="note">needs no dojostack backend: the import moves the harvest that already exists; only a re-harvest waits on the sign-in (C6)</span></td><td><span class="k">plugin.json</span> + <span class="k">marketplace.json</span> · dojostack_main</td><td>dojostack board answers, a beat row shows both pictures · <span class="k">git status</span> shows nothing derived</td><td>M</td><td><span class="chip stop">you push</span></td></tr>
+<tr class="ph"><td colspan="6">Phase 4 · step 5 of the flow</td></tr>
+<tr><td class="n">T15</td><td>CI keeps the runner's data home as an artifact (14 days); a scaffolded project gets the same workflow as a template<br><span class="note">B1 ("grade the committed bytes before the suite") is retired here: after T11 a clone carries no harvest, so there is nothing committed to grade — the gates keep running after the suite on the runner's own harvest</span></td><td><span class="k">.github/workflows/e2e.yml</span> · <span class="k">templates/specboard-ci.yml</span></td><td>a PR's job uploads <span class="k">specboard-harvest</span></td><td>S</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">B1</td><td>CI gates before the suite too</td><td>—</td><td>—</td><td>—</td><td><span class="chip gone">retired by T11</span></td></tr>
+<tr><td class="n">T16</td><td>retire <span class="k">storage.where = git</span> (run shots on a branch is the anti-pattern)</td><td><span class="k">spec-store.mjs</span> · <span class="k">serve-board.mjs</span> · <span class="k">ship-record.mjs</span> · <span class="k">client.js</span></td><td><span class="k">config.test.mjs</span> · the init spec</td><td>M</td><td><span class="chip stop">if init's PRD names it</span></td></tr>
+<tr class="ph"><td colspan="6">Phase 5 · Expected phase 8 on the store — release 0.46.0</td></tr>
+<tr><td class="n">A1</td><td>namespace every replica's classes by its moment key (<span class="k">data-replica-ns</span>) — unchanged</td><td><span class="k">spec/_replica.mjs</span> · <span class="k">spec/_base.ts</span> · <span class="k">replica-gate.mjs</span></td><td><span class="k">replica.test.mjs</span> · <span class="k">replica-gate.test.mjs</span></td><td>M</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">A2</td><td>the patch root records the DOM path of its scene root (<span class="k">data-replica-path</span>) — unchanged</td><td><span class="k">spec/_replica.mjs</span> · <span class="k">replica-gate.mjs</span></td><td>+2 units</td><td>S</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">A3′</td><td>the base is a blob: the before replica's header line stripped, <span class="k">putBlob</span>, <span class="k">beats[].base = blob/…</span><br><span class="note">was: <span class="k">evidence/_base/&lt;hash&gt;.html</span> + a hand refcount in foldEvidence. Now the address is the hash and T2's gc is the refcount; <span class="k">baseEvidencePath</span> and the fold test are not built</span></td><td><span class="k">tools/evidence.mjs</span> (<span class="k">baseBody</span>) · <span class="k">spec/_results-reporter.mjs</span></td><td><span class="k">evidence.test.mjs</span> · a harvest of <span class="k">spec/init</span> on :4199: distinct base rels &lt; beats with a base</td><td>M</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">A4′</td><td>the reader grafts the patch onto the base, context faded, one camera on both cells; PRD R18/R19 prose<br><span class="note">was: <span class="k">data-repbase</span> matched a <span class="k">spec/…/_base/</span> path. Now it is the blob rel and <span class="k">repFetch</span> reaches it at <span class="k">/blob/&lt;sha&gt;.html</span> (T8)</span></td><td><span class="k">tools/board/graft.js</span> (new) · <span class="k">client.js</span> · <span class="k">build-board.mjs</span> · <span class="k">spec/board/prd.md</span></td><td><span class="k">graft.test.mjs</span> · board spec R18/R19 red-first on :4199</td><td>L</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">A5′</td><td>the gate grades a base ONCE against every beat that shares it<br><span class="note">was: list <span class="k">_base/</span> and refuse an orphan. Now: group the index's <span class="k">beats[].base</span> by rel; an orphan cannot exist (gc); a beat whose base blob is gone is a red row</span></td><td><span class="k">tools/proof-integrity.mjs</span></td><td><span class="k">proof-integrity.test.mjs</span> · <span class="k">npm run proof mirror</span> exit 0</td><td>M</td><td><span class="chip todo">to do</span></td></tr>
+<tr><td class="n">A6′</td><td><span class="chip rel">0.46.0</span> full suite, demo real-data check on :4198, CLAUDE.md + skill, <span class="k">graft.js</span> vendored<br><span class="note">was 0.45.0 — that number now belongs to the data home (T14), which changes the skeleton's shape first</span></td><td><span class="k">plugin.json</span> + <span class="k">marketplace.json</span> · <span class="k">CLAUDE.md</span> · <span class="k">skills/kg-e2e</span> · <span class="k">_skeleton.mjs</span></td><td>both gates exit 0 here and in demo; a screenshot of demo R3 beat 1 with the faded card and the arc</td><td>M</td><td><span class="chip todo">to do</span></td></tr>
+<tr class="ph"><td colspan="6">Part C · the human's rulings (nothing scheduled until answered)</td></tr>
+<tr><td class="n">C1</td><td><span class="k">checkReq</span> cannot name which beat it proves — six beats carry a declared gap</td><td colspan="2">recommend an optional <span class="k">{ beat }</span> argument</td><td>—</td><td><span class="chip wait">waiting</span></td></tr>
+<tr><td class="n">C2</td><td>evidence keyed by requirement: a standalone init run can replace board:R1's beat<br><span class="note">T7 keeps the requirement key; keying by TEST is an index-shape change that would land cheapest right after T7, while the importer (T3) is fresh — the human's call</span></td><td colspan="2">recommend keying by test</td><td>—</td><td><span class="chip wait">waiting</span></td></tr>
+<tr><td class="n">C3</td><td>the strip names every segment vs the old plan's single caption</td><td colspan="2">recommend keeping the names</td><td>—</td><td><span class="chip wait">waiting</span></td></tr>
+<tr><td class="n">C4</td><td>board R7 wording narrowed by an implementer, restored verbatim</td><td colspan="2">recommend verbatim</td><td>—</td><td><span class="chip wait">waiting</span></td></tr>
+<tr><td class="n">C5</td><td>storage D1/D2/D3 + .git shrink</td><td colspan="2">ruled A on 2026-09-05: D1 yes (<span class="k">_config.json</span> stays ignored), D2 with the team store, D3 untouched; shrink steps 0+1 = T11; step 2 (history rewrite) still open</td><td>—</td><td><span class="chip done">ruled</span></td></tr>
+<tr><td class="n">C6</td><td>dojostack board still on 0.43.7 — vendoring needs its backend up</td><td colspan="2">T14 vendors + imports without the backend; a fresh dojostack harvest still waits on the sign-in</td><td>—</td><td><span class="chip wait">half-open</span></td></tr>
+</table>
+
+<h2>4 · What the merge changed in each source plan</h2>
+<table>
+<tr><th style="width:150px">item</th><th style="width:330px">was (the source plan)</th><th>now (the master plan), and why</th></tr>
+<tr><td class="n">A3</td><td><span class="k">baseHashOf</span> + <span class="k">baseEvidencePath</span> → <span class="k">spec/&lt;screen&gt;/evidence/_base/&lt;12 hex&gt;.html</span>; foldEvidence prunes by refcount</td><td><span class="k">baseBody(html)</span> strips the header line; <span class="k">row.base = putBlob(DATA_HOME, baseBody, 'html')</span>. The sha256 in the blob's name is the hash; T2's gc is the refcount. Two moments of one page land as ONE blob without any code that knows about bases.</td></tr>
+<tr><td class="n">A4</td><td><span class="k">data-repbase</span> ~ <span class="k">/spec\/.*\/evidence\/_base\/[0-9a-f]{12}\.html/</span>; the commit stages the index, evidence and board.html</td><td>~ <span class="k">/^blob\/[0-9a-f]{64}\.html$/</span>; <span class="k">repFetch(sh.base)</span> hits T8's <span class="k">/blob/</span> route; the commit stages source only — the derived files are untracked since T11.</td></tr>
+<tr><td class="n">A5</td><td>list <span class="k">_base/</span>; a base no beat references is an orphan row</td><td>rows come from the index (T9's walk); bases are grouped by rel and graded once; a base blob nothing names was already collected by gc, so the orphan rule is gone; "its base is gone" stays.</td></tr>
+<tr><td class="n">A6 / T14</td><td>both plans ship 0.45.0; demo harvested on 4176, this repo on 4177</td><td>T14 ships <b>0.45.0</b> (the skeleton's shape changes: FILES, SPEC_IGNORE, the manifest id); A6′ ships <b>0.46.0</b>. Ports: this repo's suite on <b>4199</b>, demo/todo on <b>4198</b>, everywhere in the master plan.</td></tr>
+<tr><td class="n">B1</td><td>run both gates BEFORE the suite in CI, on the committed harvest</td><td><b>retired.</b> After T11 no harvest is committed; a clone reads nothing derived. T15 keeps the runner's harvest as an artifact and the gates run after the suite, as today.</td></tr>
+<tr><td class="n">B2</td><td>independent, any order</td><td>folded into T9's commit window — same file (<span class="k">proof-integrity.mjs</span>), one round of its tests.</td></tr>
+<tr><td class="n">B3</td><td>independent, any order</td><td>phase 0, first: the reporter is rewritten in T7 and A3′, and its file reads as binary until the NUL is an escape.</td></tr>
+<tr><td class="n">T5</td><td><span class="k">momentsOf</span> reads <span class="k">replicaExpectedBefore</span> for the before triple</td><td>reads <span class="k">b.base || b.replicaExpectedBefore</span> and marks <span class="k">kind: 'base'</span> when it came from <span class="k">base</span> — a legacy entry (imported by T3) keeps working, and A5′ needs no second walker.</td></tr>
+<tr><td class="n">C5</td><td>waiting on the human</td><td>ruled A; the plan is this page.</td></tr>
+<tr><td class="n">C6</td><td>blocked on dojostack's backend</td><td>T14's update + import + commit need no backend; only a fresh harvest does.</td></tr>
+</table>
+
+<h2>5 · A beat's Expected after both — in the data home</h2>
+<div class="two">
+<div class="tree"><span class="cap">~/.specboard/tsumiki-3f9a1c/index.json · after A3′</span><span class="m">"todo": { "evidence": {</span>
+  "R1": { "beats": [ { "n": 1,
+     <span class="i">"base":   "blob/7c1e…a9.html"</span>,   <span class="m">← the Given, whole page, header stripped</span>
+     "layoutBefore": "blob/…json",
+     "values": [ { "frame": "blob/…png", "layout": "blob/…json",
+                   "replicaExpected": "blob/2b90…4f.html" } ],   <span class="m">← the patch</span>
+     "after": "blob/…png", "replicaExpectedAfter": "blob/…html" } ] },
+  "R3": { "beats": [ { "n": 1,
+     <span class="i">"base":   "blob/7c1e…a9.html"</span>,   <span class="m">← the SAME blob: same page, one file</span>
+     … } ] }
+<span class="m">} }</span>
+
+<span class="y">blobs/7c1e…a9.html</span>   lives while R1 or R3 names it (T2)
+<span class="y">blobs/2b90…4f.html</span>   R1 b1 v1's patch: data-replica-ns · data-replica-path
+</div>
+<div class="tree"><span class="cap">the reader (A4′) · one cell</span>fetch  /blob/7c1e…a9.html      ← the base, page-sized
+fetch  /blob/2b90…4f.html      ← the patch (data-repsrc)
+graft  SBGraft.graft(base, patch, "1/1/1")
+        → the patch stands where the row stood
+        → everything off the path: data-ctx="1" (faded)
+srcdoc region = the base's (0 0 1440 900)
+ring         = this moment's ring box
+camera       = the beat's one camera, both cells
+
+<span class="m">no base (a legacy entry, a refused graft) → paintLone: today's picture</span>
+
+<span class="cap" style="margin-top:10px">the gate (A5′)</span>base 7c1e…a9  graded ONCE:
+  pin = layoutHash(R1 b1 before skeleton)  ✓
+  pin = layoutHash(R3 b1 before skeleton)  ✓
+  gaps on its root = []                    ✓
+</div>
+</div>
+
+<h2>6 · Where the plan stops for you</h2>
+<div class="dec stop"><b>T14 · dojostack's commit.</b> The agent commits the authored <span class="k">specboard/</span> into dojostack_main locally and restarts the board on :4174. It does not push: that is your repo and your CI.</div>
+<div class="dec stop"><b>T16 · init's PRD.</b> If a requirement on the Init screen names the git-branch storage option, removing it changes requirement text — your call (rule 5). The task reads the PRD first and stops there.</div>
+<div class="dec"><b>C1–C4 stay open</b> and nothing in phases 0–5 depends on them. C2 (key evidence by test) would land cheapest right after T7 — say so before T7 starts if you want it in this round.</div>
+<div class="dec"><b>Not in this plan.</b> The 850 MB history rewrite of this repo (storage-paths §9 step 2) — every sha changes, your other session and the marketplace re-clone. T11 stops the growth without it. The team store (a bucket + Postgres, the cloud step) waits for a team.</div>
+
+<h2>7 · Failure modes the plan holds in mind</h2>
+<table>
+<tr><th style="width:320px">what could go wrong</th><th>what the plan does about it</th></tr>
+<tr><td>a landing silently drops a skeleton and the mirror gate reads green anyway (the 2026-09-04 trap)</td><td>T7 ends with a real harvest into a temp home and a look at the index; T9 runs <span class="k">proof mirror</span> against it and treats any new "no layout skeleton" row as a T7 defect</td></tr>
+<tr><td>A3′ forgets to strip the header, so every beat gets its own base and nothing is shared — and everything still looks green</td><td>A3′'s proof is a COUNT: after the init harvest, distinct base rels must be fewer than beats carrying a base; equal means no sharing and the task is not done</td></tr>
+<tr><td>the reader asks for a base at a URL the server does not serve</td><td>A4′ comes after T8 and its board test asserts the srcdoc carries <span class="k">data-ctx</span> — a 404 leaves the base out and the test red</td></tr>
+<tr><td>a deduped font — or now a shared base — is deleted because one entry stopped naming it while another still does</td><td>prune-by-path is gone; T2's gc computes the keep-set from every retained record before deleting anything</td></tr>
+<tr><td>the importer "repairs" a path that never had a file</td><td>T3 leaves it as written and lists it under <span class="k">missing</span> (rule 3)</td></tr>
+<tr><td>a unit test pinned the old locations and goes red for the right reason</td><td>T5, T11 and A3′ name the suites to expect and apply rule 4: decide which side is wrong before editing</td></tr>
+<tr><td>the other session's uncommitted work rides into the big untrack commit</td><td>T11 stages by explicit path and checks <span class="k">git status</span> for anything not a <span class="k">D</span> before committing</td></tr>
+<tr><td>the human's live boards (:4173 own, :4175 demo, :4174 dojostack) are used as a harvest target</td><td>every verification run pins <span class="k">BOARD_PORT=4199</span> (demo: 4198) and a temp <span class="k">SPECBOARD_HOME</span></td></tr>
+<tr><td>two releases in a row confuse the vendored projects</td><td>0.45.0 changes the folder's shape and needs the import; 0.46.0 changes only what a replica means and needs a re-harvest. demo/todo takes both in order; dojostack takes 0.45.0 in T14 and 0.46.0 when a harvest is possible</td></tr>
+</table>
+<p class="note">Everything above is derived from the master worker plan; where they disagree, the plan is the source. The two source worker plans stay on disk as the task bodies the master plan points into; each carries a banner naming what the merge changed.</p>
+</body>

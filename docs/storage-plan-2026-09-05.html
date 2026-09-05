@@ -1,0 +1,177 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>specboard storage A — the implementation plan, visualised</title>
+<style>
+:root{--paper:#f6f2ea;--card:#fdfcf9;--ink:#2b2a27;--mute:#6f6a60;--line:#d9d2c3;--indigo:#3f4f7a;--indigo-tint:#e6eaee;--koke:#5b6b3c;--koke-tint:#eaece1;--bengara:#8a4a3c;--bengara-tint:#f2e8e4;--yamabuki:#8a6412;--yamabuki-tint:#f6eeda;--tint:#ecebe3}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 -apple-system,Helvetica,Arial,sans-serif;padding:32px 40px;max-width:1180px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:40px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.sub{color:var(--mute);margin:0 0 20px}
+p{margin:8px 0;max-width:860px}
+.k{font:12.5px ui-monospace,Menlo,monospace;background:var(--tint);padding:1px 5px;border-radius:4px}
+.chip{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:4px;border:1px solid;font-weight:600;white-space:nowrap}
+.chip.git{color:var(--koke);border-color:#bcc4a8;background:var(--koke-tint)}
+.chip.cache{color:var(--yamabuki);border-color:#dfc98c;background:var(--yamabuki-tint)}
+.chip.stop{color:var(--bengara);border-color:#d8c0b6;background:var(--bengara-tint)}
+.chip.cloud{color:var(--indigo);border-color:#b9c4ce;background:var(--indigo-tint)}
+.chip.none{color:var(--mute);border-color:var(--line);background:var(--tint)}
+svg{max-width:100%;height:auto;display:block;background:var(--card);border:1px solid var(--line);border-radius:6px;margin:12px 0}
+svg text{font:12.5px -apple-system,Helvetica,Arial,sans-serif;fill:var(--ink)}
+svg .t{font-size:11px;fill:var(--mute)}
+svg .h{font-weight:600;font-size:13.5px}
+svg .box{fill:#fff;stroke:var(--ink);stroke-width:1.2}
+svg .soft{fill:var(--tint);stroke:var(--line)}
+svg .gitb{fill:var(--koke-tint);stroke:var(--koke)}
+svg .cacheb{fill:var(--yamabuki-tint);stroke:var(--yamabuki)}
+svg .cloudb{fill:var(--indigo-tint);stroke:var(--indigo)}
+svg .redb{fill:var(--bengara-tint);stroke:var(--bengara)}
+svg .arr{stroke:var(--ink);stroke-width:1.2;fill:none;marker-end:url(#a)}
+svg .old{stroke:var(--bengara);stroke-width:1.2;fill:none;stroke-dasharray:4 3;marker-end:url(#ar)}
+svg .tag{font-size:10.5px;fill:var(--indigo);font-weight:600}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:6px;font-size:13px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+tr:last-child td{border-bottom:0}
+td.n{font-weight:600;white-space:nowrap}
+tr.ph td{background:var(--tint);font-weight:600;font-size:12.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.03em}
+.dec{background:var(--card);border-left:3px solid var(--indigo);padding:10px 14px;margin:10px 0;font-size:14px}
+.dec b{color:var(--indigo)}
+.stop{border-left-color:var(--bengara)}.stop b{color:var(--bengara)}
+.note{font-size:12.5px;color:var(--mute)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}
+.tree{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font:12.5px/1.55 ui-monospace,Menlo,monospace;white-space:pre;overflow:auto}
+.tree .cap{font:600 13px -apple-system,Helvetica,Arial,sans-serif;display:block;margin-bottom:6px}
+.tree .g{color:var(--koke)}.tree .y{color:var(--yamabuki)}.tree .r{color:var(--bengara);text-decoration:line-through}.tree .m{color:var(--mute)}
+</style>
+
+<h1>specboard storage A — the implementation plan, visualised</h1>
+<p class="sub">2026-09-05 · decision A ruled: "the local fold stays a file and a blob directory, and the database arrives with the team store" · worker plan <span class="k">docs/superpowers/plans/2026-09-05-storage-data-home.md</span> (16 tasks, test-first) · context <span class="k">storage-userflow-2026-09-05.html</span></p>
+<p class="sub" style="border-left:3px solid #3f4f7a;padding:6px 10px;background:#fdfcf9">Folded 2026-09-05 into <span class="k">plan-storage-then-expected-2026-09-05.html</span> — the ONE plan: these sixteen tasks first (B3 before T7; T5/T9/T14/T15 amended there), then Expected phase 8 on the data home.</p>
+
+<h2>1 · What moves where — one picture</h2>
+<svg viewBox="0 0 1100 420" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2b2a27"/></marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8a4a3c"/></marker>
+  </defs>
+  <rect x="40" y="40" width="200" height="70" rx="8" class="box gitb"/>
+  <text x="140" y="66" text-anchor="middle" class="h">app repo · specboard/</text>
+  <text x="140" y="86" text-anchor="middle" class="t">prd · test · steps · decisions · manifest(id)</text>
+  <text x="140" y="100" text-anchor="middle" class="tag">T4 · T11 · T12 · T14</text>
+
+  <rect x="320" y="40" width="200" height="70" rx="8" class="box soft"/>
+  <text x="420" y="66" text-anchor="middle" class="h">Playwright run</text>
+  <text x="420" y="86" text-anchor="middle" class="t">checkReq photographs · reporter folds</text>
+  <text x="420" y="100" text-anchor="middle" class="tag">T7 · T10</text>
+
+  <path d="M240 75 L320 75" class="arr"/>
+
+  <rect x="600" y="40" width="460" height="230" rx="10" class="box cacheb"/>
+  <text x="620" y="64" class="h">~/.specboard/&lt;project id&gt;/ — the data home</text>
+  <text x="620" y="82" class="t">tools/store.mjs · T1–T3 · T5</text>
+  <rect x="620" y="96" width="200" height="56" rx="6" class="box"/>
+  <text x="720" y="118" text-anchor="middle" class="h">index.json</text>
+  <text x="720" y="136" text-anchor="middle" class="t">verdicts · coverage · claims · srcHashes</text>
+  <rect x="840" y="96" width="200" height="56" rx="6" class="box"/>
+  <text x="940" y="118" text-anchor="middle" class="h">blobs/&lt;sha256&gt;.&lt;ext&gt;</text>
+  <text x="940" y="136" text-anchor="middle" class="t">frames · replicas · skeletons · fonts · video</text>
+  <rect x="620" y="166" width="200" height="56" rx="6" class="box"/>
+  <text x="720" y="188" text-anchor="middle" class="h">runs.json · runs/&lt;id&gt;/</text>
+  <text x="720" y="206" text-anchor="middle" class="t">last N records, pruned</text>
+  <rect x="840" y="166" width="200" height="56" rx="6" class="box"/>
+  <text x="940" y="188" text-anchor="middle" class="h">viz/&lt;screen&gt;/*.svg</text>
+  <text x="940" y="206" text-anchor="middle" class="t">sketches, a cache</text>
+  <text x="620" y="252" class="t">gc at every fold: a blob lives while index.json or runs.json names it (T2)</text>
+
+  <path d="M520 62 L600 62" class="arr"/>
+  <path d="M520 88 L600 88" class="arr"/>
+
+  <rect x="320" y="300" width="200" height="70" rx="8" class="box soft"/>
+  <text x="420" y="326" text-anchor="middle" class="h">the board · serve + build</text>
+  <text x="420" y="346" text-anchor="middle" class="t">/blob/… · /runs/… · spec/** only</text>
+  <text x="420" y="360" text-anchor="middle" class="tag">T5 · T8 · T9</text>
+  <path d="M600 200 L520 200 L520 300" class="arr"/>
+
+  <rect x="40" y="300" width="200" height="70" rx="8" class="box redb"/>
+  <text x="140" y="326" text-anchor="middle" class="h">gone from the repo</text>
+  <text x="140" y="346" text-anchor="middle" class="t">evidence/ viz/ board.html _runs.json</text>
+  <text x="140" y="360" text-anchor="middle" class="t">_results*.json · storage.where = git</text>
+  <path d="M140 110 L140 300" class="old"/>
+  <text x="152" y="210" class="t">T11 · T16</text>
+
+  <rect x="600" y="300" width="460" height="70" rx="8" class="box cloudb"/>
+  <text x="830" y="326" text-anchor="middle" class="h">CI · step 5 of the flow</text>
+  <text x="830" y="346" text-anchor="middle" class="t">the runner's data home uploaded as an artifact, 14 days · a template workflow for projects</text>
+  <text x="830" y="360" text-anchor="middle" class="tag">T15</text>
+</svg>
+
+<h2>2 · The four phases, sixteen tasks</h2>
+<table>
+<tr><th style="width:44px">#</th><th style="width:300px">task</th><th>files</th><th style="width:240px">proof it works</th><th style="width:120px">who</th></tr>
+<tr class="ph"><td colspan="5">Phase 1 · the store, pure and unit-tested — nothing in the pipeline changes yet</td></tr>
+<tr><td class="n">T1</td><td>the data home + the blob address<br><span class="note">dataHomeRoot · projectId · dataHome · blobName · putBlob · blobPath</span></td><td><span class="k">tools/store.mjs</span> (new)</td><td><span class="k">tools/store.test.mjs</span> · 5 units</td><td>agent</td></tr>
+<tr><td class="n">T2</td><td>gc by reference<br><span class="note">referencedBlobs walks any record · gcBlobs deletes what nothing names</span></td><td><span class="k">tools/store.mjs</span></td><td>+2 units</td><td>agent</td></tr>
+<tr><td class="n">T3</td><td>the one-time importer<br><span class="note">a committed fold + its files → the data home; idempotent; never deletes in the repo; a missing file is reported, not invented</span></td><td><span class="k">tools/store-import.mjs</span> (new)</td><td><span class="k">store-import.test.mjs</span> · 4 units</td><td>agent</td></tr>
+<tr><td class="n">T4</td><td>the manifest carries a project id<br><span class="note">newProjectId · mergeManifest carries it · scaffold writes it</span></td><td><span class="k">tools/_skeleton.mjs</span> · <span class="k">tools/scaffold.mjs</span></td><td><span class="k">sidecar.test.mjs</span> · <span class="k">update.test.mjs</span></td><td>agent</td></tr>
+<tr class="ph"><td colspan="5">Phase 2 · the pipeline reads and writes the store — this repo and demo/todo migrate</td></tr>
+<tr><td class="n">T5</td><td>spec-store: roots in the data home, <span class="k">resolveRel</span> the one door, gc replaces prune-by-path, <span class="k">chromeSource</span>/<span class="k">hasAnyReplica</span>/<span class="k">vizFor</span> read the index</td><td><span class="k">tools/spec-store.mjs</span></td><td><span class="k">store-paths.test.mjs</span> (new) + the existing fold/stale units</td><td>agent</td></tr>
+<tr><td class="n">T6</td><td>a faces sheet names each face by its blob</td><td><span class="k">tools/evidence.mjs</span></td><td><span class="k">evidence.test.mjs</span></td><td>agent</td></tr>
+<tr><td class="n">T7</td><td>the reporter lands blobs; run records under <span class="k">runs/&lt;id&gt;/</span></td><td><span class="k">spec/_results-reporter.mjs</span></td><td><span class="k">reporter-blobs.test.mjs</span> (new) + a real harvest of one screen on :4199 into a temp home</td><td>agent</td></tr>
+<tr><td class="n">T8</td><td>the server serves <span class="k">/blob/…</span> and <span class="k">/runs/…</span>; CSP on html blobs, CORS on font blobs; the log link follows</td><td><span class="k">tools/static-allow.mjs</span> (new) · <span class="k">serve-board.mjs</span> · <span class="k">client.js</span></td><td><span class="k">static-allow.test.mjs</span> + the board spec on :4199</td><td>agent</td></tr>
+<tr><td class="n">T9</td><td>the replica gate and the sketch pass read the index and the data home</td><td><span class="k">proof-integrity.mjs</span> · <span class="k">viz-derive.mjs</span></td><td><span class="k">proof-integrity.test.mjs</span> · <span class="k">npm run proof mirror</span></td><td>agent</td></tr>
+<tr><td class="n">T10</td><td>the raw json report lands in the data home</td><td><span class="k">playwright.board.ts</span></td><td>a CLI run leaves <span class="k">spec/_results.json</span> untouched</td><td>agent</td></tr>
+<tr><td class="n">T11</td><td>this repo + demo/todo stop tracking the harvest<br><span class="note">import → ignore → git rm --cached (≈1,127 files) → delete working copies → rebuild → full suite + both gates → CLAUDE.md corrected in place</span></td><td><span class="k">.gitignore</span> ×2 · <span class="k">CLAUDE.md</span></td><td><span class="k">BOARD_PORT=4199 npm run e2e</span> green · a screenshot of one beat row</td><td>agent</td></tr>
+<tr class="ph"><td colspan="5">Phase 3 · scaffold, update, skills — dojostack migrates</td></tr>
+<tr><td class="n">T12</td><td>the skeleton's lists: vendored code ignored <i>inside</i> the folder, the folder committed; the scaffold stops writing <span class="k">/specboard/</span> into the app's ignore</td><td><span class="k">_skeleton.mjs</span> · <span class="k">scaffold.mjs</span></td><td><span class="k">skeleton-ignore.test.mjs</span> · <span class="k">sidecar.test.mjs</span> · a scaffold into a temp app</td><td>agent</td></tr>
+<tr><td class="n">T13</td><td>the five skills and the storage doc say the rule, with the reason; memory updated</td><td><span class="k">skills/*/SKILL.md</span> · <span class="k">docs/storage-paths-2026-09-05.html</span></td><td>read-through</td><td>agent</td></tr>
+<tr><td class="n">T14</td><td>release 0.45.0 · demo/todo re-vendors · dojostack: update, import 99 MB, flip the ignore, commit authored files, restart :4174</td><td><span class="k">plugin.json</span> · dojostack_main</td><td>dojostack board answers, a beat row shows both pictures · <span class="k">git status</span> shows nothing derived</td><td>agent commits · <b>you push</b></td></tr>
+<tr class="ph"><td colspan="5">Phase 4 · step 5 of the flow</td></tr>
+<tr><td class="n">T15</td><td>CI keeps the runner's data home as an artifact (14 days); a scaffolded project gets the same workflow as a template</td><td><span class="k">.github/workflows/e2e.yml</span> · <span class="k">templates/specboard-ci.yml</span></td><td>a PR's job uploads <span class="k">specboard-harvest</span></td><td>agent</td></tr>
+<tr><td class="n">T16</td><td>retire <span class="k">storage.where = git</span> (run shots on a branch is the anti-pattern)</td><td><span class="k">spec-store.mjs</span> · <span class="k">serve-board.mjs</span> · <span class="k">ship-record.mjs</span> · <span class="k">client.js</span></td><td><span class="k">config.test.mjs</span> · the init spec</td><td>agent · <span class="chip stop">stops</span> if init's PRD names the option</td></tr>
+</table>
+
+<h2>3 · A project's tree, before and after</h2>
+<div class="two">
+<div class="tree"><span class="cap">before (0.44.2)</span><span class="m">&lt;app&gt;/.gitignore    /specboard/   ← the whole folder, unversioned</span>
+&lt;app&gt;/specboard/
+  spec/&lt;screen&gt;/prd.md test.spec.ts steps.ts
+  spec/&lt;screen&gt;/evidence/  viz/  screen.png
+  spec/_results-index.json  _runs.json  _results.json
+  spec/_runs/&lt;id&gt;/
+  tools/  board.html  playwright.board.ts  node_modules/
+</div>
+<div class="tree"><span class="cap">after (0.45.0)</span><span class="g">&lt;app&gt;/specboard/              committed · KB</span>
+<span class="g">  spec/_specboard.json          release · project id · app path</span>
+<span class="g">  spec/_conflict-decisions.json</span>
+<span class="g">  spec/&lt;screen&gt;/prd.md · test.spec.ts · steps.ts · narration.json</span>
+<span class="g">  .gitignore                    node_modules/ board.html /tools/* …</span>
+<span class="m">  spec/_config.json             ignored: per machine, may hold a sign-in</span>
+<span class="m">  spec/&lt;screen&gt;/screen.png      ignored: a test still writes it here</span>
+<span class="m">  tools/ board.html node_modules/  present, ignored (vendored)</span>
+
+<span class="y">~/.specboard/&lt;project id&gt;/     never in any git</span>
+<span class="y">  index.json · runs.json · results.json</span>
+<span class="y">  blobs/&lt;sha256&gt;.&lt;ext&gt;</span>
+<span class="y">  runs/&lt;id&gt;/ · viz/&lt;screen&gt;/</span>
+
+<span class="r">spec/&lt;screen&gt;/evidence/  spec/&lt;screen&gt;/viz/</span>
+<span class="r">storage.where = git</span>
+</div>
+</div>
+
+<h2>4 · The three points where the plan stops for you</h2>
+<div class="dec stop"><b>T16 · init's PRD.</b> If a requirement on the Init screen names the git-branch option, removing it changes requirement text — your call (rule 5). The task reads the PRD first and stops there; the code deletion waits with it.</div>
+<div class="dec stop"><b>T14 · dojostack's commit.</b> The agent commits the authored <span class="k">specboard/</span> into dojostack_main locally and restarts the board. It does not push: that is your repo and your CI.</div>
+<div class="dec"><b>Not in this plan, still open.</b> The 850 MB history rewrite of this repo (storage-paths §9 step 2) — every sha changes, your other session and the marketplace re-clone. Tasks 11 and 14 stop the growth without it.</div>
+
+<h2>5 · Failure modes the plan holds in mind</h2>
+<table>
+<tr><th style="width:300px">what could go wrong</th><th>what the plan does about it</th></tr>
+<tr><td>a landing silently drops a skeleton and the mirror gate reads green anyway (the 2026-09-04 trap)</td><td>T7 ends with a real harvest into a temp home and a look at the index; T9 runs <span class="k">proof mirror</span> against it and treats any new "no layout skeleton" row as a T7 defect</td></tr>
+<tr><td>a deduped font is deleted because one entry stopped naming it while another still does</td><td>prune-by-path is gone; T2's gc computes the keep-set from every retained record before deleting anything</td></tr>
+<tr><td>the importer "repairs" a path that never had a file</td><td>T3 leaves it as written and lists it under <span class="k">missing</span> (rule 3)</td></tr>
+<tr><td>a unit test pinned the old locations and goes red for the right reason</td><td>T5 and T11 name the suites to expect and apply rule 4: decide which side is wrong before editing</td></tr>
+<tr><td>the other session's uncommitted work rides into the big untrack commit</td><td>T11 stages by explicit path and checks <span class="k">git status</span> for anything not a <span class="k">D</span> before committing</td></tr>
+<tr><td>the human's live board on :4173 is used as the harvest target</td><td>every verification run pins <span class="k">BOARD_PORT=4199</span> and a temp <span class="k">SPECBOARD_HOME</span></td></tr>
+</table>
+<p class="note">Everything above is derived from the worker plan; where they disagree, the plan is the source.</p>
+</body>
