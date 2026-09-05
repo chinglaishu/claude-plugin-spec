@@ -54,13 +54,13 @@
 import { mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { dataHome, dataHomeRoot, projectId, sha256, blobName, blobPath, isBlobRel, isBlobSrc } from './store-address.mjs'
+import { dataHome, dataHomeRoot, projectId, sha256, blobName, blobPath, isBlobRel, isBlobSrc, srcKey } from './store-address.mjs'
 import { openSqlite } from './store-db-sqlite.mjs'
 import { openPg } from './store-db-pg.mjs'
 import { openFsBlobs } from './store-blob-fs.mjs'
 import { openS3Blobs } from './store-blob-s3.mjs'
 
-export { dataHome, dataHomeRoot, projectId, sha256, blobName, blobPath, isBlobRel, isBlobSrc }
+export { dataHome, dataHomeRoot, projectId, sha256, blobName, blobPath, isBlobRel, isBlobSrc, srcKey }
 
 export const SCHEMA_VERSION = 1
 
@@ -126,6 +126,38 @@ export async function removeBlob (home, src, opts = {}) {
 
 export async function listBlobs (home, opts = {}) {
   return (await openBlobs({ home, ...opts })).list()
+}
+
+// ─── gc by reference ──────────────────────────────────────────────────────────────────────────────
+// Every src some record still names. Walks whatever it is handed — the fold, a run, one entry — so a
+// caller cannot forget a field: the rule is "named anywhere", not "named here". Pure.
+export function referencedBlobs (...records) {
+  const out = new Set()
+  const walk = v => {
+    if (typeof v === 'string') { if (isBlobSrc(v)) out.add(v); return }
+    if (Array.isArray(v)) { for (const x of v) walk(x); return }
+    if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x)
+  }
+  for (const r of records) walk(r)
+  return out
+}
+
+// Delete what nothing names, through whichever driver holds the bytes (fs unlink or bucket delete).
+// The keep-set is matched by CONTENT ADDRESS, not by string, so a keep-set gathered before a switch
+// of driver still protects the same bytes after it.
+export async function gcWithDriver (blobs, keep) {
+  const keys = new Set([...(keep instanceof Set ? keep : new Set(keep || []))].map(srcKey))
+  let deleted = 0
+  let kept = 0
+  for (const src of await blobs.list()) {
+    if (keys.has(srcKey(src))) { kept++; continue }
+    try { await blobs.remove(src); deleted++ } catch { /* already gone */ }
+  }
+  return { deleted, kept }
+}
+
+export async function gcBlobs (home, keep, opts = {}) {
+  return gcWithDriver(await openBlobs({ home, ...opts }), keep)
 }
 
 // ─── the store ────────────────────────────────────────────────────────────────────────────────────
@@ -287,6 +319,19 @@ export async function openStore ({ root = process.cwd(), home = null, manifest =
       const r = await db.get('SELECT report FROM reports WHERE run_id = ?', [String(runId)])
       return r ? unjson(r.report) : null
     },
+
+    // gc by reference: the retained records ARE the refcount (see the header). A blob two records
+    // name survives the pruning of one of them; a blob nothing names is collected.
+    async referencedBlobs () {
+      const out = new Set()
+      const add = v => { for (const s of referencedBlobs(v)) out.add(s) }
+      for (const r of await db.all('SELECT entry FROM evidence', [])) add(unjson(r.entry))
+      for (const r of await db.all('SELECT record FROM runs', [])) add(unjson(r.record))
+      for (const r of await db.all('SELECT src_hashes, proven_hashes, extra FROM screens', [])) add([unjson(r.src_hashes), unjson(r.proven_hashes), unjson(r.extra)])
+      for (const r of await db.all('SELECT report FROM reports', [])) add(unjson(r.report))
+      return out
+    },
+    async gcBlobs () { return gcWithDriver(blobs, await store.referencedBlobs()) },
 
     async dropAll () { for (const t of TABLES) await db.exec(`DROP TABLE IF EXISTS ${t}`) },
     async close () { await db.close(); await blobs.close() }

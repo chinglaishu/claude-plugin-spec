@@ -153,3 +153,49 @@ test('the store keeps run records and the raw report, newest run first', async (
   assert.deepEqual((await store.listRuns()).map(r => r.runId), ['78'])
   await store.close()
 })
+
+// ─── T2: gc by reference ────────────────────────────────────────────────────────────────────────
+import { referencedBlobs, gcBlobs } from './store.mjs'
+
+test('referencedBlobs collects every src anywhere in the records — both shapes, nothing else', () => {
+  const b1 = 'blob/' + 'a'.repeat(64) + '.png'
+  const b2 = 'blob/' + 'b'.repeat(64) + '.html'
+  const b3 = 'https://media.example.com/' + 'c'.repeat(64) + '.webm'
+  const index = { board: { evidence: { R1: { before: b1, beats: [{ n: 1, values: [{ frame: b2, layout: 'spec/x.json' }] }] } } } }
+  const runs = [{ runId: '1', shotsByTest: { t: { video: b3, shots: [b1], log: 'opened https://localhost:4199/#/board' } } }]
+  assert.deepEqual([...referencedBlobs(index, runs)].sort(), [b1, b2, b3].sort())
+  assert.deepEqual([...referencedBlobs(null, undefined, 'blob/short.png')], [])
+  // a url that is not content-addressed is somebody else's url, not our blob — a font's cdn source,
+  // a page the log mentions. Only a <sha256>.<ext> name is a src, in either shape.
+  assert.equal(isBlobSrc('https://cdn.example.com/fonts/inter.woff2'), false)
+  assert.deepEqual([...referencedBlobs({ fonts: [{ url: 'https://cdn.example.com/fonts/inter.woff2' }] })], [])
+})
+
+test('gcBlobs deletes what nothing names and keeps the rest', async () => {
+  const home = box()
+  const keep = await putBlob(home, Buffer.from('keep me'), 'png')
+  const drop = await putBlob(home, Buffer.from('drop me'), 'png')
+  assert.deepEqual(await gcBlobs(home, new Set([keep])), { deleted: 1, kept: 1 })
+  assert.equal(existsSync(blobPath(home, keep)), true)
+  assert.equal(existsSync(blobPath(home, drop)), false)
+  assert.deepEqual(await gcBlobs(box(), new Set()), { deleted: 0, kept: 0 })   // no blobs dir yet: nothing to do
+})
+
+test('a blob two records name survives the pruning of one of them; an orphan does not', async () => {
+  const home = box()
+  const store = await openStore({ root: '/a/app', home, manifest: { projectId: 'p1' }, env: {} })
+  const shared = await store.putBlob(Buffer.from('the shared base'), 'html')
+  const onlyMine = await store.putBlob(Buffer.from('the flow frame'), 'png')
+  const orphan = await store.putBlob(Buffer.from('nothing names me'), 'png')
+  await store.putEvidence({ testFile: 'spec/board/test.spec.ts', screen: 'board', reqId: 'R1', entry: { beats: [{ n: 1, base: shared, values: [] }] } })
+  await store.putEvidence({ testFile: 'spec/init/test.spec.ts', screen: 'board', reqId: 'R1', entry: { beats: [{ n: 1, base: shared, before: onlyMine, values: [] }] } })
+  await store.putRun({ runId: '77', at: 'z', ok: true, shotsByTest: {} })
+  assert.deepEqual([...await store.referencedBlobs()].sort(), [shared, onlyMine].sort())
+  assert.deepEqual(await store.gcBlobs(), { deleted: 1, kept: 2 }, 'the orphan goes, the two named blobs stay')
+  assert.equal(existsSync(blobPath(home, orphan)), false)
+  await store.deleteEvidence({ testFile: 'spec/init/test.spec.ts', screen: 'board', reqId: 'R1' })
+  assert.deepEqual(await store.gcBlobs(), { deleted: 1, kept: 1 })
+  assert.equal(existsSync(blobPath(home, shared)), true, 'the base the other test still names survives')
+  assert.equal(existsSync(blobPath(home, onlyMine)), false, 'the frame only the pruned record named is collected')
+  await store.close()
+})

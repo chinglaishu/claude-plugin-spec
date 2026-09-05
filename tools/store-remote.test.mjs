@@ -114,3 +114,20 @@ test('a live bucket, when the environment names one', { skip: process.env.SPECBO
   assert.equal((await blobs.get(src)).toString(), bytes.toString())
   await blobs.remove(src)
 })
+
+test('gc in cloud mode deletes from the BUCKET — the same keep-set, a driver-dispatched delete', async () => {
+  const calls = []
+  const name = sha(Buffer.from('keep me')) + '.png'
+  const gone = sha(Buffer.from('drop me')) + '.png'
+  const fetchImpl = async (url, init) => {
+    calls.push({ url, method: init.method })
+    if (init.method === 'GET' && url.includes('list-type=2')) {
+      return { ok: true, status: 200, text: async () => `<ListBucketResult><Key>${name}</Key><Key>${gone}</Key></ListBucketResult>` }
+    }
+    return { ok: true, status: 200, text: async () => '' }
+  }
+  const blobs = await openS3Blobs({ bucket: { endpoint: 'https://s3.example.com', name: 'b', publicBase: 'https://media.example.com' }, env: { SPECBOARD_S3_KEY: 'k', SPECBOARD_S3_SECRET: 's' }, fetch: fetchImpl })
+  const { gcWithDriver } = await import('./store.mjs')
+  assert.deepEqual(await gcWithDriver(blobs, new Set([`https://media.example.com/${name}`])), { deleted: 1, kept: 1 })
+  assert.deepEqual(calls.filter(c => c.method === 'DELETE').map(c => c.url), [`https://s3.example.com/b/${gone}`])
+})

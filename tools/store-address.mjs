@@ -14,7 +14,7 @@ import { join, resolve, basename } from 'node:path'
 
 const ID = /^[a-z0-9][a-z0-9-]{0,63}$/
 const BLOB = /^blob\/([0-9a-f]{64}\.[a-z0-9]{1,8})$/
-const URL_SRC = /^https:\/\/[^\s"'<>]+$/
+const URL_SRC = /^https:\/\/[^\s"'<>]*\/[0-9a-f]{64}\.[a-z0-9]{1,8}$/
 
 export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 
@@ -46,7 +46,16 @@ export function blobName (bytes, ext) {
 export const isBlobRel = s => BLOB.test(String(s || ''))
 
 // Either shape — this is what a gate, a reader or the gc asks before treating a string as a picture.
+// The cloud shape must still END IN THE CONTENT ADDRESS (`<sha256>.<ext>`), because that is what the
+// s3 driver writes and what makes the two shapes the same object: any other https string in a record
+// is somebody else's url — a font's cdn source, a page a log mentions — and the gc must not mistake
+// it for one of ours.
 export const isBlobSrc = s => isBlobRel(s) || URL_SRC.test(String(s || ''))
+
+// The content address inside a src, whichever shape it wears: `<sha256>.<ext>`. Two srcs naming the
+// same bytes in the two stores answer the same key, which is what lets the gc's keep-set survive a
+// switch of driver.
+export const srcKey = s => String(s || '').split('?')[0].split('/').pop()
 
 export function blobPath (home, rel) {
   const m = BLOB.exec(String(rel || ''))
