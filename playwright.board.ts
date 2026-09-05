@@ -1,6 +1,12 @@
 import { defineConfig } from '@playwright/test'
 import { readFileSync, existsSync } from 'node:fs'
 import { buildAuthProjects } from './tools/auth-projects.mjs'
+// WHERE THE RAW JSON REPORT GOES (the data home, 2026-09-05/06). Nothing derived is written into the
+// repo any more: Playwright's json reporter can only write a file, so it writes this scratch inside
+// the project's data home and spec/_results-reporter.mjs files it as a `reports` row in `onExit` —
+// after every reporter has finished — then removes it. A board-started run still points BOARD_RESULTS
+// at its own record dir, so a scoped run and the suite can never overwrite each other's report.
+import { RESULTS_SCRATCH } from './tools/spec-store.mjs'
 
 // Tests live NEXT TO the screen they prove — spec/<screen>/test.spec.ts — because that is the
 // only arrangement where a screen with no test is visibly a screen with no test. A central
@@ -71,14 +77,14 @@ export default defineConfig({
   // scoped run updates one screen and leaves the rest standing. It must be a reporter, not a
   // teardown: Playwright writes the JSON file only after globalTeardown.
   reporter: [
-    ['json', { outputFile: process.env.BOARD_RESULTS || 'spec/_results.json' }],
+    ['json', { outputFile: process.env.BOARD_RESULTS || RESULTS_SCRATCH }],
     ['list'],
     ['./spec/_results-reporter.mjs']
   ],
   // When the BOARD starts a run it asks for a record of it: every screenshot and video Playwright
-  // captures goes into that run's own directory under spec/_runs/<id>/, which the board then shows
-  // back. Off for a plain `npm run e2e`, because recording every local run is a lot of disk for
-  // something nobody asked to see.
+  // captures goes into that run's own scratch directory inside the data home (~/.specboard/<id>/runs/
+  // <runId>/), and what the run KEEPS lands as blobs at the fold. Off for a plain `npm run e2e`,
+  // because recording every local run is a lot of disk for something nobody asked to see.
   outputDir: process.env.BOARD_RECORD || 'test-results',
   use: {
     baseURL,

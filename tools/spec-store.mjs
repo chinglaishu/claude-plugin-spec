@@ -42,6 +42,12 @@ export const DATA_HOME = dataHome(ROOT, MANIFEST_HERE)
 // screenshots, the log it prints). NOT a served directory and NOT where anything durable lives —
 // what the run KEEPS lands as blobs at the fold, and this is swept when the run falls off the log.
 export const RUNDIR = join(DATA_HOME, 'runs')
+// WHERE PLAYWRIGHT'S RAW JSON REPORT LANDS ON ITS WAY IN. Playwright's json reporter can only write
+// a FILE, so this is the one scratch path both ends agree on: the config points the reporter at it
+// (playwright.board.ts) and spec/_results-reporter.mjs reads it back in `onExit` — after every
+// reporter has finished — into a `reports` row, then removes it. It is never read from disk by
+// anything else, and it is not in the repo (`spec/_results.json` is gone with the rest of the fold).
+export const RESULTS_SCRATCH = join(DATA_HOME, 'report.json')
 
 // A src out of the store → the file it names, or null. Three shapes and no fourth: a blob
 // (`blob/<sha>.<ext>`, a file under this home's blobs/), a repo-relative path (the AUTHORED tree —

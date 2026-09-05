@@ -2,7 +2,7 @@ import { writeFileSync, mkdirSync, existsSync, readFileSync, rmSync } from 'node
 import { execFileSync } from 'node:child_process'
 import { join, basename, extname } from 'node:path'
 import { tmpdir } from 'node:os'
-import { foldByScreen, recordRunEntry, DATA_HOME } from '../tools/spec-store.mjs'
+import { foldByScreen, recordRunEntry, DATA_HOME, RESULTS_SCRATCH, ROOT } from '../tools/spec-store.mjs'
 import { putBlob, openStore } from '../tools/store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
 import { clipWindows, ffmpegDownscaleArgs, deriveFacesCss, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, parseFontFacesAttachment, focusFromLayouts, valueMeta, valueLanded, claimSlot, ffmpegVideoArgs, resolvePrimaryVideo, qidOfKey } from '../tools/evidence.mjs'
@@ -730,6 +730,7 @@ export default class ResultsIndexReporter {
         } catch (err) { console.error('run-history record failed:', err) }
       }
     }
+    this.runId = process.env.BOARD_RECORD ? basename(process.env.BOARD_RECORD) : String(ranAt)
     // The manifest lives in the run's own record directory, so it is pruned with the run it
     // describes and never outlives its images.
     if (process.env.BOARD_RECORD) {
@@ -740,5 +741,24 @@ export default class ResultsIndexReporter {
         writeFileSync(join(process.env.BOARD_RECORD, 'shots.json'), JSON.stringify(shotsByTest))
       } catch (err) { console.error('shots manifest write failed:', err) }
     }
+  }
+
+  // THE RAW JSON REPORT BECOMES A ROW (the data home, 2026-09-05/06). Playwright's json reporter can
+  // only write a FILE, and it writes it AFTER every reporter's onEnd — so this is `onExit`, the one
+  // hook that runs after all of them: read the scratch the config pointed it at, file it under this
+  // run's id, and remove the file. `spec/_results.json` is gone with the rest of the fold; a report
+  // that cannot be read (a run that produced none) simply files nothing, never a fabricated one.
+  async onExit () {
+    const file = process.env.BOARD_RESULTS || RESULTS_SCRATCH
+    let report = null
+    try { report = JSON.parse(readFileSync(file, 'utf8')) } catch { report = null }
+    if (!report) return
+    const store = await openStore({ root: ROOT, home: DATA_HOME })
+    try {
+      await store.putReport(String(this.runId || Date.now()), report)
+    } catch (err) { console.error('raw report write failed:', err) } finally { await store.close() }
+    // only the SCRATCH is swept — a board-started run keeps its own report inside its record dir,
+    // where the server reads the run's totals from it before the dir is pruned with the run
+    if (!process.env.BOARD_RESULTS) { try { rmSync(file, { force: true }) } catch { /* already gone */ } }
   }
 }
