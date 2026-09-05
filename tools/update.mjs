@@ -14,14 +14,14 @@
 import { cpSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { FILES, DEPS, MANIFEST, POINTER, hashFile, readVersion, buildManifest, mergeManifest, resolveProject } from './_skeleton.mjs'
+import { FILES, DEPS, SPEC_IGNORE, boardIgnoreLines, MANIFEST, POINTER, hashFile, readVersion, buildManifest, mergeManifest, resolveProject } from './_skeleton.mjs'
 
 // Pure decision + file effects, so it can be proven against throwaway dirs. `base` is the shipped
 // manifest ({version, files}) or null; `files` is the set to walk (the real skeleton by default).
 export function updateProject ({ dest, src, base, files = FILES, dryRun = false }) {
   const version = readVersion(src)
   const baseVer = base?.version ?? 'unknown'
-  const report = { added: [], updated: [], upToDate: [], skipped: [], conflicts: [], deps: [], hasConflicts: false }
+  const report = { added: [], updated: [], upToDate: [], skipped: [], conflicts: [], deps: [], ignores: [], hasConflicts: false }
   const newFiles = { ...(base?.files || {}) }
   const ops = [] // deferred, so a dry run computes the plan and writes nothing
 
@@ -82,6 +82,31 @@ export function updateProject ({ dest, src, base, files = FILES, dryRun = false 
     }
   }
 
+  // …AND THE BOARD FOLDER'S OWN IGNORE LISTS (2026-09-06). What the vendored code IS changes with a
+  // release, and the folder's `.gitignore` is what keeps that code — and every derived byte — out of
+  // the commit while the authored spec beside it goes in. A project that updated without this kept
+  // the old lists and would stage a byte copy of the plugin the moment its folder became committed.
+  // APPEND-ONLY, and only inside the board folder: a line the project added is never removed, a line
+  // that has gone stale is left for a person to delete, and the APP repo's own .gitignore is never
+  // touched by an update (removing a `/specboard/` line there is the owner's decision, not ours).
+  // A project with no .gitignore of its own is the flat layout — its ignores live in the app repo,
+  // so one is never created here.
+  for (const [rel, lines] of [['.gitignore', boardIgnoreLines()], ['spec/.gitignore', SPEC_IGNORE]]) {
+    const p = join(dest, rel)
+    if (!existsSync(p)) continue
+    const cur = readFileSync(p, 'utf8')
+    const have = new Set(cur.split('\n').map(l => l.trim()))
+    const add = lines.filter(l => !have.has(l))
+    if (!add.length) continue
+    report.ignores.push(rel)
+    ops.push(() => {
+      const now = readFileSync(p, 'utf8')
+      writeFileSync(p, now + (now && !now.endsWith('\n') ? '\n' : '') +
+        `# specboard ${version} — the board's vendored code and everything a run derives (the data home)\n` +
+        add.join('\n') + '\n')
+    })
+  }
+
   report.hasConflicts = report.conflicts.length > 0
   // The version only advances to the new release when nothing is left half-merged; while a conflict
   // stands the project is genuinely part-old, and the version must not claim otherwise.
@@ -137,6 +162,7 @@ if (resolve(process.argv[1] || '') === fileURLToPath(import.meta.url)) {
   line('up to date', rep.upToDate)
   line('unchanged (local edits kept)', rep.skipped)
   if (rep.deps.length) console.log(`  dependencies installed into package.json: ${rep.deps.join(', ')} — run \`npm install\` in ${dest}`)
+  if (rep.ignores.length) console.log(`  ignore lists brought forward (appended, nothing removed): ${rep.ignores.join(', ')}`)
   if (rep.conflicts.length) {
     console.log('  CONFLICTS — your edits kept, new version written alongside; merge then delete the .new:')
     for (const c of rep.conflicts) console.log(`    ${c.file}   (new → ${c.new})`)

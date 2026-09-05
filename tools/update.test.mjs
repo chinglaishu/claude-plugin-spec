@@ -10,7 +10,7 @@ import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { updateProject } from './update.mjs'
-import { FILES, DEPS } from './_skeleton.mjs'
+import { FILES, DEPS, SPEC_IGNORE, boardIgnoreLines } from './_skeleton.mjs'
 
 const h = s => createHash('sha256').update(s).digest('hex')
 const w = (root, rel, body) => {
@@ -296,4 +296,45 @@ test('a dry run installs nothing', () => {
   w(dest, 'package.json', JSON.stringify({ name: 'p' }))
   updateProject({ dest, src, base: { version: '1.0.0', files: { 'a.mjs': h('OLD') } }, files: ['a.mjs'], dryRun: true })
   assert.equal('dependencies' in JSON.parse(read(dest, 'package.json')), false)
+})
+
+// AND THE BOARD FOLDER'S OWN IGNORE FILES (rule 7, found on dojostack's own migration, 2026-09-06).
+// The vendored code is ignored INSIDE the board folder — that is the only reason the folder can be
+// committed at all — but update.mjs had no opinion about .gitignore, so a project updating into
+// 0.45.0 kept the 2026-09-04 lists: no vendored code ignored, evidence/ and the fold not ignored,
+// _conflict-decisions.json still hidden. Uncommitting the app's /specboard/ line on top of that would
+// have staged the whole byte copy of the plugin and the harvest with it. So the update APPENDS what
+// is missing to the board's own .gitignore and spec/.gitignore — append-only, so a line a person
+// added is never removed, and it never touches the APP repo's ignore file (that is the owner's).
+test('an update brings the board folder\'s own ignore lists forward, appending only', () => {
+  const { src, dest } = scratch()
+  w(src, 'a.mjs', 'NEW'); w(dest, 'a.mjs', 'OLD')
+  w(dest, '.gitignore', '# specboard — the board for ..\nnode_modules/\nmy-own-scratch/\n')
+  w(dest, 'spec/.gitignore', '_runs/\n_conflict-decisions.json\n')
+  const rep = updateProject({ dest, src, base: { version: '1.0.0', files: { 'a.mjs': h('OLD') } }, files: ['a.mjs'] })
+  const board = read(dest, '.gitignore').split('\n')
+  for (const l of boardIgnoreLines()) assert.ok(board.includes(l), 'missing from the board ignore: ' + l)
+  assert.ok(board.includes('my-own-scratch/'), 'a line the project added is kept')
+  const spec = read(dest, 'spec/.gitignore').split('\n')
+  for (const l of SPEC_IGNORE) assert.ok(spec.includes(l), 'missing from spec/.gitignore: ' + l)
+  assert.ok(spec.includes('_conflict-decisions.json'), 'append-only: a stale line is left for a person to remove, never deleted under them')
+  assert.deepEqual(rep.ignores, ['.gitignore', 'spec/.gitignore'])
+})
+
+test('the ignore refresh is idempotent, writes nothing on a dry run, and creates no file where there is none', () => {
+  const { src, dest } = scratch()
+  w(src, 'a.mjs', 'NEW'); w(dest, 'a.mjs', 'OLD')
+  const base = { version: '1.0.0', files: { 'a.mjs': h('OLD') } }
+  // no .gitignore at all — a flat vendored-in project, whose ignores belong to the app repo
+  assert.deepEqual(updateProject({ dest, src, base, files: ['a.mjs'] }).ignores, [])
+  assert.equal(existsSync(join(dest, '.gitignore')), false)
+
+  w(dest, '.gitignore', boardIgnoreLines().join('\n') + '\n')
+  w(dest, 'spec/.gitignore', SPEC_IGNORE.join('\n') + '\n')
+  assert.deepEqual(updateProject({ dest, src, base, files: ['a.mjs'] }).ignores, [], 'nothing to add twice')
+
+  const b = scratch()
+  w(b.src, 'a.mjs', 'NEW'); w(b.dest, 'a.mjs', 'OLD'); w(b.dest, '.gitignore', 'node_modules/\n')
+  updateProject({ dest: b.dest, src: b.src, base, files: ['a.mjs'], dryRun: true })
+  assert.equal(read(b.dest, '.gitignore'), 'node_modules/\n', 'a dry run writes nothing')
 })

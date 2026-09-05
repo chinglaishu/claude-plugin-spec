@@ -22,6 +22,10 @@ import { calloutText, sceneDone, calloutLines } from './callout-text.mjs'
 // used to sit mid-file, inside the task-7 block that read the real prds; it moved up here when that
 // block went with the sketch, 2026-09-05)
 import { existsSync, readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+// …through the store's own doors, since the harvest left the repo (decision A, 2026-09-05)
+import { readStoreSync } from './store-sync.mjs'
+import { dataHome, blobPath } from './store.mjs'
 
 // ── fixtures: the board's OWN behavior blocks (dogfood) + kit exemplars ────
 const b = (given, ...wt) => ({
@@ -1379,13 +1383,47 @@ test('gapSummary counts a run of gaps by kind, for the derive line', () => {
 })
 
 // THE REAL HARVEST, NOT A FIXTURE (the lead's rule: verify on real data). The demo project's own
-// committed skeletons — a 1440×900 Tsumiki page, 100+ elements, three asserted values and both ends
-// — are the shape the renderer actually meets. A gap here is a real omission in the kit, never a
-// fixture that flatters it.
-const DEMO_EV = new URL('../demo/todo/spec/todo/evidence/', import.meta.url)
-const demoLayout = n => JSON.parse(readFileSync(new URL(`R1.b1.${n}.layout.json`, DEMO_EV), 'utf8'))
+// skeletons — a 1440×900 Tsumiki page, 100+ elements, three asserted values and both ends — are the
+// shape the renderer actually meets. A gap here is a real omission in the kit, never a fixture that
+// flatters it.
+//
+// WHERE THEY LIVE NOW (decision A, 2026-09-05/06). These used to be committed files read straight off
+// `demo/todo/spec/todo/evidence/R1.b1.before.layout.json`. Nothing derived is committed any more: the
+// demo's harvest is rows in ITS data home (`~/.specboard/tsumiki-e681dd/board.db`) with each skeleton a
+// content-addressed blob, so the pins read it through the same synchronous door the board renders
+// through. The tests are unchanged in what they assert — only where the bytes come from.
+//
+// A machine that has never folded (or imported) the demo has no such harvest, and these pins SKIP with
+// that said out loud rather than passing on nothing (rule 3 — an unrun test must never read as green).
+// Getting it back is one command in demo/todo: `node tools/store-import.mjs`, or a real run of its suite.
+const DEMO_ROOT = new URL('../demo/todo/', import.meta.url)
+const demoManifest = (() => { try { return JSON.parse(readFileSync(new URL('spec/_specboard.json', DEMO_ROOT), 'utf8')) } catch { return null } })()
+const DEMO_HOME = demoManifest ? dataHome(fileURLToPath(DEMO_ROOT), demoManifest) : null
+const demoStore = (() => { try { return DEMO_HOME ? readStoreSync(DEMO_HOME, { manifest: demoManifest }) : null } catch { return null } })()
+// beat 1 of a requirement, as the requirement's HOME screen harvested it
+const demoBeat = id => {
+  const row = (demoStore ? demoStore.evidence : []).find(r => r.screen === 'todo' && r.reqId === id)
+  const beats = row && row.entry && Array.isArray(row.entry.beats) ? row.entry.beats : []
+  return beats.find(b => Number(b.n) === 1) || null
+}
+// 'before' | 'after' | 'v<k>' → the skeleton that moment was measured with
+const demoSkel = (id, n) => {
+  const beat = demoBeat(id)
+  if (!beat) return null
+  const src = n === 'before' ? beat.layoutBefore
+    : n === 'after' ? beat.layoutAfter
+      : ((beat.values || [])[Number(String(n).slice(1)) - 1] || {}).layout
+  const p = src ? blobPath(DEMO_HOME, src) : null
+  if (!p || !existsSync(p)) return null
+  return JSON.parse(readFileSync(p, 'utf8'))
+}
+// the skip guard: the requirements these pins need, present in this machine's store
+const demoHas = (...ids) => ids.every(id => demoSkel(id, 'before') && demoSkel(id, 'after'))
+const NO_DEMO = 'the demo\'s harvest is not in this machine\'s store — run `node tools/store-import.mjs` (or the suite) in demo/todo'
+const demoLayout = n => demoSkel('R1', n)
 
-test('mirrorGaps: the demo\'s real harvest draws everything it measured — zero gaps, every frame', () => {
+test('mirrorGaps: the demo\'s real harvest draws everything it measured — zero gaps, every frame', (t) => {
+  if (!demoHas('R1')) return t.skip(NO_DEMO)
   const beat = { before: demoLayout('before'), after: demoLayout('after'), values: ['v1', 'v2', 'v3'].map(demoLayout) }
   const d = renderWireframe([beat], { behavior: GUARDB, id: 'R1', pass: true })
   assert.equal(d.gaps.length, 5, 'one report per drawn frame: the given, three asserted values, the result')
@@ -1583,7 +1621,8 @@ test('mirror-11: where the app draws its own tick inside the control, that is th
   assert.deepEqual(mirrorGaps(lay(true), app, { focus: false }), [], 'the box and its icon are both still drawn')
 })
 
-test('mirror-11: the demo\'s real harvest is unmoved — zero gaps, the same rings and veils', () => {
+test('mirror-11: the demo\'s real harvest is unmoved — zero gaps, the same rings and veils', (t) => {
+  if (!demoHas('R1', 'R3')) return t.skip(NO_DEMO)
   // (rule 4, 2026-09-02: this pin used to count EVERY `stroke="var(--ai)"` in the whole drawing and
   // call the total "the rings". mirror-10 made an icon draw its own lines, so a sidebar icon whose
   // measured ink lands on indigo legitimately adds strokes carrying that token — the count went
@@ -1596,7 +1635,7 @@ test('mirror-11: the demo\'s real harvest is unmoved — zero gaps, the same rin
   // signature — one wash per ringed scene — so the two are pinned as the different numbers they are
   // rather than being asserted equal. The harvest moved; the pin moves with it.)
   for (const [id, vals, rings, veils] of [['R1', ['v1', 'v2', 'v3'], 6, 4], ['R3', ['v1', 'v2'], 3, 3]]) {
-    const L = n => JSON.parse(readFileSync(new URL(`${id}.b1.${n}.layout.json`, DEMO_EV), 'utf8'))
+    const L = n => demoSkel(id, n)
     const beat = { before: L('before'), after: L('after'), values: vals.map(L) }
     const d = renderWireframe([beat], { behavior: GUARDB, id, pass: true })
     assert.equal(d.gaps.length, vals.length + 2, `${id}: a gap report per frame`)
@@ -1610,7 +1649,8 @@ test('mirror-11: the demo\'s real harvest is unmoved — zero gaps, the same rin
   }
 })
 
-test('mirror-11: the demo\'s own container ring, measured per shape, draws track and arc apart', () => {
+test('mirror-11: the demo\'s own container ring, measured per shape, draws track and arc apart', (t) => {
+  if (!demoHas('R3')) return t.skip(NO_DEMO)
   // The real R3 harvest, with the two circles' colours filled in as the mirror-11 capture records
   // them (the committed files are a mirror-10 harvest and carry only the icon-level `fg` — black).
   const paint = L => ({
@@ -1622,7 +1662,7 @@ test('mirror-11: the demo\'s own container ring, measured per shape, draws track
         ] } }
       : e))
   })
-  const L = n => paint(JSON.parse(readFileSync(new URL(`R3.b1.${n}.layout.json`, DEMO_EV), 'utf8')))
+  const L = n => paint(demoSkel('R3', n))
   const d = renderWireframe([{ before: L('before'), after: L('after'), values: ['v1', 'v2'].map(L) }],
     { behavior: GUARDB, id: 'R3', pass: true })
   for (const g of d.gaps) assert.deepEqual(g.gaps, [], `frame ${g.frame} — ${gapSummary(g.gaps)}`)
@@ -1655,9 +1695,9 @@ test('mirror-11: the demo\'s own container ring, measured per shape, draws track
 // claim. These tests are about the RULE, not the demo's current shape — so they take the first value
 // and the LAST one (the counter check, the one that fails) and strip the on-disk claims first, then
 // inject exactly the claim each case is about.
-const R9L = n => JSON.parse(readFileSync(new URL(`R9.b1.${n}.layout.json`, DEMO_EV), 'utf8'))
+const R9L = n => demoSkel('R9', n)
 const stripClaim = L => { const { claim, ...rest } = L; return rest }
-const r9Last = () => { let k = 1; while (existsSync(new URL(`R9.b1.v${k + 1}.layout.json`, DEMO_EV))) k++; return k }
+const r9Last = () => { const b = demoBeat('R9'); return Math.max(1, (b && b.values ? b.values.length : 1)) }
 const R9BEH = b('five open leaves and a delete', 'you delete one', 'To do still reads 5 — a delete is only an archive')
 const r9Beat = claim => ({
   before: stripClaim(R9L('before')),
@@ -1672,7 +1712,8 @@ const valuesAt = (frame, x) => [...String(frame).matchAll(/<text\b([^>]*)>([\s\S
 const COUNTER_X = '420.9'
 const FAILED = { expected: '5', got: '4', ok: false }
 
-test('mirror-12: a failed claim draws the EXPECTED value on the ringed element, not the measured one', () => {
+test('mirror-12: a failed claim draws the EXPECTED value on the ringed element, not the measured one', (t) => {
+  if (!demoHas('R9')) return t.skip(NO_DEMO)
   const f = frameOf(drawR9(FAILED).svg, 2)                      // the beat's second asserted value: the failing one
   assert.deepEqual(valuesAt(f, COUNTER_X), ['5'],
     'the drawing shows what the requirement asks for — the photograph beside it keeps the 4 it read')
@@ -1681,7 +1722,8 @@ test('mirror-12: a failed claim draws the EXPECTED value on the ringed element, 
   assert.ok(!/got/.test(f), 'the callout stays the sentence the burn-in chose; “got 4 ✕” is the photograph’s')
 })
 
-test('mirror-12: the beat\'s AFTER frame carries the same intent — it is the intended end state', () => {
+test('mirror-12: the beat\'s AFTER frame carries the same intent — it is the intended end state', (t) => {
+  if (!demoHas('R9')) return t.skip(NO_DEMO)
   const d = drawR9(FAILED)
   assert.deepEqual(valuesAt(frameOf(d.svg, 3), COUNTER_X), ['5'],
     'the after frame has no claim of its own, so it takes the beat\'s last failed one')
@@ -1689,13 +1731,15 @@ test('mirror-12: the beat\'s AFTER frame carries the same intent — it is the i
     'the earlier value passed and is drawn exactly as it was measured')
 })
 
-test('mirror-12: a claim that PASSED changes nothing — the mirror still draws what was measured', () => {
+test('mirror-12: a claim that PASSED changes nothing — the mirror still draws what was measured', (t) => {
+  if (!demoHas('R9')) return t.skip(NO_DEMO)
   const d = drawR9({ expected: '4', got: '4', ok: true })
   assert.deepEqual(valuesAt(frameOf(d.svg, 2), COUNTER_X), ['4'])
   assert.deepEqual(valuesAt(frameOf(d.svg, 3), COUNTER_X), ['4'])
 })
 
-test('mirror-12: the guard reads the SUBSTITUTED value as the truth — a missing 5 is the gap now', () => {
+test('mirror-12: the guard reads the SUBSTITUTED value as the truth — a missing 5 is the gap now', (t) => {
+  if (!demoHas('R9')) return t.skip(NO_DEMO)
   const d = drawR9(FAILED)
   for (const g of d.gaps) assert.deepEqual(g.gaps, [], `frame ${g.frame} — ${gapSummary(g.gaps)}`)
   // …and the gate's own path (tools/proof-integrity.mjs checkMirrors): the frame re-read against the
@@ -1711,7 +1755,8 @@ test('mirror-12: the guard reads the SUBSTITUTED value as the truth — a missin
   assert.match(gaps[0].what, /5/, 'the intended value is what the frame owes — never the measured 4')
 })
 
-test('mirror-12: the real R9 harvest, claimless as it is on disk, draws exactly as it did', () => {
+test('mirror-12: the real R9 harvest, claimless as it is on disk, draws exactly as it did', (t) => {
+  if (!demoHas('R9')) return t.skip(NO_DEMO)
   const d = drawR9(null)
   assert.equal(d.gaps.length, 4, 'the given, two asserted values, the result')
   for (const g of d.gaps) assert.deepEqual(g.gaps, [], `frame ${g.frame} — ${gapSummary(g.gaps)}`)
