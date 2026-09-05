@@ -17,6 +17,8 @@ package-lock.json
 # they arrived as untracked files inside a project whose whole policy is not to commit vendored code)
 /spec/_layout-walk.mjs
 /spec/_replica.mjs
+# …and the composer that makes the walk and the replica ONE page pass (2026-09-04) — vendored like them
+/spec/_moment.mjs
 /spec/_design.css
 /spec/_fixture.ts
 /spec/_state-guard.ts
@@ -46,3 +48,5 @@ package-lock.json
 # specboard update scratch
 .specboard-backup-*/
 *.new
+# the saved authenticated session dir (specboard 0.45.0's own board-folder list)
+spec/.auth/
