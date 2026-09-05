@@ -15,7 +15,7 @@ import {
   ROOT, APP_ROOT, SPEC, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
   CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson,
-  RUNS, readRuns, recordRunEntry, reEscape, runVerdict, readResults, slotAfterClose,
+  readRuns, recordRunEntry, reEscape, runVerdict, readResults, slotAfterClose, RUNDIR,
   shouldVoice, narrationPack, voiceReadiness, voicesDir
 } from './spec-store.mjs'
 // pure (no fs, no clock) — safe to import here; the BUILDER still runs as a child process below
@@ -91,7 +91,6 @@ let running = null
 const runStack = []
 let watchOn = false
 
-const RUNDIR = join(SPEC, '_runs')
 // RUNS / readRuns / recordRunEntry live in spec-store now, shared with the reporter so a CLI or crawl
 // run records into the same "recent runs" log a board-started run does.
 

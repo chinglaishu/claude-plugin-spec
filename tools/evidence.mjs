@@ -235,11 +235,23 @@ export function ffmpegVideoArgs (srcRel, outRel) {
 // offset indexes the recording actually shown. A requirement the primary did not cover keeps its
 // own latest frames and carries no video (the reader hides the button honestly). Pure — the
 // reporter does the file I/O around it; unit-tested in tools/evidence.test.mjs.
+// THE HARVEST KEY CARRIES THE COVERING TEST (the human's C2 ruling, 2026-09-06): `<test file>
+// <screen>:<id>`, so one requirement harvested by two test FILES in one run is two entries and
+// neither can overwrite the other. Everything here still works per REQUIREMENT — which screen owns
+// it, which recording covered the most of them — so this is the one place that has to take the qid
+// back off the key. An entry keyed by the bare qid (an older harness, a fixture) reads as itself.
+export const qidOfKey = key => {
+  const s = String(key || '')
+  const i = s.indexOf(' ')
+  return i < 0 ? s : s.slice(i + 1)
+}
+
 export function resolvePrimaryVideo (harvest) {
   const byScreen = {}
-  for (const qid of Object.keys(harvest || {})) {
+  for (const key of Object.keys(harvest || {})) {
+    const qid = qidOfKey(key)
     const i = qid.indexOf(':'); if (i < 1) continue
-    ;(byScreen[qid.slice(0, i)] ||= []).push(qid)
+    ;(byScreen[qid.slice(0, i)] ||= []).push(key)
   }
   const out = {}
   for (const qids of Object.values(byScreen)) {
@@ -303,6 +315,11 @@ export function resolvePrimaryVideo (harvest) {
         // …and the RULES that declare them (phase 4a), the same plain pass-through: the reporter
         // turns them into the screen's one servable faces.css beside the files above.
         fontFaceRules: Array.isArray(h.fontFaceRules) ? h.fontFaceRules : [],
+        // …and WHO FILED IT (C2, 2026-09-06): the covering test, carried through so the fold can key
+        // the row on it. A pass-through like the fonts — picking the primary recording has no
+        // opinion about which file proved what.
+        testFile: h.testFile || null,
+        testTitle: h.testTitle || null,
         srcVideo: usePrimary ? primary : null
       }
     }

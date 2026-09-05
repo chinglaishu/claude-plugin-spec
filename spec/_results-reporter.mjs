@@ -1,10 +1,11 @@
-import { writeFileSync, copyFileSync, mkdirSync, existsSync, readFileSync, rmSync } from 'node:fs'
+import { writeFileSync, mkdirSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
-import { createHash } from 'node:crypto'
-import { join, relative, basename, extname } from 'node:path'
-import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
+import { join, basename, extname } from 'node:path'
+import { tmpdir } from 'node:os'
+import { foldByScreen, recordRunEntry, DATA_HOME } from '../tools/spec-store.mjs'
+import { putBlob, openStore } from '../tools/store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, fontEvidencePath, facesCssPath, deriveFacesCss, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, parseFontFacesAttachment, focusFromLayouts, valueMeta, valueLanded, claimSlot, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
+import { clipWindows, ffmpegDownscaleArgs, deriveFacesCss, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, parseFontFacesAttachment, focusFromLayouts, valueMeta, valueLanded, claimSlot, ffmpegVideoArgs, resolvePrimaryVideo, qidOfKey } from '../tools/evidence.mjs'
 // what a landed replica says about itself (phase 3, 2026-09-03): how many gaps the in-page gate
 // found, and whether it was gated at all. One reader, shared with `npm run proof mirror`.
 import { replicaNote } from '../tools/replica-gate.mjs'
@@ -172,50 +173,75 @@ function ffmpegOk () {
   return FFMPEG
 }
 
-// Turn the run's raw evidence harvest ({qid: {before, after, window}} with attachment paths in
-// the run's output dir, pruned with it) into durable index entries: copy each frame pair to its
-// deterministic home (spec/<screen>/evidence/<rid>.*.png — overwriting is the retention rule) and
-// return {qid: entry} for the fold. The WINDOW rides the entry — it is what lets the board's
-// frame-stepper (gif mode, Task 13) pace the pair at the assert body's true relative timing; the
-// looping webp the window once fed is retired (the stepper plays the frames, so nothing rendered
-// the clip). Best-effort throughout — a frame that cannot be copied is dropped, never a failed
-// run — and it NEVER creates a screen directory the tree does not have (a stray tag must not
-// materialise a screen; the state guard would have nothing to remove because nothing may appear).
-// Task 16 #1: commit ONE recording per source file — content-hash named so an identical recording
-// re-lands on its own path and a changed one appears beside the old (the fold prunes the orphan).
-// Downscaled/re-encoded small when ffmpeg is here (tools/evidence.mjs ffmpegVideoArgs — measured
-// ~0.75 MB for a 40s flow); plain-copied otherwise, bigger but honest. Best-effort throughout: a
-// failed or timed-out encode removes its partial file and simply leaves the entries video-less.
-function commitVideo (srcAbs, screen, cache) {
+// ONE WAY IN (the data home, 2026-09-05/06): bytes → a BLOB, and the src it returns is both what the
+// row keeps and the URL the board asks for. Nothing is copied into `spec/<screen>/evidence/` any
+// more — an unchanged frame re-lands on its own content address for free, and a frame no retained
+// row names is collected at the fold (tools/store.mjs gcBlobs) instead of being pruned by path.
+// Best-effort throughout, exactly as the copies were: a file that will not land is dropped, never a
+// failed run.
+const land = async (srcAbs, ext) => {
+  try { return await putBlob(DATA_HOME, readFileSync(srcAbs), ext || extname(srcAbs).slice(1) || 'bin') } catch { return null }
+}
+// what a landed file SAYS — read from the source the run just wrote, not from the blob it became:
+// the bytes are the same and this way the fold reads each moment exactly once (and reads nothing at
+// all through a bucket in cloud mode).
+const readText = p => { try { return readFileSync(p, 'utf8') } catch { return null } }
+let tmpSeq = 0
+const tmpFile = ext => join(tmpdir(), `sb-${process.pid}-${Date.now()}-${tmpSeq++}.${ext}`)
+
+// ONE frame, landed as a blob: downscaled to the house 1280 width when ffmpeg is here (final review
+// M4 — a full-viewport PNG per phase per beat per fold was megabytes of history), the 1× bytes
+// otherwise. Returns the src or null; never throws.
+async function landFrame (srcAbs) {
+  if (ffmpegOk()) {
+    const tmp = tmpFile('png')
+    try {
+      execFileSync('ffmpeg', ffmpegDownscaleArgs(srcAbs, tmp), { stdio: 'ignore', timeout: 15000 })
+      if (existsSync(tmp)) {
+        const rel = await land(tmp, 'png')
+        try { rmSync(tmp, { force: true }) } catch { /* already gone */ }
+        if (rel) return rel
+      }
+    } catch { try { rmSync(tmp, { force: true }) } catch { /* nothing landed */ } }
+  }
+  return land(srcAbs, 'png')
+}
+
+// Task 16 #1: keep ONE recording per source file — re-encoded small when ffmpeg is here
+// (tools/evidence.mjs ffmpegVideoArgs — measured ~0.75 MB for a 40s flow), landed as-is otherwise.
+// Content-addressed like everything else, so the identical recording re-lands on itself and a
+// changed one is simply a different blob (the old one is collected once no row names it). Cached per
+// screen+source so one recording is encoded once per fold. Best-effort: a failed or timed-out encode
+// removes its partial file and leaves the entries video-less.
+async function commitVideo (srcAbs, screen, cache) {
   const key = screen + '\x00' + srcAbs
   if (cache.has(key)) return cache.get(key)
   let rel = null
-  try {
-    const hash = createHash('sha256').update(readFileSync(srcAbs)).digest('hex').slice(0, 12)
-    rel = evidenceVideoPath(screen, hash)
-    const dest = join(process.cwd(), rel)
-    if (!existsSync(dest)) {
-      let landed = false
-      if (ffmpegOk()) {
-        try {
-          execFileSync('ffmpeg', ffmpegVideoArgs(srcAbs, dest), { stdio: 'ignore', timeout: 180000 })
-          landed = existsSync(dest)
-        } catch {
-          try { rmSync(dest, { force: true }) } catch { /* nothing landed */ }
-          landed = false
-        }
-      }
-      if (!landed) {
-        try { copyFileSync(srcAbs, dest); landed = true } catch { /* dropped, never fatal */ }
-      }
-      if (!landed) rel = null
-    }
-  } catch { rel = null }
+  if (ffmpegOk()) {
+    const tmp = tmpFile('webm')
+    try {
+      execFileSync('ffmpeg', ffmpegVideoArgs(srcAbs, tmp), { stdio: 'ignore', timeout: 180000 })
+      if (existsSync(tmp)) rel = await land(tmp, 'webm')
+    } catch { /* fall through to the plain landing */ }
+    try { rmSync(tmp, { force: true }) } catch { /* already gone */ }
+  }
+  if (!rel) rel = await land(srcAbs, 'webm')
   cache.set(key, rel)
   return rel
 }
 
-function harvestEvidence (harvest, ranAt) {
+// Turn the run's raw harvest into durable rows: land every frame, skeleton, replica, face and
+// recording as a blob and return `{<test file> <qid>: entry}` for the fold. The WINDOW rides the
+// entry — it is what lets the board's frame-stepper pace a beat at the assert body's true relative
+// timing. It NEVER creates a screen directory the tree does not have (a stray tag must not
+// materialise a screen).
+//
+// THE KEY CARRIES THE TEST (the human's C2 ruling, 2026-09-06). Evidence used to be keyed by
+// REQUIREMENT alone, so a composed flow proving another screen's requirement overwrote the home
+// screen's harvest of it — the collision the I5 precedence rule and the `foreign` marker refereed.
+// Both are gone: the flow's harvest and the home screen's are two rows, and the reader merges them
+// with the home screen's own test headlining (tools/spec-store.mjs mergeEvidenceRows).
+export async function harvestEvidence (harvest, ranAt) {
   const out = {}
   // EVERY GAPPED MOMENT OF THIS RUN, said out loud at the fold (phase 3). A replica that stopped
   // looking like the app is exactly the defect the drawing's mirror guard exists for, and the fold is
@@ -227,85 +253,66 @@ function harvestEvidence (harvest, ranAt) {
   // last-capture count let a shorter composed flow steal it, leaving the comprehensive flow's own
   // beats video-less). resolvePrimaryVideo (tools/evidence.mjs, pure + unit-tested) makes that call,
   // and a shared requirement's window comes from the PRIMARY recording, so the seek indexes the
-  // recording actually shown. commitVideo (cached per screen) then writes that one .webm.
+  // recording actually shown. commitVideo (cached per screen) then lands that one .webm.
   const resolved = resolvePrimaryVideo(harvest)
   const cache = new Map()
-  // …and what is ALREADY COMMITTED (final review I5): read once, so a cross-screen flow can tell
-  // whether the requirement's own screen has already harvested a beat it is about to land on.
-  let committed = {}
-  try { committed = JSON.parse(readFileSync(join(process.cwd(), 'spec', '_results-index.json'), 'utf8')) } catch { committed = {} }
-  for (const [qid, r] of Object.entries(resolved)) {
+  for (const [key, r] of Object.entries(resolved)) {
+    const qid = qidOfKey(key)
     const scr = qid.slice(0, qid.indexOf(':'))
     const rid = qid.slice(qid.indexOf(':') + 1)
     if (!scr || !existsSync(join(process.cwd(), 'spec', scr))) continue
-    const paths = evidencePaths(scr, rid)
-    try { mkdirSync(join(process.cwd(), paths.dir), { recursive: true }) } catch { continue }
-    const entry = { before: null, after: null, window: r.window || null, beats: [], runId, at: new Date(ranAt).toISOString() }
-    // ONE frame, landed at its deterministic path: downscaled to the house 1280 width when ffmpeg
-    // is here (final review M4 — a full-viewport PNG per phase per beat per fold was megabytes of
-    // history), the 1× copy otherwise. Returns whether it landed; never throws.
-    const landFrame = (src, destRel) => {
-      const dest = join(process.cwd(), destRel)
-      if (ffmpegOk()) {
-        try {
-          execFileSync('ffmpeg', ffmpegDownscaleArgs(src, dest), { stdio: 'ignore', timeout: 15000 })
-          if (existsSync(dest)) return true
-        } catch { /* fall through to the plain copy */ }
-      }
-      try { copyFileSync(src, dest); return true } catch { return false }
+    const entry = {
+      before: null,
+      after: null,
+      window: r.window || null,
+      beats: [],
+      runId,
+      at: new Date(ranAt).toISOString(),
+      // who filed it (C2) — the fold keys the row on this, so two tests proving one requirement are
+      // two rows and neither can quietly stand in for the other
+      testFile: r.testFile || `spec/${scr}/test.spec.ts`,
+      testTitle: r.testTitle || null
     }
     // PER BEAT (2026-08-28): each beat of the requirement keeps its own pair, its own layout
-    // skeletons — the SOURCE tools/viz.mjs renderWireframe draws that beat's frame from — and its
-    // own window, so a per-beat row can show, pace and seek its own proof. Best-effort throughout.
-    // WHAT THE HOME SCREEN'S OWN FILE ALREADY PUT THERE (final review I5). Read ONCE per fold, from
-    // the committed index: a beat a foreign flow is about to land on, that the requirement's own
-    // screen has already harvested, keeps what it has — the paths are deterministic, so landing the
-    // foreign files would overwrite the bytes before any fold could decide otherwise.
-    const held = (n) => {
-      const e = ((committed[scr] || {}).evidence || {})[rid]
-      const b = e && Array.isArray(e.beats) ? e.beats.find(x => x && Number(x.n) === Number(n)) : null
-      return !!(b && (b.before || b.after || b.layoutBefore || b.layoutAfter ||
-        b.replicaExpectedBefore || b.replicaExpectedAfter || (Array.isArray(b.values) && b.values.length)))
-    }
+    // skeletons — what the gate checks its picture against — and its own window, so a per-beat row
+    // can show, pace and seek its own proof. Best-effort throughout.
     for (const b of (r.beats || [])) {
-      const bp = beatEvidencePaths(scr, rid, b.n)
-      if (b.foreign && held(b.n)) {
-        // the home screen's harvest stands; this flow proved the requirement (coverage still folds)
-        // and simply does not repaint its pictures
-        entry.beats.push({ n: b.n, foreign: true })
-        continue
-      }
       const row = { n: b.n, before: null, after: null, layoutBefore: null, layoutAfter: null, replicaExpectedBefore: null, replicaExpectedAfter: null, window: b.window || null, values: [] }
       for (const phase of ['before', 'after']) {
-        if (b[phase] && landFrame(b[phase], bp[phase])) row[phase] = bp[phase]
+        if (!b[phase]) continue
+        const rel = await landFrame(b[phase])
+        if (rel) row[phase] = rel
       }
-      for (const key of ['layoutBefore', 'layoutAfter']) {
-        if (!b[key]) continue
-        // a plain copy: JSON has nothing to re-encode
-        try { copyFileSync(b[key], join(process.cwd(), bp[key])); row[key] = bp[key] } catch { /* dropped */ }
+      const layText = {}
+      for (const key2 of ['layoutBefore', 'layoutAfter']) {
+        if (!b[key2]) continue
+        layText[key2] = readText(b[key2])
+        const rel = await land(b[key2], 'json')      // JSON has nothing to re-encode
+        if (rel) row[key2] = rel
       }
       // …and the ONE REPLICA of each end of the beat (2026-09-04): the app's own sanitised DOM with
-      // this beat's claims applied, copied as it was captured — an html file has nothing to
-      // re-encode, and re-encoding the picture the Expected view is built from is exactly how a
-      // mirror drifts. The gate's verdict on the UNEDITED tree rides on its root.
-      for (const key of ['replicaExpectedBefore', 'replicaExpectedAfter']) {
-        if (!b[key]) continue
-        try { copyFileSync(b[key], join(process.cwd(), bp[key])); row[key] = bp[key] } catch { /* dropped */ }
+      // this beat's claims applied, landed as it was captured — re-encoding the picture the Expected
+      // view is built from is exactly how a mirror drifts. The gate's verdict on the UNEDITED tree
+      // rides on its root.
+      const repText = {}
+      for (const key2 of ['replicaExpectedBefore', 'replicaExpectedAfter']) {
+        if (!b[key2]) continue
+        repText[key2] = readText(b[key2])
+        const rel = await land(b[key2], 'html')
+        if (rel) row[key2] = rel
       }
-      // …and WHAT THE GATE FOUND, read back off the file that just landed (phase 3): the beat's
+      // …and WHAT THE GATE FOUND, read off the very bytes that just landed (phase 3): the beat's
       // resting moment is what the row shows, so that is the one the fold records and reports.
-      noteReplica(row, row.replicaExpectedAfter, gapLines, scr, rid, b.n, 'after')
+      noteReplica(row, repText.replicaExpectedAfter, gapLines, scr, rid, b.n, 'after')
       // …and the beat's OPENING moment is reported too (fix round 1, M2): a gapped before-frame used
       // to say nothing at the fold and only surface later in the CLI. The beat's own verdict stays
       // the resting moment's — that is the one the row shows.
-      noteReplica(null, row.replicaExpectedBefore, gapLines, scr, rid, b.n, 'before')
+      noteReplica(null, repText.replicaExpectedBefore, gapLines, scr, rid, b.n, 'before')
       // …and where the RESTING moment has NO PICTURE at all (a moment whose ringed element the walk
       // refused to measure lands none — spec/_moment.mjs), the row's verdict comes from the last
-      // moment of the beat that DOES have one rather than from nothing: the stale banner is about
-      // the pictures the row shows, and a row that shows one has a verdict about it. Reported with
-      // no gapLines, because that moment has already said its gaps on the line above.
+      // moment of the beat that DOES have one rather than from nothing.
       if (!row.gate && row.replicaExpectedBefore) {
-        noteReplica(row, row.replicaExpectedBefore, [], scr, rid, b.n, 'before')
+        noteReplica(row, repText.replicaExpectedBefore, [], scr, rid, b.n, 'before')
       }
       // THE ASSERTED-VALUE FRAMES (2026-08-29): one per value the beat rang and read, landed the same
       // way and in the same order, each carrying `at` — its offset in ms from the moment the beat's
@@ -313,54 +320,63 @@ function harvestEvidence (harvest, ranAt) {
       // snapLayout). That offset is what lets the board anchor the frame INSIDE the beat's own window
       // and play the loop at the run's true relative pace; without a skeleton the frame still shows,
       // untimed, and the loop falls back to equal holds.
+      const valueLayouts = []
       for (const v of (b.values || [])) {
-        const vp = valueEvidencePaths(scr, rid, b.n, v.k)
         const got = { k: v.k, frame: null, layout: null, replicaExpected: null, at: null }
-        if (v.frame && landFrame(v.frame, vp.frame)) got.frame = vp.frame
+        if (v.frame) {
+          const rel = await landFrame(v.frame)
+          if (rel) got.frame = rel
+        }
+        let vlay = null
         if (v.layout) {
-          try { copyFileSync(v.layout, join(process.cwd(), vp.layout)); got.layout = vp.layout } catch { /* dropped */ }
+          vlay = readText(v.layout)
+          const rel = await land(v.layout, 'json')
+          if (rel) got.layout = rel
         }
-        for (const key of ['replicaExpected']) {
-          if (!v[key]) continue
-          try { copyFileSync(v[key], join(process.cwd(), vp[key])); got[key] = vp[key] } catch { /* dropped */ }
+        let vrep = null
+        if (v.replicaExpected) {
+          vrep = readText(v.replicaExpected)
+          const rel = await land(v.replicaExpected, 'html')
+          if (rel) got.replicaExpected = rel
         }
-        noteReplica(got, got.replicaExpected, gapLines, scr, rid, b.n, 'v' + v.k)
-        if (got.layout) {
+        noteReplica(got, vrep, gapLines, scr, rid, b.n, 'v' + v.k)
+        if (vlay) {
           try {
+            const parsed = JSON.parse(vlay)
+            valueLayouts.push(parsed)
             // …and the NAME of the moment beside its offset (the human, 2026-09-02): the assertion's
             // own label, so the row's ONE stepper can say what each segment IS instead of "when 1".
             // Lifted by the pure valueMeta (tools/evidence.mjs) — a skeleton that carries neither
             // yields neither, and the board falls back to a generic name and equal holds.
-            const meta = valueMeta(JSON.parse(readFileSync(join(process.cwd(), got.layout), 'utf8')))
+            const meta = valueMeta(parsed)
             if (typeof meta.at === 'number') got.at = meta.at
             if (meta.label) got.label = meta.label
             // …and the CLAIM it made (the human, 2026-09-02): what the assertion asked for beside
-            // what the page gave it. The drawn mirror shows the EXPECTED value on a scene the app
-            // failed — the schematic is the intent, the photograph is what happened — so it has to
+            // what the page gave it. The Expected shows the intended value on a moment the app
+            // failed — the picture is the intent, the photograph is what happened — so it has to
             // survive the fold. Lifted whole or not at all (valueMeta claimOf).
             if (meta.claim) got.claim = meta.claim
             // …and whether this moment's PHOTOGRAPH landed at all (task 3b, item 5, 2026-09-04).
             // The shot is bounded so a slow page costs the bound and never the run; when it is
             // reached the frame is missing and the moment used to VANISH from the fold, taking its
-            // replica with it (pruned as superseded) and reddening every beat that needs a claimed
-            // specimen, with nothing anywhere saying why. The moment is what the run MEASURED, so it
-            // stays — marked, and named in the fold's own output below.
+            // replica with it and reddening every beat that needs a claimed specimen, with nothing
+            // anywhere saying why. The moment is what the run MEASURED, so it stays — marked.
             if (meta.dropped) got.dropped = true
           } catch { /* an unreadable skeleton — the frame simply plays untimed and unnamed */ }
         }
         if (valueLanded(got)) row.values.push(got)
         if (got.dropped) gapLines.push(`evidence drop · ${scr} ${rid} b${b.n} v${v.k} · the page would not photograph this moment; its measurement and its replica are kept`)
       }
-      // THE FOCUS RECT: where the ring stood when this beat was proven, read back out of the layouts
+      // THE FOCUS RECT: where the ring stood when this beat was proven, read out of the skeletons
       // that already recorded it (tools/evidence.mjs focusFromLayouts) — the board zooms the media
       // onto it. No cropped file is ever written; the zoom is a view over the frame. It spans EVERY
       // phase of the beat (2026-08-29), not the after-frame alone: the value the When typed and the
       // value the Then produced are usually different elements, and a camera on the last of them
       // crops the rest of the beat out of the row on both sides. The union is one rect, so the row
       // still has exactly one camera (board R19).
-      const rings = [row.layoutAfter, ...row.values.map(v => v.layout)].filter(Boolean).map(p => {
-        try { return JSON.parse(readFileSync(join(process.cwd(), p), 'utf8')) } catch { return null }
-      })
+      const rings = []
+      if (layText.layoutAfter) { try { rings.push(JSON.parse(layText.layoutAfter)) } catch { /* unreadable */ } }
+      for (const l of valueLayouts) rings.push(l)
       if (rings.length) {
         try {
           const f = focusFromLayouts(rings)
@@ -370,60 +386,44 @@ function harvestEvidence (harvest, ranAt) {
       if (row.before || row.after || row.layoutBefore || row.layoutAfter || row.values.length) entry.beats.push(row)
     }
     // …and the REQUIREMENT-LEVEL pair every existing reader still consumes (the cover, the Focus
-    // media pane, the frame-stepper): the first beat's before and the last beat's after, at the
-    // unchanged <rid>.before.png / <rid>.after.png so nothing downstream moves. Copied from the
-    // beat frames that already landed — same bytes, one downscale instead of two.
+    // media pane, the frame-stepper): the first beat's before and the last beat's after. Content
+    // addressing makes this FREE — the same bytes are the same blob, so the pair is the beat frames'
+    // own srcs rather than a second copy of them under another name.
     const first = entry.beats.find(b => b.before)
     const last = [...entry.beats].reverse().find(b => b.after)
-    for (const [phase, from] of [['before', first && first.before], ['after', last && last.after]]) {
-      if (from) {
-        try { copyFileSync(join(process.cwd(), from), join(process.cwd(), paths[phase])); entry[phase] = paths[phase] } catch { /* dropped */ }
-      } else if (r[phase] && landFrame(r[phase], paths[phase])) {
-        entry[phase] = paths[phase]     // no beat frame landed, but the run captured one — keep it
-      }
+    if (first) entry.before = first.before
+    if (last) entry.after = last.after
+    for (const [phase, from] of [['before', entry.before], ['after', entry.after]]) {
+      if (from || !r[phase]) continue
+      const rel = await landFrame(r[phase])       // no beat frame landed, but the run captured one
+      if (rel) entry[phase] = rel
     }
     if (!(entry.before || entry.after)) continue
-    // Task 16 #1: commit the screen's PRIMARY recording to spec/<screen>/evidence/<hash>.webm and
-    // point this entry at it with the seek offsets (this entry's own window, frozen from the primary
-    // recording) — the reader seeks to `from` so video mode opens at THIS requirement's moment. A
-    // requirement the primary did not cover has r.srcVideo null and stays video-less (button hidden);
-    // a CLI run resolves everything to '_novideo', so this is a no-op and the fold's carry keeps
-    // whatever stands committed. Best-effort: a failed encode leaves the entry video-less.
-    // THE SCREEN'S WEB FONTS (2026-09-03): the faces the replica is set in, committed content-named
-    // under evidence/_fonts/ so many requirements of one screen share one file (foldEvidence
-    // refcounts them per screen, exactly like the video). A face that will not copy is simply not
+    // THE SCREEN'S WEB FONTS (2026-09-03): the faces the replica is set in, landed as blobs so many
+    // requirements of one screen share one file by content. A face that will not land is simply not
     // recorded — the replica then renders in the fallback stack, which is honest, not a fake green.
     const faces = []
     for (const f of (r.fonts || [])) {
-      if (!f || !f.hash || !f.ext || !f.src) continue
-      const rel = fontEvidencePath(scr, f.hash, f.ext)
-      const dest = join(process.cwd(), rel)
-      try {
-        mkdirSync(join(process.cwd(), paths.dir, '_fonts'), { recursive: true })
-        if (!existsSync(dest)) copyFileSync(f.src, dest)
-        if (!faces.some(x => x.hash === f.hash)) faces.push({ hash: f.hash, ext: f.ext, family: f.family || '', path: rel })
-      } catch { /* dropped, never fatal */ }
+      if (!f || !f.src) continue
+      const rel = await land(f.src, f.ext)
+      if (rel && !faces.some(x => x.path === rel)) faces.push({ hash: f.hash || '', ext: f.ext || '', family: f.family || '', url: f.url || '', path: rel })
     }
     if (faces.length) entry.fonts = faces
     // …and the ONE SHEET that DECLARES them (phase 4a): the readable @font-face rules of this page,
-    // with every `url(...)` rewritten to the file committed beside it, so an opaque-origin srcdoc
-    // iframe can set the replica in the app's own type. A rule naming a face that did not fetch is
-    // dropped by deriveFacesCss — a browser would 404 it and fall back silently, which is a picture
-    // of a different app. One deterministic path per screen; rewritten in place at every fold.
+    // with every `url(...)` rewritten to the blob beside it, so an opaque-origin srcdoc iframe can
+    // set the replica in the app's own type. A rule naming a face that did not fetch is dropped by
+    // deriveFacesCss — a browser would 404 it and fall back silently, which is a picture of a
+    // different app. The sheet is a blob too, so it sits in the same directory as the faces it names
+    // and one relative url is right in either store.
     const facesCss = deriveFacesCss(r.fontFaceRules || [], faces)
     if (facesCss) {
-      const rel = facesCssPath(scr)
-      try {
-        mkdirSync(join(process.cwd(), paths.dir, '_fonts'), { recursive: true })
-        writeFileSync(join(process.cwd(), rel), facesCss + '\n')
-        entry.fontFaces = rel
-      } catch { /* dropped, never fatal — the replica then renders in a fallback stack, honestly */ }
+      try { entry.fontFaces = await putBlob(DATA_HOME, Buffer.from(facesCss + '\n'), 'css') } catch { /* dropped, never fatal */ }
     }
     if (r.srcVideo) {
-      const rel = commitVideo(r.srcVideo, scr, cache)
+      const rel = await commitVideo(r.srcVideo, scr, cache)
       if (rel) entry.video = { path: rel, from: entry.window ? entry.window.from : null, to: entry.window ? entry.window.to : null }
     }
-    out[qid] = entry
+    out[key] = entry
   }
   // the gapped moments of this run — and the dropped photographs beside them (task 3b, item 5) — at
   // most 12 of them and then the count: one line each, naming the file, the kind and where on the
@@ -433,19 +433,21 @@ function harvestEvidence (harvest, ranAt) {
   return out
 }
 
-// ONE LANDED REPLICA'S VERDICT, kept on the folded moment as `gate: { gaps, gated }` — small,
-// derived, and enough for a reader of the index to see whether the row's picture was ever checked.
-// The Expected's own reading is reported but not stored twice, because the moment already has one.
-// Never throws: a replica that will not read is simply not noted.
+// ONE LANDED REPLICA'S VERDICT, kept on the folded moment as `gate: { gaps, gated, pin, trunc,
+// phase }` — small, derived, and enough for a reader of the row to see whether its picture was ever
+// checked. Never throws: a replica that will not read is simply not noted.
 //
-// THE FIELD IS `gate`, NOT `replica` (fix round 1, C1 — the brief's own name, corrected here). At a
-// VALUE moment `replica` is already the FILE PATH (tools/evidence.mjs valueEvidencePaths), so writing
-// the verdict there replaced the path with an object — and `foldEvidence`'s keep-set then failed to
-// find that path among the entry's references and PRUNED the very file the run had just written.
-export function noteReplica (row, rel, gapLines, screen, id, beat, phase) {
-  if (!rel) return
+// It takes the replica's own TEXT (2026-09-06, the data home): the fold has those bytes in hand from
+// the moment it lands them, and a blob has no path to re-read — in cloud mode re-reading would mean
+// fetching back what this process just uploaded.
+//
+// THE FIELD IS `gate`, NOT `replica` (fix round 1, C1 — the brief's own name). At a VALUE moment
+// `replica` is already the picture's own src, so writing the verdict there replaced the src with an
+// object — and the fold's keep-set then failed to find that src among the entry's references.
+export function noteReplica (row, html, gapLines, screen, id, beat, phase) {
+  if (!html) return
   try {
-    const note = replicaNote(readFileSync(join(process.cwd(), rel), 'utf8'))
+    const note = replicaNote(String(html))
     // THE WHOLE VERDICT, not just the counts (2026-09-04, the review's C1). The board's stale banner
     // names two reasons that are properties of this FILE — the pin it was gated against, so a later
     // build can see the harvest move past it, and a capture that ran out of bytes. Recording only
@@ -540,10 +542,14 @@ export default class ResultsIndexReporter {
       // one. The page a test actually worked in is the last one it opened.
       // Evidence frames are per-REQUIREMENT material, not "what this test saw" — keep them out of
       // the cover/shots selection or a checkReq's after-frame would displace the real cover.
+      // …AND THEY LAND AS BLOBS TOO (the data home, 2026-09-05/06). A run's record used to name
+      // files inside its own directory under spec/_runs/<id>/, which the board then served; the
+      // record dir is scratch now (it is pruned with the run) and what the record KEEPS is a src,
+      // gc'd by reference the moment the run falls off the capped log.
       const allShots = atts.filter(a => /\.png$/i.test(a.path || '') && !parseEvidenceAttachment(a.name))
-        .map(a => relative(process.cwd(), a.path))
-      const shots = allShots.slice(-1)
-      const video = atts.find(a => /\.webm$/i.test(a.path || ''))
+      const shots = (await Promise.all(allShots.slice(-1).map(a => land(a.path, 'png')))).filter(Boolean)
+      const videoAtt = atts.find(a => /\.webm$/i.test(a.path || ''))
+      const video = videoAtt ? { path: videoAtt.path, src: await land(videoAtt.path, 'webm') } : null
       // The DETAIL STEPS of the case — every action and check Playwright ran, in order and nested,
       // so a test case can be expanded to see exactly what it did. Verbose, so it lives in the
       // per-run record (pruned with the run), never in the committed index.
@@ -604,7 +610,9 @@ export default class ResultsIndexReporter {
         // reran a few shared beats last cannot steal it from the comprehensive flow that proved
         // everything (which had left its screen-only reqs video-less). Only a board run records
         // video, so a CLI run's captures land under '_novideo' and the committed video rides the fold's carry.
-        const h = (evidenceHarvest[qid] ||= { caps: {} })
+        // THE KEY CARRIES THE TEST FILE (C2, 2026-09-06): one requirement harvested by two files in
+        // one run is two entries, so a composed flow can never overwrite the home screen's harvest.
+        const h = (evidenceHarvest[`spec/${rel} ${qid}`] ||= { caps: {}, testFile: `spec/${rel}`, testTitle: test.title })
         const key = (video && video.path) ? video.path : '_novideo'
         const cap = (h.caps[key] ||= { srcVideo: (video && video.path) || null, beats: {}, order: [] })
         // …and PER BEAT inside that capture. An un-keyed name (an older run) folds as beat 1.
@@ -674,7 +682,7 @@ export default class ResultsIndexReporter {
       // Always record the case — every case now carries at least its own log, even one with no shots,
       // no video and no steps, so "each test case has its own record" holds for every case.
       shotsByTest[test.title] = {
-        shots, video: video ? relative(process.cwd(), video.path) : null, steps, log: caseLog,
+        shots, video: video ? video.src : null, steps, log: caseLog,
         // What a log needs to be worth keeping ten of: when it ran, how long it took, whether it
         // passed, and the commit it ran against — so a case going red can be tied to a change.
         at: new Date(ranAt).toISOString(), ms, ok, commit: COMMIT
@@ -688,7 +696,7 @@ export default class ResultsIndexReporter {
       // requirement this run proved gets its fresh frames + window; one it did not touch keeps its
       // existing evidence. Harvest first (copies + optional clip cuts), fold second.
       let evidence = {}
-      try { evidence = harvestEvidence(evidenceHarvest, ranAt) } catch (err) { console.error('evidence harvest failed:', err) }
+      try { evidence = await harvestEvidence(evidenceHarvest, ranAt) } catch (err) { console.error('evidence harvest failed:', err) }
       try { await foldByScreen(byScreen, { partial, evidence }) } catch (err) { console.error('results-index fold failed:', err) }
       // Record a "recent runs" entry — but ONLY when the SERVER did not start this run. A board-started
       // run sets BOARD_RECORD and the server writes a richer entry itself (with per-test shots), so

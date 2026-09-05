@@ -12,51 +12,42 @@
 // This pins the wire itself.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join, relative } from 'node:path'
 import { noteReplica } from '../spec/_results-reporter.mjs'
 import { withReplicaAttrs } from './replica-gate.mjs'
 
 const ROOT = '<div class="rep r0" data-replica-kit="replica-1" data-replica-region="0 0 100 100">x</div>'
-// noteReplica reads its path relative to the process cwd, exactly as the fold hands it one
-const landed = (html) => {
-  const dir = mkdtempSync(join(tmpdir(), 'sb-gate-'))
-  const abs = join(dir, 'R1.b1.after.actual.html')
-  writeFileSync(abs, html)
-  return { rel: relative(process.cwd(), abs), clean: () => rmSync(dir, { recursive: true, force: true }) }
-}
+// noteReplica takes the replica's own TEXT (2026-09-06, the data home): the fold holds those bytes
+// from the moment it lands them, and a blob has no path to re-read.
 
 test('noteReplica records the PIN the gate checked the replica against', () => {
-  const f = landed(withReplicaAttrs(ROOT, { layout: 'a1b2c3d4e5f60718', gaps: [] }))
-  try {
+  const html = withReplicaAttrs(ROOT, { layout: 'a1b2c3d4e5f60718', gaps: [] })
+  {
     const row = {}
-    noteReplica(row, f.rel, [], 'board', 'R1', 1, 'after')
+    noteReplica(row, html, [], 'board', 'R1', 1, 'after')
     assert.equal(row.gate.pin, 'a1b2c3d4e5f60718',
       'without the pin the board can never say "layout moved" — the banner reason is dead wire')
     assert.equal(row.gate.gaps, 0)
     assert.equal(row.gate.gated, true)
     assert.equal(row.gate.trunc, false)
-  } finally { f.clean() }
+  }
 })
 
 test('noteReplica records a TRUNCATED capture in its own word, beside the gap it also counts', () => {
-  const f = landed(withReplicaAttrs(ROOT.replace('data-replica-kit', 'data-replica-truncated="1" data-replica-kit'),
-    { layout: 'ffff0000ffff0000', gaps: [] }))
-  try {
+  const html = withReplicaAttrs(ROOT.replace('data-replica-kit', 'data-replica-truncated="1" data-replica-kit'),
+    { layout: 'ffff0000ffff0000', gaps: [] })
+  {
     const row = {}
-    noteReplica(row, f.rel, [], 'board', 'R1', 1, 'after')
+    noteReplica(row, html, [], 'board', 'R1', 1, 'after')
     assert.equal(row.gate.trunc, true, 'the banner says "truncated" in its own words, not just "replica gap"')
     assert.equal(row.gate.gaps, 1, 'and it still counts as a gap')
-  } finally { f.clean() }
+  }
 })
 
 test('noteReplica on an UNGATED replica reports no pin rather than a wrong one', () => {
-  const f = landed(ROOT)
-  try {
+  {
     const row = {}
-    noteReplica(row, f.rel, [], 'board', 'R1', 1, 'after')
+    noteReplica(row, ROOT, [], 'board', 'R1', 1, 'after')
     assert.equal(row.gate.gated, false)
     assert.equal(row.gate.pin, '', 'nothing walked it back, so there is no pin to compare — never a guess')
-  } finally { f.clean() }
+  }
 })
