@@ -1,7 +1,7 @@
 // tools/evidence.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { clipWindow, ffmpegFrameArgs, ffmpegDownscaleArgs } from './evidence.mjs'
+import { clipWindow, ffmpegFrameArgs, ffmpegDownscaleArgs, baseBody } from './evidence.mjs'
 
 const steps = [
   { label: 'Open /todo.html', cat: 'pw:api', t: 0, d: 400 },
@@ -154,7 +154,12 @@ test('per-beat: the requirement-level pair is derived, and every beat keeps its 
   // captured before they existed. This assertion was CORRECTLY broken by that change (rule 4).
   // …and `replicaExpectedAfter` in phase 2 (2026-09-03), on the same rule: a null where nothing was
   // harvested. Correctly broken by that change too (rule 4).
-  assert.deepEqual(r.beats[0], { n: 1, before: 'b1.png', after: 'a1.png', layoutBefore: 'b1.json', layoutAfter: 'a1.json', replicaExpectedBefore: null, replicaExpectedAfter: null, replicaExpectedAfter: null, window: { from: 100, to: 400 }, values: [] })
+  // …and `base` in phase 8 (2026-09-05), on exactly the same rule: the beat's BEFORE picture is now
+  // a shared, content-addressed blob rather than a per-moment file, and it reads null where the run
+  // harvested none. Correctly broken by that change too (rule 4). (The duplicated
+  // `replicaExpectedAfter` key in this literal went with the edit — it always said the same thing
+  // twice.)
+  assert.deepEqual(r.beats[0], { n: 1, before: 'b1.png', after: 'a1.png', layoutBefore: 'b1.json', layoutAfter: 'a1.json', replicaExpectedBefore: null, replicaExpectedAfter: null, base: null, window: { from: 100, to: 400 }, values: [] })
   assert.deepEqual(r.beats[1].window, { from: 900, to: 1200 }, 'each beat keeps its OWN span, so a per-beat row seeks its own moment')
 })
 
@@ -563,4 +568,14 @@ test('absoluteFacesCss points a face at the dir the SHEET lives in — /blob for
   // an already-rooted or absolute url is left exactly as it is — absolutising an absolute url is how
   // a rewrite starts inventing files
   assert.equal(absoluteFacesCss('@font-face{src:url("https://cdn/x.woff2")}', 'blob'), '@font-face{src:url("https://cdn/x.woff2")}')
+})
+
+// ── ONE BASE PER SCREEN STATE (phase 8 A3, 2026-09-05) ──────────────────────────────────────────
+test('phase 8: the base is the before replica without its header line, so two moments of one page are one blob', () => {
+  const a = '<!-- specboard replica-1 · todo:R3 b1 before · Expected · sanitised, no script -->\n<style>.rep .rab{}</style><div class="rep rab"></div>'
+  const b = '<!-- specboard replica-1 · todo:R1 b1 before · Expected · sanitised, no script -->\n<style>.rep .rab{}</style><div class="rep rab"></div>'
+  assert.equal(baseBody(a), baseBody(b))
+  assert.equal(baseBody(a), '<style>.rep .rab{}</style><div class="rep rab"></div>')
+  assert.equal(baseBody('<div></div>'), '<div></div>')            // no header: unchanged
+  assert.notEqual(baseBody(a), baseBody(a.replace('rab"></div>', 'rab">x</div>')))
 })

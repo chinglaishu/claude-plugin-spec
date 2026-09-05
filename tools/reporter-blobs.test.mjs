@@ -68,9 +68,14 @@ test('every landed file is a blob in the data home, and nothing is written under
   assert.equal(e.testTitle, 'the board proves R1')
   for (const k of ['before', 'after']) assert.equal(isBlobRel(e[k]), true, k)
   const b = e.beats[0]
-  for (const k of ['before', 'after', 'layoutBefore', 'layoutAfter', 'replicaExpectedBefore', 'replicaExpectedAfter']) {
+  // …the beat's BEFORE replica lands as `base` since phase 8 (2026-09-05) — the same bytes with the
+  // header stripped, so every beat that starts from this screen state names ONE blob.
+  // `replicaExpectedBefore` is no longer set on a fresh entry: this assertion was correctly broken
+  // by that change (rule 4), not weakened to fit it.
+  for (const k of ['before', 'after', 'layoutBefore', 'layoutAfter', 'base', 'replicaExpectedAfter']) {
     assert.equal(isBlobRel(b[k]), true, k)
   }
+  assert.equal(b.replicaExpectedBefore, null, 'the before picture IS the base now')
   assert.equal(isBlobRel(e.fonts[0].path), true, 'the face')
   assert.equal(isBlobRel(e.fontFaces), true, 'the sheet that declares it')
   assert.match(e.fontFaces, /\.css$/)
@@ -111,4 +116,43 @@ test('the same bytes harvested twice are ONE blob — a re-harvest of an unchang
   const b = await harvestOnce(home)
   const key = 'spec/board/test.spec.ts board:R1'
   assert.equal(a.out[key].beats[0].before, b.out[key].beats[0].before, 'same content, same address')
+})
+
+// ── ONE BASE PER SCREEN STATE (phase 8 A3, 2026-09-05) ──────────────────────────────────────────
+// Two beats that start from the same page captured the same bytes twice; the only byte that
+// differed was the header comment naming the moment. Strip it and they are ONE blob — which is the
+// whole point of the base: the reader fetches it once, and the gate grades it once.
+test('phase 8: two beats that start from the same page share ONE base blob, header and all', async () => {
+  const home = box()
+  process.env.SPECBOARD_HOME = home
+  const { harvestEvidence } = await import('../spec/_results-reporter.mjs?home=' + encodeURIComponent(home) + '&base=1')
+  const src = box()
+  const f = (n, body) => { const p = join(src, n); writeFileSync(p, body); return p }
+  const head = m => '<!-- specboard replica-1 · ' + m + ' · Expected · sanitised, no script -->\n'
+  const body = replica('deadbeef')
+  const beat = (n, moment) => [n, {
+    before: f('b' + n + '.png', 'PNGB' + n),
+    after: f('a' + n + '.png', 'PNGA' + n),
+    layoutBefore: f('lb' + n + '.json', layout()),
+    layoutAfter: f('la' + n + '.json', layout()),
+    replicaExpectedBefore: f('rb' + n + '.html', head(moment) + body),
+    replicaExpectedAfter: f('ra' + n + '.html', head(moment) + body),
+    window: { from: 0, to: 10 },
+    values: {}
+  }]
+  const harvest = {
+    'spec/board/test.spec.ts board:R2': {
+      latestKey: '_novideo',
+      testFile: 'spec/board/test.spec.ts',
+      caps: { _novideo: { srcVideo: null, order: [1, 2], beats: Object.fromEntries([beat(1, 'board:R2 b1 before'), beat(2, 'board:R2 b2 before')]) } }
+    }
+  }
+  const out = await harvestEvidence(harvest, Date.now())
+  const beats = out['spec/board/test.spec.ts board:R2'].beats
+  assert.equal(beats.length, 2)
+  assert.ok(beats[0].base && beats[1].base, 'both beats landed a base')
+  assert.equal(beats[0].base, beats[1].base, 'the same page is the same blob, whatever the header said')
+  // …and the AFTER moments, which keep their header, are two files — the proof the sharing comes
+  // from baseBody and not from the fixture happening to be identical
+  assert.notEqual(beats[0].replicaExpectedAfter, beats[1].replicaExpectedAfter)
 })

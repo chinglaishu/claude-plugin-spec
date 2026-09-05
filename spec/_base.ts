@@ -1360,6 +1360,16 @@ function momentKey (id: string, beat: number, phase: Phase): string {
   const i = id.indexOf(':')
   if (i > -1) scr = id.slice(0, i)
   else { try { scr = basename(dirname(String(test.info().file || ''))) } catch { scr = '' } }
+  // …EXCEPT THE BEFORE MOMENT, WHICH IS THE SCREEN'S BASE (phase 8 A3, corrected 2026-09-05). A
+  // beat's before replica is body-rooted — it is the Given, the whole page — and the fold lands it
+  // as a content-addressed blob so every beat that starts from the same page names ONE file. Key it
+  // by the BEAT and two beats of one page write two different class sets, so two different blobs,
+  // and the sharing A3 exists for is dead on arrival (measured: six of six bases distinct). The
+  // namespace's job is only that a base and a PATCH never restyle each other in one document, and
+  // that holds as long as their prefixes differ — so every base of a screen may share one. Two
+  // bases are never in one document, so a screen whose beats start from two different pages simply
+  // gets two blobs wearing the same prefix, which nothing can observe.
+  if (phase === 'before') return `${scr}:before`
   return `${scr}:${id}#b${beat}/${phase}`
 }
 const MOMENT_FN = momentFunction(String(snapLayoutWalk), String(captureReplica))

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { foldByScreen, recordRunEntry, DATA_HOME, RESULTS_SCRATCH, ROOT } from '../tools/spec-store.mjs'
 import { putBlob, openStore } from '../tools/store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindows, ffmpegDownscaleArgs, deriveFacesCss, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, parseFontFacesAttachment, focusFromLayouts, valueMeta, valueLanded, claimSlot, ffmpegVideoArgs, resolvePrimaryVideo, qidOfKey } from '../tools/evidence.mjs'
+import { clipWindows, ffmpegDownscaleArgs, deriveFacesCss, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, parseFontFacesAttachment, focusFromLayouts, baseBody, valueMeta, valueLanded, claimSlot, ffmpegVideoArgs, resolvePrimaryVideo, qidOfKey } from '../tools/evidence.mjs'
 // what a landed replica says about itself (phase 3, 2026-09-03): how many gaps the in-page gate
 // found, and whether it was gated at all. One reader, shared with `npm run proof mirror`.
 import { replicaNote } from '../tools/replica-gate.mjs'
@@ -277,7 +277,7 @@ export async function harvestEvidence (harvest, ranAt) {
     // skeletons — what the gate checks its picture against — and its own window, so a per-beat row
     // can show, pace and seek its own proof. Best-effort throughout.
     for (const b of (r.beats || [])) {
-      const row = { n: b.n, before: null, after: null, layoutBefore: null, layoutAfter: null, replicaExpectedBefore: null, replicaExpectedAfter: null, window: b.window || null, values: [] }
+      const row = { n: b.n, before: null, after: null, layoutBefore: null, layoutAfter: null, base: null, replicaExpectedBefore: null, replicaExpectedAfter: null, window: b.window || null, values: [] }
       for (const phase of ['before', 'after']) {
         if (!b[phase]) continue
         const rel = await landFrame(b[phase])
@@ -295,7 +295,20 @@ export async function harvestEvidence (harvest, ranAt) {
       // view is built from is exactly how a mirror drifts. The gate's verdict on the UNEDITED tree
       // rides on its root.
       const repText = {}
-      for (const key2 of ['replicaExpectedBefore', 'replicaExpectedAfter']) {
+      // PHASE 8 (2026-09-05): the BEFORE replica lands as the beat's BASE — the same bytes with the
+      // header comment stripped (tools/evidence.mjs baseBody), so two beats that start from the same
+      // page hash to ONE blob and the reader can graft each moment's patch onto it. `putBlob` names
+      // the file by that hash, which is the content-address phase 8 asked for, and the fold's gc is
+      // its refcount. `replicaExpectedBefore` is no longer set on a new entry — the before picture IS
+      // the base — but the fold still carries a legacy entry's, so an un-re-harvested screen keeps
+      // showing what it showed.
+      if (b.replicaExpectedBefore) {
+        repText.replicaExpectedBefore = readText(b.replicaExpectedBefore)
+        try {
+          row.base = await putBlob(DATA_HOME, Buffer.from(baseBody(repText.replicaExpectedBefore || ''), 'utf8'), 'html')
+        } catch { row.base = null }
+      }
+      for (const key2 of ['replicaExpectedAfter']) {
         if (!b[key2]) continue
         repText[key2] = readText(b[key2])
         const rel = await land(b[key2], 'html')
@@ -311,7 +324,7 @@ export async function harvestEvidence (harvest, ranAt) {
       // …and where the RESTING moment has NO PICTURE at all (a moment whose ringed element the walk
       // refused to measure lands none — spec/_moment.mjs), the row's verdict comes from the last
       // moment of the beat that DOES have one rather than from nothing.
-      if (!row.gate && row.replicaExpectedBefore) {
+      if (!row.gate && (row.base || row.replicaExpectedBefore)) {
         noteReplica(row, repText.replicaExpectedBefore, [], scr, rid, b.n, 'before')
       }
       // THE ASSERTED-VALUE FRAMES (2026-08-29): one per value the beat rang and read, landed the same

@@ -90,7 +90,7 @@ function env (body, opts = {}) {
 }
 const run = (body, o = {}) => moment({
   ring: o.ring || null, target: o.target || null, props: REPLICA_PROPS,
-  claim: null, claims: [], base: null, minRegion: null, caps: o.caps || null, env: env(body, o)
+  claim: null, claims: [], base: null, key: o.key, minRegion: null, caps: o.caps || null, env: env(body, o)
 })
 
 // a page whose one card carries a word, so both halves have something to say about the same moment
@@ -230,4 +230,19 @@ test('…and a moment with NO target handed over is captured exactly as before',
   const fn = new Function('a', 'var document = { getElementById: function () { return null } }; return (' + src + ')(a)')
   const noTarget = fn({ ring: { x: 1, y: 1, width: 2, height: 2 }, target: null, gateHost: 'h' })
   assert.ok(noTarget.rep, 'the capture finds the element under the ring itself, as it always has')
+})
+
+// ── phase 8 A1: a field the composed source forgets to forward is a field the page never sees ───
+// The moment key is what namespaces the replica's classes, and it travels to the capture ONLY
+// through this composed expression's arg list. The 2026-09-04 trap was exactly this shape — the
+// harness handed something over and the page silently got nothing — so it is asserted here rather
+// than discovered in a harvest. (It WAS discovered in a harvest: the first init run after A1 wrote
+// six bases all stamped `data-replica-ns="r"`, the no-key fallback.)
+test('the moment key reaches the capture, so the replica is namespaced by the moment it photographs', () => {
+  const p = onePage()
+  const a = run(p.body, { ring: { x: 520, y: 300, width: 120, height: 20 }, target: p.word, key: 'todo:R3#b1/v1' })
+  assert.match(a.rep.html, /data-replica-ns="r[a-z0-9]{6}"/, 'the key made it across: ' + a.rep.html.slice(0, 200))
+  const b = run(onePage().body, { ring: { x: 520, y: 300, width: 120, height: 20 }, target: null, key: 'todo:before' })
+  assert.notEqual(/data-replica-ns="([^"]+)"/.exec(a.rep.html)[1], /data-replica-ns="([^"]+)"/.exec(b.rep.html)[1],
+    'two different moments, two different namespaces')
 })

@@ -104,6 +104,18 @@ export function beatEvidencePaths (screen, id, n) {
   }
 }
 
+// ONE BASE PER SCREEN STATE (phase 8, the human 2026-09-05: "build a schematic page and use that page
+// in all test cases"). The before moment of every beat is body-rooted — no ring, so the scene root is
+// the body — and two beats that start from the same page produced the same bytes three times over
+// (demo/todo's R1/R2/R3 before files). The only byte that differed was the header comment naming the
+// moment. Strip it, and the reporter's putBlob does the rest: same bytes, same sha256, ONE blob, kept
+// while any beat names it (tools/store.mjs gcBlobs — the blob's NAME is the hash phase 8 wanted and
+// the fold's gc is its refcount, so no `_base/` directory and no hand-kept count exist). The reader
+// drops every comment anyway (repBody), so nothing downstream misses the header.
+export function baseBody (html) {
+  return String(html || '').replace(/^<!--[^\n]*-->\n?/, '')
+}
+
 // THE ASSERTED-VALUE FRAMES INSIDE A BEAT (2026-08-29, the human: "the When must be visible in the
 // proof too"). A beat's before/after pair photographs the two ENDS of an assertion body, and the
 // action itself falls between them: a box carrying what was just typed into it is empty in the
@@ -290,6 +302,10 @@ export function resolvePrimaryVideo (harvest) {
           // as the photograph it is shown against — for the same reason the skeleton is.
           replicaExpectedBefore: s.replicaExpectedBefore || null,
           replicaExpectedAfter: s.replicaExpectedAfter || null,
+          // …and since phase 8 the BEFORE picture is the beat's BASE: the same body-rooted replica,
+          // header stripped and landed as a content-addressed blob, so every beat that starts from
+          // this screen state names ONE file (tools/evidence.mjs baseBody).
+          base: s.base || null,
           window: s.window || null,
           // the beat's asserted values in CHECK order (2026-08-29) — sorted by the check number the
           // attachment carried, never by the order the attachments happened to arrive in
@@ -609,9 +625,12 @@ export function foldEvidence (index, entries) {
         // Expected view is built from.)
         const hasB = !!(carried.layoutBefore || b.layoutBefore)
         const hasA = !!(carried.layoutAfter || b.layoutAfter)
-        if (!(b.replicaExpectedBefore || b.replicaExpectedAfter) &&
-            ((o.replicaExpectedBefore && hasB) || (o.replicaExpectedAfter && hasA))) {
+        // …and `base` is one of those pictures since phase 8 (it IS the before replica), so it
+        // travels on exactly the same terms: with the before skeleton, or not at all.
+        if (!(b.base || b.replicaExpectedBefore || b.replicaExpectedAfter) &&
+            ((o.base && hasB) || (o.replicaExpectedBefore && hasB) || (o.replicaExpectedAfter && hasA))) {
           carried = carried === b ? { ...carried } : carried
+          if (o.base && hasB) carried.base = o.base
           if (o.replicaExpectedBefore && hasB) carried.replicaExpectedBefore = o.replicaExpectedBefore
           if (o.replicaExpectedAfter && hasA) carried.replicaExpectedAfter = o.replicaExpectedAfter
         }
@@ -636,6 +655,10 @@ export function foldEvidence (index, entries) {
             ? [b.before, b.after, b.layoutBefore, b.layoutAfter,
                 // …and the beat's TWO REPLICAS (2026-09-04, one per moment), on the frames' rule: a
                 // dropped beat leaves neither a picture nor the html beside it behind
+                // (`b.base` is deliberately NOT here: a base blob is SHARED by every beat that
+                // starts from the same screen state, so a per-entry prune list could name one that
+                // another requirement still points at. Its retention is the fold's gc, whose
+                // keep-set is every record in the store — tools/store.mjs gcBlobs.)
                 b.replicaExpectedBefore, b.replicaExpectedAfter,
                 // …and every asserted-value frame the beat carried, with its skeleton and its own
                 // replica: a beat that lost a check must not leave its frames behind (2026-08-29)

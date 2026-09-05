@@ -770,3 +770,14 @@ test('a re-harvest of the SAME test replaces its own beat and names the supersed
   assert.equal(b.before, 'blob/' + 'a'.repeat(64) + '.png', 'the fresh frame stands')
   assert.equal(b.replicaExpectedAfter, 'spec/board/evidence/R1.b1.after.expected.html', 'and the untouched moment rides along')
 })
+
+// ── phase 8 A3: a beat's BASE is one more picture the fold must carry ───────────────────────────
+test('phase 8: foldEvidence carries a beat\'s base, and a fresh beat with no base borrows the old one like it borrows a replica', () => {
+  const base = 'blob/' + 'a'.repeat(64) + '.html'
+  const lay = 'blob/' + '1'.repeat(64) + '.json'
+  const index = { todo: { evidence: { R1: { beats: [{ n: 1, before: 'blob/' + 'b'.repeat(64) + '.png', layoutBefore: lay, base, values: [] }] } } } }
+  foldEvidence(index, { 'todo:R1': { beats: [{ n: 1, before: 'blob/' + 'c'.repeat(64) + '.png', layoutBefore: lay, base: 'blob/' + 'd'.repeat(64) + '.html', values: [] }] } })
+  assert.equal(index.todo.evidence.R1.beats[0].base, 'blob/' + 'd'.repeat(64) + '.html', 'a fresh base replaces the old')
+  foldEvidence(index, { 'todo:R1': { beats: [{ n: 1, before: 'blob/' + 'e'.repeat(64) + '.png', layoutBefore: lay, values: [] }] } })
+  assert.equal(index.todo.evidence.R1.beats[0].base, 'blob/' + 'd'.repeat(64) + '.html', 'a fold with no base keeps the last one (the same rule as a missing replica)')
+})
