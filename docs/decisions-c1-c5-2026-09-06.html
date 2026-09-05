@@ -1,0 +1,121 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>specboard — the C1–C5 decisions, explained in full</title>
+<style>
+:root{--paper:#f6f2ea;--card:#fdfcf9;--ink:#2b2a27;--mute:#6f6a60;--line:#d9d2c3;--indigo:#3f4f7a;--indigo-tint:#e6eaee;--koke:#5b6b3c;--koke-tint:#eaece1;--bengara:#8a4a3c;--bengara-tint:#f2e8e4;--yamabuki:#8a6412;--yamabuki-tint:#f6eeda;--tint:#ecebe3}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 -apple-system,Helvetica,Arial,sans-serif;padding:32px 40px;max-width:1060px}
+h1{font-size:22px;margin:0 0 4px}
+h2{font-size:17px;margin:44px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+h2 .chip{margin-left:10px}
+.sub{color:var(--mute);margin:0 0 18px}
+p{margin:8px 0;max-width:880px}
+.k{font:12.5px ui-monospace,Menlo,monospace;background:var(--tint);padding:1px 5px;border-radius:4px;white-space:nowrap}
+.chip{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:4px;border:1px solid;font-weight:600;white-space:nowrap;vertical-align:2px}
+.chip.now{color:var(--bengara);border-color:#d8c0b6;background:var(--bengara-tint)}
+.chip.later{color:var(--yamabuki);border-color:#dfc98c;background:var(--yamabuki-tint)}
+.chip.cheap{color:var(--koke);border-color:#bcc4a8;background:var(--koke-tint)}
+.chip.info{color:var(--indigo);border-color:#b9c4ce;background:var(--indigo-tint)}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);font-size:13.5px}
+th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+tr:last-child td{border-bottom:0}
+.rec{background:var(--card);border-left:3px solid var(--indigo);padding:10px 14px;margin:12px 0;font-size:14px;max-width:900px}
+.rec b{color:var(--indigo)}
+.against{background:var(--card);border-left:3px solid var(--bengara);padding:10px 14px;margin:12px 0;font-size:14px;max-width:900px}
+.against b{color:var(--bengara)}
+.quote{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:10px 14px;font:13px/1.6 ui-monospace,Menlo,monospace;white-space:pre-wrap;margin:10px 0;max-width:900px}
+.quote .cap{font:600 12.5px -apple-system,Helvetica,Arial,sans-serif;display:block;margin-bottom:6px;color:var(--mute)}
+.quote em{background:var(--bengara-tint);font-style:normal;padding:0 2px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.panel header{padding:8px 14px;font-weight:600;font-size:13.5px;background:var(--tint)}
+.panel.bad header{background:var(--bengara-tint);color:var(--bengara)}
+.panel.good header{background:var(--koke-tint);color:var(--koke)}
+.panel .bd{padding:12px 14px;font-size:13px}
+.panel .bd p{margin:5px 0;max-width:none}
+.slot{border:1.5px solid var(--ink);border-radius:6px;padding:6px 10px;margin:6px 0;font:12px ui-monospace,Menlo,monospace;background:#fff;display:inline-block}
+.slot.clash{border-color:var(--bengara);background:var(--bengara-tint)}
+.wr{font-size:12px;color:var(--mute);margin:2px 0}
+.wr b{color:var(--ink)}
+.arrow{color:var(--mute)}
+.strip{display:flex;gap:3px;margin:8px 0;align-items:center}
+.strip .seg{flex:1;border:1px solid var(--line);background:#fff;border-radius:4px;padding:4px 6px;font-size:11.5px;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.strip .seg.on{border-color:var(--indigo);background:var(--indigo-tint);font-weight:600}
+.note{font-size:12.5px;color:var(--mute)}
+.opts td:first-child{font-weight:600;white-space:nowrap}
+</style>
+
+<h1>The C1–C5 decisions, explained in full</h1>
+<p class="sub">2026-09-06 · the five Part-C items of the one plan (<span class="k">plan-storage-then-expected-2026-09-05.html</span> §3) — what each one actually is, why it is yours (rule 5: requirement meaning and canonical sides wait on the human), what I recommend and what could go wrong if you follow me. Nothing in phases 0–5 blocks on C1/C3/C4; <b>C2 is the only one with a deadline</b> (it must be ruled before T7, the reporter rewrite). C5 is mostly ruled already — one residue stays open.</p>
+
+<table>
+<tr><th style="width:44px">id</th><th>the decision in one line</th><th style="width:160px">rule it by</th><th style="width:250px">my recommendation</th></tr>
+<tr><td><b>C1</b></td><td>let a test name WHICH beat an assertion proves (<span class="k">checkReq(id, { beat }, fn)</span>)</td><td><span class="chip later">any time</span> (fits phase 5)</td><td>yes — clears six declared gaps</td></tr>
+<tr><td><b>C2</b></td><td>key harvested evidence by TEST instead of by REQUIREMENT</td><td><span class="chip now">before T7 starts</span></td><td>yes — kills the I5 collision for good</td></tr>
+<tr><td><b>C3</b></td><td>the moment strip keeps a name per segment, or reverts to one caption per beat</td><td><span class="chip cheap">confirm only</span></td><td>keep the names (zero work)</td></tr>
+<tr><td><b>C4</b></td><td>bless R7's restored original wording, or re-add the implementer's narrowing clause</td><td><span class="chip cheap">confirm only</span></td><td>bless the restoration (already in the tree)</td></tr>
+<tr><td><b>C5</b></td><td>ruled 2026-09-05 — the one residue: rewrite this repo's 850&nbsp;MB git history, or not</td><td><span class="chip later">after 0.45.0, or never</span></td><td>defer; T11 already stops the growth</td></tr>
+</table>
+
+<h2>C1 · checkReq cannot say which beat it proves <span class="chip later">any time</span></h2>
+<p><b>The situation.</b> A requirement's PRD has a behavior block of numbered beats (Given, then When→Then 1, When→Then 2, …). A test tags the requirement with <span class="k">checkReq('R5', fn)</span> — but the tag names only the <i>requirement</i>; which <i>beat</i> a given assertion is proving is inferred from the run's structure. In six places across the suite that inference cannot be made honestly, so those beats carry a <b>declared intent gap</b> — the visible debt <span class="k">npm run proof lint</span> prints on every run, by design never a pass and never silently attributed to the wrong beat (rule 3).</p>
+<p><b>The proposal.</b> An optional second argument: <span class="k">checkReq('R5', { beat: 2 }, fn)</span>. Existing tests change nothing (the argument is optional); the six ambiguous sites name their beat explicitly and the gaps close. The lint gains one guard: a named beat that does not exist in the PRD's behavior block is refused, so a stale number is an error, never a wrong picture.</p>
+<div class="rec"><b>Recommend: yes.</b> Small, additive, honest — it converts six permanent "we cannot say" rows into six attributed proofs. Folded into phase 5 (it touches <span class="k">spec/_base.ts</span> and the lint, nothing in storage).</div>
+<div class="against"><b>What could go wrong if you say yes:</b> beat numbers become one more thing an author must keep aligned with the PRD. If you renumber a behavior block and forget the test, the lint catches a beat that no longer exists — but a beat that still exists with a <i>different meaning</i> (you swapped beats 2 and 3) would be misattributed until the Changed-drift or a human eye catches it. The mitigation is the existing reqhash drift: editing the PRD flips the requirement to Changed/unproven anyway, forcing a re-look.</div>
+
+<h2>C2 · Evidence keyed by requirement vs by test <span class="chip now">must be ruled before T7</span></h2>
+<p><b>The situation.</b> Harvested evidence (the frames, skeletons, replicas of each beat) is filed under the <i>requirement</i> — one deterministic slot per <span class="k">reqId.beat</span>. Coverage is many-to-many by design: a flow on the <span class="k">init</span> screen can legitimately prove <span class="k">board:R1</span>. On 2026-09-04 that combination bit us (the I5 incident): the init flow, run <b>alone</b>, rewrote <span class="k">board/evidence/R1.b1.*</span> with pictures photographed on the <i>init</i> page, pruned what the board's own run had put there, and the next board run went red on four tests. The standing patch is a precedence rule: the home screen's own test owns its beats, a flow may only fill beats left empty, and the reporter marks a flow's version <span class="k">foreign</span> without copying its bytes.</p>
+<div class="two">
+<div class="panel bad"><header>today — keyed by requirement</header><div class="bd">
+<p class="wr"><b>board/test.spec.ts</b> run → writes <span class="arrow">↘</span></p>
+<p><span class="slot clash">board · R1.b1 — ONE slot</span></p>
+<p class="wr"><b>init flow</b> (tags board:R1), run alone → writes <span class="arrow">↗</span> the SAME slot</p>
+<p class="wr">Two writers, one address. The precedence rule referees forever; the flow's fresher photograph of that beat is deliberately thrown away because the stale home picture holds the slot.</p>
+</div></div>
+<div class="panel good"><header>proposed — keyed by test</header><div class="bd">
+<p class="wr"><b>board/test.spec.ts</b> → <span class="slot">board/test · R1.b1</span></p>
+<p class="wr"><b>init flow</b> → <span class="slot">init/flow · R1.b1</span></p>
+<p class="wr">Two writers, two addresses — a collision is structurally impossible; the precedence rule, the <span class="k">foreign</span> marker and the discard all get deleted. R1's reader lists evidence from <i>every</i> test that covers it, each under its own name.</p>
+</div></div>
+</div>
+<p><b>Why now:</b> T7 rewrites the reporter's landing path and T3 builds the one-time importer. Re-keying during that rewrite is one shape decision; re-keying <i>after</i> it is a second migration of the same data. That is the whole reason this needs your ruling before implementation starts.</p>
+<div class="rec"><b>Recommend: key by test.</b> It removes a whole class of bug plus the workaround that referees it, and provenance gets cleaner — a picture always says which test took it.</div>
+<div class="against"><b>What could go wrong if you say yes:</b> (1) the reader needs one new display rule — when two tests prove the same requirement, whose pictures headline the beat row? (proposed: the home screen's own test headlines; other tests listed beneath, one tap away — your eye on the first mock decides). (2) Storage grows slightly: two covering tests each keep their beats instead of sharing one slot — bounded by the same gc, and honest, since they photographed different pages. (3) The index shape changes, so T3's importer carries the mapping — done once, inside the task that exists anyway.</div>
+
+<h2>C3 · The strip's per-segment names vs one caption <span class="chip cheap">confirm only</span></h2>
+<p><b>The situation.</b> Since your "one stepper, named moments" decisions (2026-09-02), each beat row has ONE moment strip over both pictures, and every segment is <b>named by the assertion that recorded it</b> (the claim's label rides the harvest into <span class="k">values[].label</span>). The older Expected base+patch plan's mock drew a single caption per moment instead. The two documents disagree, so before A4′ rebuilds the reader on the graft, you pick which is canon.</p>
+<div class="two">
+<div class="panel good"><header>keep — a name per segment (today)</header><div class="bd">
+<div class="strip"><span class="seg">type the name</span><span class="seg on">price shows 40</span><span class="seg">total shows 240</span><span class="seg">Then</span></div>
+<p class="wr">You can see where you are and jump to a moment by what it proved. One ellipsised line, full text + expected/actual in the hover tooltip — the height rule already holds.</p>
+</div></div>
+<div class="panel bad"><header>revert — one caption per beat</header><div class="bd">
+<div class="strip"><span class="seg">·</span><span class="seg on">·</span><span class="seg">·</span><span class="seg">·</span></div>
+<p class="wr">beat 2 — "price and total update" (one line under the strip)</p>
+<p class="wr">Cleaner-looking strip; every moment anonymous until hovered. This is what the old mock drew.</p>
+</div></div>
+</div>
+<div class="rec"><b>Recommend: keep the names</b> — it is the decision you already made on 2026-09-02, it shipped, and A4′ simply preserves it. Zero work. The only argument against is visual density, which the one-line-ellipsis rule already contains.</div>
+
+<h2>C4 · Board R7's wording — bless the restoration <span class="chip cheap">confirm only</span></h2>
+<p><b>The situation.</b> R7 is the requirement that says specboard owns neither the wireframe nor the design. On 2026-09-03, during the Expected View build, an implementer <b>narrowed its Then</b> to make room for the new replica picture — an implementer editing requirement meaning, which is rule 5's line. The plan restored your original wording, and the tree today carries the original verbatim. You are blessing (or reversing) that restoration.</p>
+<div class="quote"><span class="cap">R7's Then — your original, what the tree says today</span>no design chip, no design link and no embedded wireframe exist anywhere in it — requirements and proof only</div>
+<div class="quote"><span class="cap">R7's Then — the implementer's narrowed version (2026-09-03, since removed)</span>no design chip, no design link and no embedded wireframe exist anywhere in it — requirements and proof only<em>; nothing is LOADED from anywhere (a beat row's Expected picture is the harvest's own committed replica, inert in a srcdoc sandbox, never an artifact this tool owns)</em> (narrowed 2026-09-03, rule 6, by the human's Expected View decision — see R18)</div>
+<p>The added clause was not <i>wrong</i> — the Expected picture really is an inert replica, never a loaded artifact — but it restated R18's mechanism inside R7's meaning, and it was an implementer's pen on requirement text. R18 (the Expected picture requirement) already owns that rule in its own words.</p>
+<div class="rec"><b>Recommend: bless the restoration</b> (the tree is already verbatim). R7 stays a clean statement of scope; R18 keeps the replica mechanics.</div>
+<div class="against"><b>What could go wrong:</b> if you actually <i>liked</i> the narrowing — you may feel "nothing is loaded from anywhere" is R7's business, a security-shaped promise about the detail page — then say so and the clause goes back as your words, dated to you. The cost of blessing is only that this promise lives in R18 rather than twice.</div>
+
+<h2>C5 · Storage rulings — settled, except the history rewrite <span class="chip later">after 0.45.0, or never</span></h2>
+<p><b>What was ruled (for the record).</b> The 2026-09-05 storage decision answered three sub-questions from the paths study:</p>
+<table>
+<tr><th style="width:46px">id</th><th>the question was</th><th>ruled</th><th>where it lives now</th></tr>
+<tr><td><b>D1</b></td><td>commit the authored files (prd, tests, manifest) and ignore only the derived, instead of gitignoring the whole <span class="k">specboard/</span> folder — "a product cannot keep its users' requirements on one disk"</td><td><b>yes</b></td><td>T11/T12 — and the day's later rulings built on it (home-dir store, then the two switches)</td></tr>
+<tr><td><b>D2</b></td><td>which cloud path — B (each user's own private store + a static hosted board) vs C (a multi-tenant service)</td><td><b>B, then evolved</b></td><td>superseded by your final shape: team = a remote db url + a cloud bucket; every local board and CI write the shared record; a hosted read-only board optional</td></tr>
+<tr><td><b>D3</b></td><td>run the tools from the version-pinned plugin instead of vendoring ~45&nbsp;MB into every project</td><td><b>untouched</b></td><td>tools stay vendored for now; a clean later step (it changes kg-init/kg-update, not storage)</td></tr>
+</table>
+<p style="margin-top:14px"><b>The one live residue: this repo's own git history.</b> Years of committed harvests grew <span class="k">claude-plugin-spec</span>'s <span class="k">.git</span> to ~850&nbsp;MB. T11 stops the growth (nothing derived is tracked from then on) — but the 850&nbsp;MB of <i>history</i> stays in every full clone until the history itself is rewritten. A rewrite (filter-repo dropping the old evidence paths) shrinks clones to a few MB, at a real price: <b>every commit sha changes</b>. Your other Claude sessions' checkouts, the marketplace install, any fork or open PR — all must re-clone; anything pinned to an old sha breaks.</p>
+<div class="rec"><b>Recommend: defer.</b> Do it — if ever — right after 0.45.0 ships, in a quiet moment you pick, with every session's work committed and pushed first. Until then, a heavy clone is a one-time cost per machine (and <span class="k">git clone --depth 1</span> avoids it entirely); a botched or badly-timed rewrite costs every clone at once.</div>
+<div class="against"><b>What deferring costs:</b> every full clone keeps downloading 850&nbsp;MB of dead pictures, and the marketplace copy stays heavy. If new-machine setup pain matters to you sooner, say so and it becomes a scheduled task with a coordination checklist instead of a someday.</div>
+
+<p class="note" style="margin-top:28px">Also on the books, needing no ruling: <b>C6</b> — dojostack's board is still on 0.43.7 because a fresh harvest needs its backend's sign-in; T14's vendoring + import need no backend, so only the re-harvest waits. When you rule the items above, a word each is enough ("C1 yes, C2 by test, C3 keep, C4 bless, C5 defer") — C2 is the only one implementation waits on.</p>
+</body>
