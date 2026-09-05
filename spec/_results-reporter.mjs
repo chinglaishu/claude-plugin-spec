@@ -187,7 +187,7 @@ function ffmpegOk () {
 // ~0.75 MB for a 40s flow); plain-copied otherwise, bigger but honest. Best-effort throughout: a
 // failed or timed-out encode removes its partial file and simply leaves the entries video-less.
 function commitVideo (srcAbs, screen, cache) {
-  const key = screen + ' ' + srcAbs
+  const key = screen + '\x00' + srcAbs
   if (cache.has(key)) return cache.get(key)
   let rel = null
   try {
