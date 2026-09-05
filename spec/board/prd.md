@@ -339,12 +339,28 @@ chosen from the *shape* of the sentence, true to the idea and to nothing on scre
 requirement: the picture is now a **replica**, the app's own DOM. `spec/_replica.mjs` walks up from
 the element `proveVisible` handed over to the smallest ancestor at least 3× the ring's area,
 serialises that subtree with its computed styles, strips every script, handler and external URL, and
-commits it as `spec/<screen>/evidence/<id>.b<n>.<phase>.actual.html`; the **Expected** file beside it
-is the same markup with the beat's claims applied. The board renders it in an `<iframe sandbox
-srcdoc>` with no `allow-*` token — no script, no network, no origin — on a paper page carrying the
-app's shell plates, wearing the same ring and dim the photograph beside it wears. That is what makes
-a row a **comparison** instead of an illustration: both cells are the same component at the same
-moment, one as the requirement says it should be, one as the app rendered it.
+lands it in the project's data home as the **Expected** for that moment — the same markup with the
+beat's claims applied.
+
+The picture the board shows is **two files, not one**: the beat's **base** — the screen's Given,
+captured body-rooted once and shared by content with every beat that starts from that state — with
+this moment's **patch** grafted in where its own scene root stands in it. The base is the whole page,
+so the component is shown *where it lives*; everything off the path from the page to the patch is
+drawn as **faded context**, because it was captured at the beat's opening and this moment's patch was
+not, and two instants shown at equal weight would be a picture claiming to be one. The board renders
+the result in an `<iframe sandbox srcdoc>` with no `allow-*` token — no script, no network, no
+origin — wearing the same ring and dim the photograph beside it wears. That is what makes a row a
+**comparison** instead of an illustration: both cells are the same component at the same moment, one
+as the requirement says it should be, one as the app rendered it. A moment with no base — a harvest
+from before this, a graft the base cannot take — still shows its own patch alone, which is what this
+row showed before; it is never blank for want of a base.
+
+*(Amended 2026-09-05, phase 8 — the human on the mock: "build a schematic page and use that page in
+all test cases". One whole replica per moment meant the same page serialised three times over for
+three beats of one screen, and each one cropped to its own component so a reader could not see where
+it sat. Rule 6 corrections in the same edit: the committed path `spec/<screen>/evidence/<id>.b<n>.<phase>.actual.html`
+this paragraph named is doubly gone — the Actual half became the photograph on 2026-09-04, and every
+derived file left the repository for the data home on 2026-09-05.)*
 
 On a **failing** beat the Expected shows the **intended** state — the last state the app got right,
 with every failed claim applied: a wrong value corrected on the ringed element, an element the app
@@ -428,7 +444,10 @@ transform — the replica stands at the app's OWN coordinates, so the two cells 
 system outright rather than one being re-expressed into the other's. **One camera aims
 both** — there is no inline zoom toggle any more (the human, 2026-09-02, with the full-frame button
 removed): both cells always frame the component, and the whole screenshot is the lightbox a click on
-the proof opens. And the two cells
+the proof opens. Since phase 8 the two cells are **page-sized on both sides by construction**: the
+Expected stands on the beat's whole-page base with the moment's patch grafted in at the app's own
+coordinates, so one camera frames both because there is only ever one page to frame *(2026-09-05)*.
+And the two cells
 step **together**: the row's one stepper walks the beat's moments, so frame *n* of the photograph and
 the replica the Expected cell is showing are the same moment — same region, same clock. The **words** are
 the same beat too — and the same **sentence**: the callout burned into the RECORDING says one

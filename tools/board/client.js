@@ -1389,6 +1389,11 @@ const B = window.__BOARD__ || {}
       '.sbring{position:absolute;border:' + RINGG.stroke + 'px solid ' + ink + ';border-radius:' + RINGG.radius +
         'px;box-shadow:0 0 0 ' + RINGG.halo + 'px ' + PAPER.halo + ',0 0 0 9999px ' + PAPER.veil + ';pointer-events:none}',
       '.sbdim{position:absolute;inset:0;background:' + PAPER.veil + ';pointer-events:none}',
+      // THE BASE'S CONTEXT, FADED (phase 8, 2026-09-05). The page around the patch was captured at
+      // the beat's OPENING and this moment's patch was not, so showing the two at equal weight would
+      // be a picture claiming to be one instant. Faded, it does the one job it is there for: saying
+      // WHERE the component sits. Marked by tools/board/graft.js, never by this sheet.
+      '[data-ctx][data-ctx][data-ctx]{opacity:.4;filter:saturate(.5)}',
       // (the .sbsk sketch layer that stood a drawing in a borrowed page went with the SKETCH, retired
       // by the human 2026-09-05 — an un-harvested requirement shows its prose and an honest empty
       // state, so no page here is ever a borrowed one.)
@@ -1744,7 +1749,10 @@ const B = window.__BOARD__ || {}
     const pair = function (b, capA, capB) {
       const out = []
       const vals = values(b)
-      if (b.before && !vals.length) out.push(shot(b.before, capA, b.window ? b.window.from : null, b.aimBefore, b.replicaExpectedBefore || '', 'expected', null))
+      // …and the beat's OPENING picture is its BASE since phase 8 (2026-09-05): the body-rooted
+      // capture of the Given, one blob shared by every beat that starts from that page. A legacy
+      // entry still carries `replicaExpectedBefore`, and this reads whichever the fold left.
+      if (b.before && !vals.length) out.push(shot(b.before, capA, b.window ? b.window.from : null, b.aimBefore, b.base || b.replicaExpectedBefore || '', 'expected', null))
       for (const v of vals) out.push(v)
       // the beat's RESULT takes its Expected — the intended state, which on a failed beat is the last
       // one the app got right plus every claim (spec/_replica.mjs intendedLayout's own rule)
@@ -1765,6 +1773,11 @@ const B = window.__BOARD__ || {}
       // never had — draw it beside the ring the beat last stood on.)
       let last = null
       for (const s of out) { if (s.aim) last = s.aim; else if (last) s.aim = last }
+      // THE BEAT'S BASE RIDES ON EVERY SHOT OF IT (phase 8, 2026-09-05): the screen's Given, which is
+      // the page each of this beat's moments is a patch on. Attached here, once, rather than threaded
+      // through `shot`'s eight positional arguments — the base is a property of the BEAT, and every
+      // moment of it wants the same one.
+      for (const s of out) s.base = b.base || ''
       return out
     }
     // the LAST moment of a beat is its result, so it is named by the beat's own Then — "after — <Then>"
@@ -2037,6 +2050,7 @@ const B = window.__BOARD__ || {}
       const blank = function (why) {
         fr.dataset.repsrc = ''
         fr.dataset.repside = ''
+        fr.dataset.repbase = ''
         show(repSrcdoc({ body: '', faces: '', plates: [], region: null, ring: null, ok: true,
           vw: vp.vw, vh: vp.vh, note: why }))
       }
@@ -2061,24 +2075,71 @@ const B = window.__BOARD__ || {}
             return
           }
           const region = repRect(got[0], 'data-replica-region')
-          show(repSrcdoc({
-            body: body,
-            faces: got[1] || '',
-            plates: repPlates(got[2], region, vp.vw, vp.vh),
-            region: region,
-            ring: repRect(got[0], 'data-ring-box'),
-            // the ring reddens where THIS moment failed — a value's own claim, or, on the beat's
-            // result, any claim in its checklist that the app did not answer
-            ok: !failedClaims(sh).length,
-            vw: vp.vw, vh: vp.vh
-          }))
-          // WHICH moment this cell is showing, said out loud on the cell (phase 4a): the reader's
-          // own readout for a person, and the deterministic seam the board's own tests walk — the
-          // path is the harvest's, so "both pictures move together" can be asserted against the
-          // index rather than against a tween.
-          fr.dataset.repside = sh.repSide
-          fr.dataset.repsrc = sh.rep
-          fr.dataset.repmoment = String(j)
+          // WHAT THIS CELL SHOWS WITH NO BASE UNDER IT — a legacy harvest, a body-rooted moment
+          // (which IS the whole page already), or a graft the base could not take. Exactly what this
+          // row showed before phase 8: the moment's own replica on paper, with the shell plates the
+          // beat's before skeleton measured. Never a blank for want of a base (rule 3).
+          const paintLone = function () {
+            show(repSrcdoc({
+              body: body,
+              faces: got[1] || '',
+              plates: repPlates(got[2], region, vp.vw, vp.vh),
+              region: region,
+              ring: repRect(got[0], 'data-ring-box'),
+              // the ring reddens where THIS moment failed — a value's own claim, or, on the beat's
+              // result, any claim in its checklist that the app did not answer
+              ok: !failedClaims(sh).length,
+              vw: vp.vw, vh: vp.vh
+            }))
+            // …and it still NAMES the base when the picture it drew IS the base (a beat's opening
+            // moment): the cell's readout says what it is showing, always.
+            fr.dataset.repbase = (sh.base && sh.base === sh.rep) ? sh.base : ''
+            // WHICH moment this cell is showing, said out loud on the cell (phase 4a): the reader's
+            // own readout for a person, and the deterministic seam the board's own tests walk — the
+            // path is the harvest's, so "both pictures move together" can be asserted against the
+            // index rather than against a tween.
+            fr.dataset.repside = sh.repSide
+            fr.dataset.repsrc = sh.rep
+            fr.dataset.repmoment = String(j)
+          }
+          // THE GRAFT (phase 8, 2026-09-05): the Expected of a moment is the beat's BASE — the whole
+          // page as the beat found it — with this moment's PATCH standing where its own scene root
+          // stands in it, and everything off that path faded as context. The patch records that path
+          // itself (`data-replica-path`, A2) and its classes are namespaced by its moment (A1), so
+          // the two files can share one document without restyling each other. A body-rooted patch
+          // has no smaller scene to graft and is already the whole page — it paints alone.
+          const path = repAttr(got[0], 'data-replica-path')
+          if (!(sh.base && sh.repSide === 'expected' && path && window.SBGraft)) { paintLone(); return }
+          repFetch(sh.base).then(function (baseText) {
+            if (mine !== seq || !fr.isConnected) return
+            const baseHtml = repBody(baseText)
+            if (!baseHtml) { paintLone(); return }
+            const p = new DOMParser().parseFromString(
+              '<div id="b">' + baseHtml + '</div><div id="p">' + body + '</div>', 'text/html')
+            const baseRoot = p.querySelector('#b > .rep')
+            const patchRoot = p.querySelector('#p > .rep')
+            const g = window.SBGraft.graft(baseRoot, patchRoot, path)
+            // A REFUSED GRAFT IS NOT A BLANK ROW (rule 3): the base has moved past the path this
+            // patch recorded, so the honest picture is the patch alone — and the cell says the
+            // reason out loud rather than pretending it drew the page.
+            if (!g.ok) { fr.dataset.repwhy = g.why; paintLone(); return }
+            fr.dataset.repwhy = ''
+            const styles = Array.prototype.map.call(p.querySelectorAll('style'), function (s) { return s.outerHTML }).join('')
+            show(repSrcdoc({
+              body: styles + baseRoot.outerHTML,
+              faces: got[1] || '',
+              // no shell plates: the base IS the shell, measured rather than blocked in
+              plates: [],
+              region: repRect(baseText, 'data-replica-region'),
+              ring: repRect(got[0], 'data-ring-box'),
+              ok: !failedClaims(sh).length,
+              vw: vp.vw, vh: vp.vh
+            }))
+            fr.dataset.repbase = sh.base
+            fr.dataset.repside = sh.repSide
+            fr.dataset.repsrc = sh.rep
+            fr.dataset.repmoment = String(j)
+          })
         })
       }
       for (const sh of shots) if (sh.rep) repFetch(sh.rep)      // prefetch the row, once

@@ -1298,7 +1298,11 @@ const replicaSpecimens = () => {
     const beat = ((ev[rid] || {}).beats || [])[0]
     if (!beat || !beat.before || !beat.after || !beat.layoutAfter) continue
     const exp = beat.replicaExpectedAfter || ''
-    const rep = beat.replicaExpectedBefore || ''
+    // …and the beat's OPENING picture is its BASE since phase 8 (2026-09-05): the body-rooted
+    // capture, header stripped, landed as one content-addressed blob shared by every beat that
+    // starts from the same page. A legacy entry still carries `replicaExpectedBefore`, and this
+    // reads whichever the fold left. (Correctly broken by that change — rule 4.)
+    const rep = beat.base || beat.replicaExpectedBefore || ''
     const layBytes = readSrcSync(beat.layoutAfter)
     if (!exp || !rep || !readSrcSync(exp) || !readSrcSync(rep) || !layBytes) continue
     // …and WHAT IT CLAIMS, and WHERE (2026-09-04): a claim is filed on the moment that made it — the
@@ -1462,6 +1466,17 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
     // …and the claim is MARKED on it, so a reader sees which words the requirement put there
     expect(/data-claim="(?:ok|fixed|restored|new)"/.test(cdoc),
       'the claimed element is marked in the picture, not silently corrected').toBe(true)
+    // PHASE 8 (2026-09-05): the picture is the beat's BASE — the screen's Given, one content-
+    // addressed blob shared by every beat that starts from that state — with THIS moment's patch
+    // grafted in where its own scene root stands. So the cell names the base it drew, the patch's
+    // root is in the document at its recorded path, and the base's own content OUTSIDE the patch is
+    // there too, marked as context. A lone cropped replica has none of the three.
+    const gbase = await crow.locator('.sbframe').evaluate(el => String((el as HTMLElement).dataset.repbase || ''))
+    await hudCheck('the Expected is built on the beat\'s shared base', 'a base blob',
+      /^blob\/[0-9a-f]{64}\.html$/.test(gbase) ? 'a base blob' : (gbase || '(no base)'))
+    expect(gbase, 'the cell names the base blob it drew').toMatch(/^blob\/[0-9a-f]{64}\.html$/)
+    expect(/data-ctx="1"/.test(cdoc), 'the base\'s content outside the patch is marked as context').toBe(true)
+    expect(/data-replica-path="[0-9/]+"/.test(cdoc), 'and the patch root stands at its recorded path').toBe(true)
     // C2 — EVERY FONT URL IN THE SRCDOC IS ABSOLUTE. An `about:srcdoc` document resolves a relative
     // url against the PARENT's base, so a relative face would 404 and the replica would render in a
     // fallback stack: a picture of a different app, silently. (This repo declares no @font-face, so
@@ -1943,6 +1958,20 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     expect(Math.abs(scales[0] - scales[1]), 'one camera: both cells at the SAME magnification').toBeLessThan(0.02)
     await hudCheck('the moment camera is capped at 1.25×', 'within the cap',
       Math.max(scales[0], scales[1]) <= 1.26 ? 'within the cap' : 'zoomed to ' + Math.max(scales[0], scales[1]))
+    // PHASE 8 (2026-09-05): both cells are page-sized BY CONSTRUCTION, not by two crops agreeing —
+    // the Expected stands on the beat's whole-page BASE with this moment's patch grafted in at the
+    // app's own coordinates, so there is only ever one page for the camera to frame on either side.
+    // The regions in the document say it: the base's is first, at the page origin and the page's own
+    // width, with the patch's own smaller one nested inside it.
+    const sdoc = await row.locator('.sbframe iframe.repframe')
+      .evaluate(f => String((f as HTMLIFrameElement).srcdoc || ''))
+    const regs = [...sdoc.matchAll(/data-replica-region="(-?\d+) (-?\d+) (\d+) (\d+)"/g)].map(m => m.slice(1).map(Number))
+    await hudCheck('the Expected stands on the whole page', 'the page\'s own width',
+      (regs.length && regs[0][2] === vw) ? 'the page\'s own width' : (regs.length ? regs[0][2] + 'px wide' : '(no region)'))
+    expect(regs.length, 'the Expected carries the base AND the patch grafted into it').toBeGreaterThan(1)
+    expect(regs[0][0], 'the base starts at the page origin').toBe(0)
+    expect(regs[0][2], 'and is the page\'s own width').toBe(vw)
+    expect(regs[1][2] < regs[0][2], 'the patch is the component inside it, not a second page').toBe(true)
     }
   })
 

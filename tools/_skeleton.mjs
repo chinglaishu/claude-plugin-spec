@@ -81,6 +81,12 @@ export const FILES = [
   // reason, invisible to the every-relative-import-is-vendored guard and listed here directly: a
   // scaffolded project whose build cannot read it emits no board at all.
   'tools/board/words.js',
+  // …and the GRAFT (phase 8, 2026-09-05): the Expected of a moment is the beat's whole-page base
+  // with that moment's patch standing where its scene root stands in it. The fourth verbatim file,
+  // listed here for exactly the reason the other two are — and the derived guard in
+  // tools/update.test.mjs ("every file build-board.mjs inlines verbatim is a vendored skeleton
+  // file") went red the moment the builder gained the read, which is what it promised it would do.
+  'tools/board/graft.js',
   'tools/serve-board.mjs',
   // the resilient directory watch serve-board.mjs builds both of its watchers on — an unhandled
   // FSWatcher 'error' (a watched directory deleted under Node's recursive walker, which is what

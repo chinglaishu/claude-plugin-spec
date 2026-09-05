@@ -471,7 +471,11 @@ const evAttrs = (s, r) => {
       // …and the REPLICAS beside the frames (phase 4a, 2026-09-03): the Expected cell fetches these
       // paths and builds its srcdoc from them, so they ride on exactly the frames' own terms — only
       // a path whose FILE exists, content-hash-busted because a re-harvest overwrites in place.
-      for (const k of ['before', 'after', 'layoutBefore', 'layoutAfter',
+      // …and the beat's BASE with them (phase 8, 2026-09-05): the screen's Given, one blob shared by
+      // every beat that starts from that page, which each moment's patch is grafted onto. On the
+      // same terms as the rest — a src whose bytes are gone bakes nothing, and the reader then paints
+      // the moment's own replica alone.
+      for (const k of ['before', 'after', 'layoutBefore', 'layoutAfter', 'base',
         'replicaExpectedBefore', 'replicaExpectedAfter']) {
         const v = path(b[k]); if (v) o[k] = v
       }
@@ -1867,6 +1871,12 @@ export function build () {
   // reaches the same bytes (tools/words.test.mjs), so the rule the board underlines by is the rule
   // the tests pin.
   const wordsJs = readFileSync(join(ROOT, 'tools', 'board', 'words.js'), 'utf8')
+  // …and the GRAFT (phase 8, 2026-09-05): the Expected of a moment is the beat's whole-page BASE
+  // with this moment's patch standing where its scene root stands in it, everything off that path
+  // faded as context. A fourth verbatim real-JS file, emitted before the client (which reads
+  // globalThis.SBGraft), for the same reason the other two are — node --test reaches the same bytes
+  // (tools/graft.test.mjs), so the rule the board builds a picture by is the rule the tests pin.
+  const graftJs = readFileSync(join(ROOT, 'tools', 'board', 'graft.js'), 'utf8')
 
   // the design system's text is read ONCE and reused: inlined below, and parsed for the --scale
   // the breakpoint emits compute from (see parseScale/scaledBp at the top of this file)
@@ -4311,6 +4321,7 @@ ${detail}
 <script>window.__BOARD__ = ${islandJson(BOARD_DATA)}</script>
 <script>${stepperJs}</script>
 <script>${wordsJs}</script>
+<script>${graftJs}</script>
 <script>${clientJs}</script>
 `
 
