@@ -1350,8 +1350,20 @@ async function harvestFonts (page: Page, info: any, fonts: { family?: string, ur
 // handed to both — and the walk's own answers (the element it actually measured under the ring, the
 // boxes it dropped as occluded) go straight across to the capture inside the page, which is what
 // makes the two halves agree rather than merely be simultaneous.
+// WHICH MOMENT (phase 8 A1, 2026-09-05): the one string that names this moment across the whole
+// harvest — the screen, the requirement, the beat and the phase. It is hashed into the class prefix
+// of the replica this moment captures, so the beat's BASE and this moment's PATCH can stand in one
+// srcdoc without their two sheets restyling each other. The screen is derived exactly as
+// `snapReplica` derives it (a qualified id names its own screen; otherwise the spec file's folder).
+function momentKey (id: string, beat: number, phase: Phase): string {
+  let scr = ''
+  const i = id.indexOf(':')
+  if (i > -1) scr = id.slice(0, i)
+  else { try { scr = basename(dirname(String(test.info().file || ''))) } catch { scr = '' } }
+  return `${scr}:${id}#b${beat}/${phase}`
+}
 const MOMENT_FN = momentFunction(String(snapLayoutWalk), String(captureReplica))
-async function captureMoment (claim: Claim | null): Promise<{ skel: any, rep: any, repSkel: any }> {
+async function captureMoment (claim: Claim | null, key: string = ''): Promise<{ skel: any, rep: any, repSkel: any }> {
   const page = CURRENT_PAGE
   if (!page) return { skel: null, rep: null, repSkel: null }
   const c = CUR_CHECK
@@ -1370,6 +1382,10 @@ async function captureMoment (claim: Claim | null): Promise<{ skel: any, rep: an
       ring: LAST_BOX,
       target: handle,
       props: REPLICA_PROPS,
+      // WHICH MOMENT THIS IS (phase 8 A1): every class this capture mints is prefixed by a hash of
+      // this key, so the base and the patch can be rendered in ONE document without restyling each
+      // other. Deterministic — a re-harvest of the same moment writes the same bytes.
+      key,
       // THIS MOMENT'S ONE CLAIM, the beat's claims-so-far (each carrying the ring box it was made
       // under — informational for `data-claims`, and the anchor a rebuild needs for the ones that
       // failed), and the base spec/_replica.mjs builds the Expected from
@@ -1411,7 +1427,7 @@ async function snapPhase (id: string, beat: number, seq: number, phase: Phase, a
   // item 1): the photograph is the evidence, and the measurement and the markup that ride after it
   // are now taken together, so nothing can settle between them. The writes stay in this order —
   // the skeleton first, then the replica the gate checks against it.
-  const m = await captureMoment(claim)
+  const m = await captureMoment(claim, momentKey(id, beat, phase))
   await snapLayout(id, beat, seq, phase, at, label, claim, m.skel, !shot)
   await snapReplica(id, beat, seq, phase, claim, m.rep, m.repSkel)
 }

@@ -65,7 +65,7 @@ function env (body, opts = {}) {
   }
 }
 const cap = (body, o = {}) => captureReplica({
-  target: o.target || null, ring: o.ring || null, caps: o.caps, props: REPLICA_PROPS, env: env(body, o)
+  target: o.target || null, ring: o.ring || null, caps: o.caps, key: o.key, props: REPLICA_PROPS, env: env(body, o)
 })
 
 // ── 1. the scene root ───────────────────────────────────────────────────────────────────────────
@@ -2059,4 +2059,29 @@ test('a circle\'s stroke-dasharray and stroke-dashoffset travel with it — the 
   assert.ok(r.html.includes('stroke-dasharray="56.5"'), 'the dash pattern is the arc\'s length: ' + r.html)
   assert.ok(r.html.includes('stroke-dashoffset="37.7"'), 'and the offset is how much of it is undone')
   assert.ok(r.html.includes('>1/3<'), 'the fraction in the middle still travels too')
+})
+
+// ── the NAMESPACE (phase 8 A1, 2026-09-05) ──────────────────────────────────────────────────────
+// The Expected of a moment is about to be rendered INSIDE the screen's base replica (base + patch in
+// one srcdoc), and every replica used to name its classes r0…rN — so the two sheets restyled each
+// other and the base's grid collapsed into the patch's 26 px button. A short hash of the moment key
+// prefixes every class, deterministic so a re-harvest of the same moment writes the same bytes.
+test('two captures of two moments never share a class name, and the root says which namespace it is', () => {
+  const leaf = () => el('span', [300, 200, 40, 20], { text: 'Draft', cs: { color: 'rgb(79, 70, 229)', 'font-size': '12px' } })
+  const body = () => el('body', [0, 0, 1440, 900], { children: [el('div', [280, 190, 80, 40], { children: [leaf()], cs: { display: 'flex' } })] })
+  const a = cap(body(), { target: null, ring: { x: 300, y: 200, width: 40, height: 20 }, key: 'todo:R3#b1/v1' })
+  const b = cap(body(), { target: null, ring: { x: 300, y: 200, width: 40, height: 20 }, key: 'todo:R3#b1/after' })
+  const classes = h => new Set((h.match(/class="([^"]+)"/g) || []).flatMap(m => m.slice(7, -1).split(/\s+/)).filter(c => c !== 'rep'))
+  const A = classes(a.html); const B = classes(b.html)
+  assert.ok(A.size > 0 && B.size > 0)
+  for (const c of A) assert.ok(!B.has(c), 'class ' + c + ' is shared by two moments')
+  assert.match(a.html, /data-replica-ns="r[a-z0-9]{6}"/, 'the root names its namespace')
+  assert.ok(!/\.rep \.r\d+\{/.test(a.html), 'no bare rN rule survives: ' + a.html.slice(0, 200))
+})
+
+test('the namespace is a pure function of the key — a re-harvest of the same moment writes the same classes', () => {
+  const body = () => el('body', [0, 0, 1440, 900], { children: [el('span', [10, 10, 40, 20], { text: 'x', cs: { color: 'rgb(1, 2, 3)' } })] })
+  const a = cap(body(), { target: null, ring: { x: 10, y: 10, width: 40, height: 20 }, key: 'k' })
+  const b = cap(body(), { target: null, ring: { x: 10, y: 10, width: 40, height: 20 }, key: 'k' })
+  assert.equal(a.html, b.html)
 })

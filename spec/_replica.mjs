@@ -118,6 +118,20 @@ export function captureReplica (arg) {
   // BASE the caller wants the Expected built from (fix round 1 — see the header). A caller that
   // passes none of the three gets an `expected` that is the Actual bar the side it names, which is
   // exactly right for a beat's BEFORE moment: nothing has been claimed yet.
+  // THE NAMESPACE (phase 8 A1, 2026-09-05). Every replica used to name its classes r0…rN, so two
+  // files rendered in ONE document restyled each other — the base-plus-patch mock collapsed the
+  // base's grid into the patch's 26 px button. A short hash of the moment key prefixes every class,
+  // deterministic so a re-harvest of the same moment writes the same bytes. Six base-36 chars of
+  // FNV-1a: enough that two moments of one screen never collide in practice, and short enough to
+  // stay under the byte cap. A caller with no key gets the old bare `r` prefix, which is what a unit
+  // test of one lone capture wants.
+  const NS = (() => {
+    const key = String((arg && arg.key) || '')
+    if (!key) return 'r'
+    let h = 0x811c9dc5
+    for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0 }
+    return 'r' + (h >>> 0).toString(36).padStart(7, '0').slice(-6)
+  })()
   const CLAIM = (arg && arg.claim && typeof arg.claim === 'object') ? arg.claim : null
   const CLAIMS = (arg && Array.isArray(arg.claims)) ? arg.claims : []
   const BASE = (arg && typeof arg.base === 'string' && arg.base) ? arg.base : ''
@@ -546,7 +560,7 @@ export function captureReplica (arg) {
     const decl = list.join(';')
     let cls = seen.get(decl)
     if (!cls) {
-      cls = 'r' + seen.size
+      cls = NS + seen.size
       seen.set(decl, cls)
       RULES.push({ cls, decl })
       bytes += decl.length + cls.length + 8              // `.rep .rN{…}\n`
@@ -1287,7 +1301,10 @@ export function captureReplica (arg) {
     // out of its own <style> and re-minted here (deduped like any other), so it comes back looking
     // the way it was captured.
     const cssMap = {}
-    const re = /\.rep\s*\.(r\d+)\s*\{([^}]*)\}/g
+    // …and the class token is `<ns>N` since phase 8 A1 namespaced it (`r0` on a pre-phase-8 base, or
+    // on a capture given no key). Reading only `r\d+` here would have silently emptied every class
+    // of a REBUILT Expected the moment the namespace landed — found and fixed in the same turn.
+    const re = /\.rep\s*\.(r[0-9a-z]*\d+)\s*\{([^}]*)\}/g
     let m
     while ((m = re.exec(htmlStr))) if (!cssMap[m[1]]) cssMap[m[1]] = m[2]
     // the base's own REGION (fix round 2, rule 2) — read straight off the raw DOM root's attribute,
@@ -1322,11 +1339,11 @@ export function captureReplica (arg) {
       if (a[0] !== 'class') continue
       const out = []
       for (const tok of String(a[1]).split(/\s+/)) {
-        if (!/^r\d+$/.test(tok)) continue                 // `rep` means nothing on a borrowed node
+        if (!/^r[0-9a-z]*\d+$/.test(tok)) continue        // `rep` means nothing on a borrowed node (A1: `<ns>N`)
         const decl = cssMap[tok]
         if (!decl) continue
         let cls = seen.get(decl)
-        if (!cls) { cls = 'r' + seen.size; seen.set(decl, cls); RULES.push({ cls, decl }) }
+        if (!cls) { cls = NS + seen.size; seen.set(decl, cls); RULES.push({ cls, decl }) }
         out.push(cls)
       }
       a[1] = out.join(' ')
@@ -1369,6 +1386,7 @@ export function captureReplica (arg) {
     : { x: 0, y: 0, w: vw, h: vh }
   const rootAttrs = [['class', ('rep' + (built.cls ? ' ' + built.cls : ''))],
     ['data-replica-kit', 'replica-1'],
+    ['data-replica-ns', NS],
     ['data-replica-region', reg.x + ' ' + reg.y + ' ' + reg.w + ' ' + reg.h]]
   if (rb) rootAttrs.push(['data-ring-box', Math.round(rb.x) + ' ' + Math.round(rb.y) + ' ' + Math.round(rb.w) + ' ' + Math.round(rb.h)])
   if (truncated) rootAttrs.push(['data-replica-truncated', '1'])

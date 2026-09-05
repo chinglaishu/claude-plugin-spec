@@ -508,3 +508,10 @@ test('a live walk that stopped early is not evidence that a replica box was abse
   assert.deepEqual(replicaGaps(stopped, invented, region).filter(g => g.kind === 'extra-box'), [],
     'a walk that ran out of budget says nothing about what it never reached')
 })
+
+// ── phase 8 A1: the namespace travels on the root, so every later reader asks the ROOT, never a
+// regex over class names
+test('replicaAttrs reads the namespace off the root', () => {
+  const html = '<style>.rep .rab12cd0{color:red}</style><div class="rep rab12cd0" data-replica-kit="replica-1" data-replica-ns="rab12cd" data-replica-region="0 0 10 10"></div>'
+  assert.equal(replicaAttrs(html).ns, 'rab12cd')
+})

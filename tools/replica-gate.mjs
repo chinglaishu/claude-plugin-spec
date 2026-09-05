@@ -334,6 +334,9 @@ export function replicaAttrs (html) {
   const reg = attrOf(tag, 'data-replica-region').trim().split(/\s+/).map(Number)
   return {
     kit: attrOf(tag, 'data-replica-kit'),
+    // phase 8 A1: the class namespace of this file, so a reader that puts two replicas in one
+    // document asks the ROOT which prefix is whose, never a regex over the class names
+    ns: attrOf(tag, 'data-replica-ns'),
     region: reg.length === 4 && reg.every(n => Number.isFinite(n)) ? { x: reg[0], y: reg[1], w: reg[2], h: reg[3] } : null,
     layout: attrOf(tag, 'data-replica-layout'),
     gaps: jsonOf(attrOf(tag, 'data-replica-gaps')),
