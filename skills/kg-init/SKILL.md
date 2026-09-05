@@ -12,14 +12,23 @@ Everything below serves that one job.
 
 ## 0. Scaffold specboard into this project — first, always
 
-THE RULE (the human, 2026-09-04): the board lives in **`specboard/` inside the app repo** — one folder
-holding `spec/`, the vendored `tools/`, `board.html`, `playwright.board.ts` and `node_modules`. The app's
-git **ignores the whole folder** (the scaffold appends `/specboard/` to its `.gitignore`). The folder is
-**local-only and single-user** for now — deliberately NOT a git repo of its own (the human's decision,
-2026-09-04): the PRDs, tests and harvest live on this machine, and sharing them across a team is the
-coming step, storing the board's files in the cloud. Nothing specboard-related is ever committed to the
-app's history — no evidence frames, no fonts, no 4 MB board.html. The tools resolve their root to the
-folder they live in, so the board runs from there unchanged.
+THE RULE (the human, 2026-09-04, refined 2026-09-05 — "we only store things in codebase if it's
+necessary, otherwise find a way to store somewhere else"): the board lives in **`specboard/` inside the
+app repo** — one folder holding `spec/`, the vendored `tools/`, `board.html`, `playwright.board.ts` and
+`node_modules`. That folder is **COMMITTED, authored files only**: the PRDs, the tests, the steps, the
+narration packs, the human's conflict rulings and `spec/_specboard.json`. Its own `.gitignore` keeps the
+rest out — the vendored code (a byte copy of this plugin, re-created by scaffold/update), `board.html`,
+`node_modules`, the run scratch, and `spec/_config.json`, which is per machine and whose sign-in script
+may carry a credential.
+
+**Everything a run DERIVES lives outside every repo, in `~/.specboard/<projectId>/`**: the fold, the run
+log and the raw report as rows in `board.db`, and every frame, replica, skeleton, font and video as
+`blobs/<sha256>.<ext>`, garbage-collected by reference at each fold. So the app's history never carries
+an evidence frame, a font or a 4 MB `board.html` — not because a `.gitignore` line hides them, but
+because they are not there. The tools resolve their root to the folder they live in, so the board runs
+from there unchanged. (This supersedes the 2026-09-04 whole-folder ignore, which existed to keep the
+harvest out of the app repo; with the harvest gone to the data home, ignoring the folder only kept the
+project's PRDs and tests on one disk.)
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/tools/scaffold.mjs" .        # → ./specboard/  (re-running finds the existing board; never a second one)
@@ -32,16 +41,21 @@ Two escapes, only when asked for: `--dir <boardDir>` keeps the board somewhere e
 gets a one-line `.specboard` pointer to it); `--flat` is the old vendored-in layout with `spec/` at the
 app's root. Every other skill starts with "cd into the board" and finds it either way.
 
-**Do not `git init` the folder and do not offer it a remote.** Local-only is the decision; the cloud
-step will carry it to the team. Say so once if the human asks how the board is shared, and move on.
+**Do not `git init` the folder and do not offer it a remote** — it is committed to the app repo, which
+is already its history. If the human asks how the board is shared: the authored half travels with the
+app repo like any other source, and the derived half (frames, video, the fold) is local to each machine
+until a team flips the two switches in `spec/_specboard.json` — `db: "remote"` with a `SPECBOARD_DB_URL`
+and `media: "cloud"` with a bucket, at which point every teammate's board and CI read one record.
 
 ## 1. Install dependencies and start the board
 
 The scaffold wrote the board folder's `package.json` (the `board` / `board:build` / `staff` / `proof` /
-`e2e` scripts, the two dev deps), its `.gitignore` (scratch and secrets only) and `spec/.gitignore`
-(transient run state only). The harvested proof frames under
-`spec/<screen>/evidence/` and `board.html` stay in the folder — nothing the scaffold writes ignores them,
-so the day the folder is synced or versioned, the proof travels with it.
+`e2e` scripts, the two dev deps, and the store's own two dependencies — `better-sqlite3`, the default db
+driver, and `pg`, the team's; the board server opens `board.db` through them, so `npm install` is not
+optional), its `.gitignore` (the vendored code, `board.html`, scratch and secrets) and `spec/.gitignore`
+(the run state and everything derived). It also wrote the project's `projectId` into
+`spec/_specboard.json` — that is the name of its data home, `~/.specboard/<projectId>/`, on every machine
+that checks the project out.
 
 ```bash
 cd specboard

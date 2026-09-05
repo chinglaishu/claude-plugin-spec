@@ -5,11 +5,21 @@ description: Use when a project already has specboard scaffolded (a spec/ board 
 
 # Updating a scaffolded project to a new specboard release
 
-> **Where the board lives.** THE RULE: a project's board — `spec/`, the vendored `tools/`, `board.html`,
-> `playwright.board.ts`, `node_modules` — lives in **`specboard/` inside the app repo**, a folder the app's
-> git ignores wholesale (`/specboard/`). It is **local-only and single-user** for now (not a git repo of
-> its own — the human's decision; team sharing is the coming cloud step). So from the app repo, **`cd
-> specboard` before every command below** — nothing specboard-related is ever committed to the app.
+> **Where the board lives.** THE RULE (the human, 2026-09-05: "we only store things in codebase if it's
+> necessary, otherwise find a way to store somewhere else"): a project's board is the folder
+> **`specboard/` inside the app repo, COMMITTED — authored files only**: `spec/<screen>/prd.md`,
+> `test.spec.ts`, `steps.ts`, `narration.json`, `spec/_conflict-decisions.json`, `spec/_specboard.json`.
+> The vendored `tools/`, `board.html` and `node_modules` sit in the same folder, but the folder's own
+> `.gitignore` keeps them out (a byte copy of the plugin is not a second thing to commit), and
+> `spec/_config.json` stays out too — it is per machine and its sign-in script may carry a credential.
+> **Everything a run DERIVES lives in `~/.specboard/<projectId>/`** — the fold, the run log and the raw
+> report as rows in `board.db`, and every frame, replica, skeleton, font and video as
+> `blobs/<sha256>.<ext>`, gc'd by reference at each fold. Out of every git by location, not by a
+> `.gitignore` line. Nothing derived is ever committed anywhere. From the app repo, **`cd specboard`**
+> for every command below. (Supersedes the 2026-09-04 whole-folder ignore: that rule existed to keep
+> the harvest out of the app repo, and the harvest is no longer there. A project scaffolded before this
+> may still have a `/specboard/` line in the app's `.gitignore` — removing it is the owner's call, and
+> an update never edits an app repo's ignore file.)
 > Two exceptions you may meet: a one-line `.specboard` file naming a board kept elsewhere (cd there
 > instead), or an old flat project with `spec/` at the root (stay put). `update.mjs` and `scaffold.mjs`
 > find the board themselves either way.
@@ -85,7 +95,39 @@ version — that is the only reason the file conflicted. Then delete the `.new`.
 Do not skip a conflict silently. If you cannot confidently merge one, say so and leave the `.new` in
 place with a note — a half-merged board is worse than an honestly-flagged one.
 
-## 4. Rebuild, restart, verify — the update is not done until the live server runs new code
+## 4. Coming from 0.44.x or earlier — install the store's deps, import the harvest once, flip the ignore
+
+Specboard **0.45.0** moved everything a run derives out of every repository and into the project's data
+home, `~/.specboard/<projectId>/` (the human, 2026-09-05: "we only store things in codebase if it's
+necessary, otherwise find a way to store somewhere else"). Three one-time steps, in this order, and only
+when the version you came FROM is below 0.45.0.
+
+```bash
+npm install                       # the update added better-sqlite3 (the db driver) and pg; without them
+                                  # the board throws "the sqlite driver needs better-sqlite3" on its first page
+node tools/store-import.mjs       # moves the committed fold + every evidence file into the data home.
+                                  # Idempotent, and it never deletes or edits anything in the repo.
+```
+
+The importer prints how many blobs landed, how many paths it rewrote, and every path it could not find
+(a path that names no file is left exactly as written and reported — an entry that lied before lies the
+same way after, visibly). Read that list before going on: a long `missing` run usually means it was run
+from the wrong directory.
+
+Then the repo stops tracking what is now in the data home. The update refreshed the board folder's own
+`.gitignore` (or left a `.gitignore.new` to merge — keep every line of the new one), so:
+
+```bash
+git rm -r --cached --quiet board.html $(git ls-files | grep -E '/(evidence|viz)/|/screen\.png$|/crawl\.png$|_results(-index)?\.json$|_runs\.json$')
+rm -rf spec/*/evidence spec/*/viz board.html spec/_results.json spec/_results-index.json spec/_runs.json
+```
+
+**And the board folder itself is COMMITTED now** — authored files only. If the app repo's `.gitignore`
+carries a `/specboard/` line from an earlier release, removing it is what puts the project's PRDs and
+tests into its history; it is the owner's decision, so raise it rather than doing it silently, and never
+edit an app repo's ignore file as a side effect of an update.
+
+## 5. Rebuild, restart, verify — the update is not done until the live server runs new code
 
 ```bash
 npm run board:build          # regenerate board.html with the new renderer

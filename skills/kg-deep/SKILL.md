@@ -5,11 +5,21 @@ description: Use to take ONE screen from a bare row (or no row) to deep, human-o
 
 # kg-deep — one screen, made deep
 
-> **Where the board lives.** THE RULE: a project's board — `spec/`, the vendored `tools/`, `board.html`,
-> `playwright.board.ts`, `node_modules` — lives in **`specboard/` inside the app repo**, a folder the app's
-> git ignores wholesale (`/specboard/`). It is **local-only and single-user** for now (not a git repo of
-> its own — the human's decision; team sharing is the coming cloud step). So from the app repo, **`cd
-> specboard` before every command below** — nothing specboard-related is ever committed to the app.
+> **Where the board lives.** THE RULE (the human, 2026-09-05: "we only store things in codebase if it's
+> necessary, otherwise find a way to store somewhere else"): a project's board is the folder
+> **`specboard/` inside the app repo, COMMITTED — authored files only**: `spec/<screen>/prd.md`,
+> `test.spec.ts`, `steps.ts`, `narration.json`, `spec/_conflict-decisions.json`, `spec/_specboard.json`.
+> The vendored `tools/`, `board.html` and `node_modules` sit in the same folder, but the folder's own
+> `.gitignore` keeps them out (a byte copy of the plugin is not a second thing to commit), and
+> `spec/_config.json` stays out too — it is per machine and its sign-in script may carry a credential.
+> **Everything a run DERIVES lives in `~/.specboard/<projectId>/`** — the fold, the run log and the raw
+> report as rows in `board.db`, and every frame, replica, skeleton, font and video as
+> `blobs/<sha256>.<ext>`, gc'd by reference at each fold. Out of every git by location, not by a
+> `.gitignore` line. Nothing derived is ever committed anywhere. From the app repo, **`cd specboard`**
+> for every command below. (Supersedes the 2026-09-04 whole-folder ignore: that rule existed to keep
+> the harvest out of the app repo, and the harvest is no longer there. A project scaffolded before this
+> may still have a `/specboard/` line in the app's `.gitignore` — removing it is the owner's call, and
+> an update never edits an app repo's ignore file.)
 > Two exceptions you may meet: a one-line `.specboard` file naming a board kept elsewhere (cd there
 > instead), or an old flat project with `spec/` at the root (stay put). `update.mjs` and `scaffold.mjs`
 > find the board themselves either way.
