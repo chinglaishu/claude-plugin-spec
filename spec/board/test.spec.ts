@@ -1976,6 +1976,31 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     expect(regs[0][0], 'the base starts at the page origin').toBe(0)
     expect(regs[0][2], 'and is the page\'s own width').toBe(vw)
     expect(regs[1][2] < regs[0][2], 'the patch is the component inside it, not a second page').toBe(true)
+    // …AND THE PATCH LANDS WHERE ITS OWN REGION SAYS IT STANDS. The ring is drawn in the page's own
+    // coordinates, so a base that shifts its content by even a few pixels puts the ring beside the
+    // thing it rings — a picture that misreads itself, which is worse than no picture. Measured by
+    // rendering the very srcdoc the cell shows into an unsandboxed frame of the same size and asking
+    // where the patch root actually ended up. (Found on demo/todo R3 at 89 px out: a body-rooted
+    // base's region carries the page's SCROLL, and positioning the wrapper by it applied that
+    // offset a second time — the base's own flow already has it baked in.)
+    const placed = await page.evaluate(async (doc: string) => {
+      const f = document.createElement('iframe')
+      f.style.cssText = 'position:fixed;left:-9999px;top:0;width:1440px;height:900px;border:0'
+      f.srcdoc = doc
+      document.body.appendChild(f)
+      await new Promise(r => { f.onload = r; setTimeout(r, 1500) })
+      const d = f.contentDocument!
+      const patch = d.querySelector('[data-replica-path]:not([data-replica-path=""])') as HTMLElement | null
+      const box = patch ? patch.getBoundingClientRect() : null
+      const said = patch ? String(patch.getAttribute('data-replica-region') || '').split(/\s+/).map(Number) : null
+      f.remove()
+      return (box && said && said.length === 4) ? { y: Math.round(box.y), saysY: said[1] } : null
+    }, sdoc)
+    expect(placed, 'the grafted patch is measurable in the document the cell shows').toBeTruthy()
+    await hudCheck('the patch stands where its own capture says it does', String(placed!.saysY), String(placed!.y))
+    expect(Math.abs(placed!.y - placed!.saysY),
+      'the grafted patch stands at its own page coordinates, so the ring lands on it: ' + JSON.stringify(placed))
+      .toBeLessThanOrEqual(2)
     }
   })
 

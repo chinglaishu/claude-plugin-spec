@@ -2137,7 +2137,15 @@ const B = window.__BOARD__ || {}
               faces: got[1] || '',
               // no shell plates: the base IS the shell, measured rather than blocked in
               plates: [],
-              region: repRect(baseText, 'data-replica-region'),
+              // THE BASE STANDS AT THE PAGE ORIGIN, NOT AT ITS OWN REGION'S y (2026-09-05, measured
+              // on demo/todo R3: the patch rendered 89 px above where its own capture said it
+              // stood, and the ring — drawn in the page's own coordinates — landed beside the thing
+              // it rings). A body-rooted base's region carries the page's SCROLL, and the capture
+              // already bakes a scrolled box's scroll into the flow, so its local frame IS the page
+              // frame; positioning the wrapper by that region applies the offset a second time. A
+              // lone patch is different and unchanged: its local origin is its scene root, which is
+              // exactly what its region names.
+              region: (function () { const r = repRect(baseText, 'data-replica-region'); return r ? { x: 0, y: 0, w: r.w, h: r.h } : null })(),
               ring: repRect(got[0], 'data-ring-box'),
               ok: !failedClaims(sh).length,
               vw: vp.vw, vh: vp.vh
