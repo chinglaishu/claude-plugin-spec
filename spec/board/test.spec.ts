@@ -2683,9 +2683,19 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
       .toHaveCount(1)
     await hudCheck('the film ends on its last fact', '1 fact(s)',
       (await row.locator('.sbproof .pchip .pcvr').count()) + ' fact(s)')
-    await proveVisible(row.locator('.sbproof .pchip .pcvr'), plain(claims[claims.length - 1].got),
+    // …AND AN ABSENCE IS SPOKEN, NOT SPELLED (rule 4, 2026-09-07). This built its oracle from the
+    // claim's RAW `got`, which for an absence is the harvest's `(missing)` sentinel — a string the
+    // board is documented never to print: `actualWords` (client.js) says the author's own `phrase`
+    // for an absence, or the one generic sentence. The oracle was wrong the whole time; a re-harvest
+    // simply moved this beat onto a last fact that IS an absence and showed it ("expected
+    // (missing), got ✓nothing was there"). It states the board's rule rather than the sentinel.
+    const lastClaim = claims[claims.length - 1]
+    const lastWords = String(lastClaim.got) === '(missing)'
+      ? (String(lastClaim.phrase || '').trim() || 'nothing was there')
+      : plain(lastClaim.got)
+    await proveVisible(row.locator('.sbproof .pchip .pcvr'), plain(lastWords),
       'The film ends on its last fact — one value, never a recap of all of them',
-      { soft: true, match: (shown: string) => plain(shown).includes(plain(claims[claims.length - 1].got)) })
+      { soft: true, match: (shown: string) => plain(shown).includes(plain(lastWords)) })
     // …AND THE FOURTH FACT, CLAIMED AS AN ABSENCE (fix round 1, 2026-09-04): the context row claims
     // nothing, so it carries no chip at all. `proveVisible(…, MISSING, …)` passes exactly while the
     // chip is gone and fails, with the chip's own words as `got`, the moment one appears.

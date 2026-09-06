@@ -68,8 +68,17 @@ const startRun = (request: any, data: any = {}) =>
 // This number is PATIENCE, never an assertion: nothing about what these tests prove changes with it,
 // and a run that never finishes still fails, just later. The enclosing test budgets below are sized
 // off it, so raising one without the other only moves where the timeout lands.
-const NEST_WAIT_MS = 300_000
-const NEST_TEST_MS = 420_000
+// HOW LONG A NESTED BOARD RUN IS GIVEN. Raised 300 s → 480 s (and the test ceiling with it) on
+// 2026-09-06, when the harvest began recording video on EVERY run (live action — each moment plays
+// its own slice of the recording). MEASURED on this repo's own board screen, idle machine, scoped
+// run: 1.9 m of tests and 162 s of CPU without the recording, 2.1 m and 270 s WITH it — +7 % wall,
+// +66 % CPU. A nested run competes with the outer suite's own browser for that CPU, so the same run
+// took 3.8–5.6 m inside the suite and two of these specs tipped over a bound sized for the old cost.
+// The bound still exists to catch a HUNG run, and 480 s is comfortably past the 4–5 m a healthy one
+// now takes while leaving a hang visible. It is a fixture number, never a requirement: if a nested
+// run ever needs more than this, the run got slower and that is the thing to fix.
+const NEST_WAIT_MS = 480_000
+const NEST_TEST_MS = 600_000
 
 const idle = async (request: any) => {
   // poll the server's own view of what is running rather than reading a chip — the chip lags a

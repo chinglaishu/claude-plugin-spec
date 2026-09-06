@@ -1747,6 +1747,19 @@ const B = window.__BOARD__ || {}
     // it is ready — otherwise the first moment plays from 0 and the row opens on the wrong action
     vid.addEventListener('loadeddata', function () { if (cur) { rewind(); play(); arm() } })
     onSpd(vid, function (sp) { vid.playbackRate = (sp > 0 ? sp : 1) })
+    // …AND ONLY THE ROWS A READER CAN SEE ARE DECODING. A requirement's reader builds EVERY beat row
+    // at once, so a ten-beat requirement would otherwise keep ten 1440×900 decoders running for rows
+    // scrolled well off the screen. Off-screen pauses and holds its place; back on screen it resumes
+    // from the moment's own start. Where there is no IntersectionObserver nothing changes — the film
+    // simply plays as it did.
+    if (window.IntersectionObserver) {
+      new IntersectionObserver(function (es) {
+        for (const e of es) {
+          if (!cur) continue
+          if (e.isIntersecting) { rewind(); play(); arm() } else { disarm(); try { vid.pause() } catch (x) { /* nothing playing */ } }
+        }
+      }, { rootMargin: '200px' }).observe(vid)
+    }
     return { el: vid, show: show }
   }
 
