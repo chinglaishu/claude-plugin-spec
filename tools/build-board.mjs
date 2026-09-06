@@ -466,8 +466,18 @@ const evAttrs = (s, r) => {
       try { return JSON.parse(bytes.toString('utf8')) } catch { return null }
     }
     const aim = p => { const l = readL(p); return l ? focusFromLayout(l) : null }
+    // LIVE ACTION — THE MOMENTS' OWN SLICES OF THE RECORDING (the human, 2026-09-06). They ride the
+    // VIDEO, not the beat, and for the video's own reason: `video.from`/`video.to` are frozen at the
+    // fold that cut the recording, because a later video-less fold moves every window with the fresh
+    // frames and must never re-aim a recording it did not cut. The slices index the same recording,
+    // so they are frozen with it and read back from it here. A requirement whose video did not land
+    // (the file check below) bakes none, and every moment keeps its still.
+    const slices = (e.video && e.video.path && evSrc(e.video.path) && e.video.beats && typeof e.video.beats === 'object')
+      ? e.video.beats
+      : null
     const list = e.beats.map(b => {
       const o = { n: Number(b.n) }
+      const sl = slices ? slices[String(Number(b.n))] : null
       // …and the REPLICAS beside the frames (phase 4a, 2026-09-03): the Expected cell fetches these
       // paths and builds its srcdoc from them, so they ride on exactly the frames' own terms — only
       // a path whose FILE exists, content-hash-busted because a re-harvest overwrites in place.
@@ -520,6 +530,16 @@ const evAttrs = (s, r) => {
       if (b.window && typeof b.window.from === 'number' && typeof b.window.to === 'number') {
         o.window = { from: b.window.from, to: b.window.to }
       }
+      // …and the two ENDS' slices (the values' own ride on each value below): the opening state is a
+      // short hold, the beat's result the span from its last fact to the window's end. Only a beat
+      // the fold could time carries them at all.
+      const span = s => (s && typeof s.from === 'number' && typeof s.to === 'number' && s.to > s.from)
+        ? { from: s.from, to: s.to }
+        : null
+      if (sl) {
+        const sb = span(sl.before); if (sb) o.sliceBefore = sb
+        const sa = span(sl.after); if (sa) o.sliceAfter = sa
+      }
       // THE BEAT'S CAMERA — the proof cell's zoom rect (the human, 2026-08-28). It is the UNION of
       // the rings across the beat's scenes (before, each asserted value, after), DERIVED at build
       // time from the layout skeletons — never read from a stored field. A re-harvest with fresh
@@ -543,6 +563,12 @@ const evAttrs = (s, r) => {
         if (!src) return null
         const o2 = { frame: src }
         if (typeof v.at === 'number' && Number.isFinite(v.at)) o2.at = v.at
+        // …and THIS MOMENT'S SLICE of the recording (the human, 2026-09-06): the span that ends on
+        // this moment's anchor, so the cell can play the gesture that produced the fact rather than
+        // only showing the frame it was read on. Matched by the check number `k`, not by position:
+        // a value whose frame did not land is dropped from this list and its slice must go with it.
+        const vs = sl ? (sl.values || []).find(x => x && Number(x.k) === Number(v.k)) : null
+        const vsp = span(vs); if (vsp) o2.slice = vsp
         // …and the MOMENT'S NAME (the human, 2026-09-02): what this check proved, in the run's own
         // words, so the row's one stepper names its segment instead of numbering it. Bounded again
         // here — what rides is text a run wrote, and it is about to become an HTML attribute.
@@ -2734,6 +2760,16 @@ export function build () {
   .fsteps { display:grid; }
   .fsteps img { grid-area:1 / 1; width:100%; height:auto; cursor:zoom-in; opacity:0; }
   .fsteps img.on { opacity:1; z-index:1; }
+  /* LIVE ACTION (the human, 2026-09-06: "i expect each small step could be gif / live-action").
+     The moment's own slice of the run's recording, stacked in the SAME grid cell as the still it is
+     the moving version of and framed by the SAME camera (it wears .camsub, so aimCamera/aimFrame
+     transform it with everything else). It sits over the frame, so the still underneath is the
+     fallback the moment a slice is not honest. pointer-events:none on purpose: a click on a proof
+     opens the lightbox on the FRAME — the evidence — and the moving picture is a view over it. */
+  .fsteps video.pclive { grid-area:1 / 1; width:100%; height:auto; opacity:0;
+    pointer-events:none; background:transparent; }
+  .fsteps video.pclive.on { opacity:1; z-index:2; }
+  .pcbox.zoomed .fsteps video.pclive { position:absolute; left:0; top:0; }
   .fstepbar { display:flex; align-items:center; gap:var(--s3); padding:var(--s2) var(--s3);
     border-top:1px solid var(--hair); background:var(--paper); }
   .fstepbar .pdots { display:inline-flex; gap:6px; align-items:center; }

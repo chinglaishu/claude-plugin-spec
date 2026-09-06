@@ -410,7 +410,42 @@ change.
   `npm run e2e` harvested RINGLESS frames and ringless layout skeletons and the fold wrote them over
   the board's ringed harvest: the reader lost its zoom, ring and callout, and the drawing beside it
   (drawn from the same skeleton) lost them too — the second root cause of "the focus effect is gone".
-  Only the video and the narration holds (`recordHold`) stay recording-only.
+  Only the narration holds (`recordHold`) stay recording-only. *(This said "the video and the
+  narration holds"; corrected 2026-09-06, rule 6 — see the next bullet: the video is on for every
+  run now.)*
+- **EACH SMALL STEP IS LIVE ACTION** *(the human, 2026-09-06: "i expect each small step could be gif /
+  live-action (like within a small step, really see the text input being change)")*. A strip segment
+  showed a STILL — the frame taken at the instant the check read the value — and the GESTURE that
+  produced it fell between two stills, on screen nowhere but the whole-requirement video band, which
+  plays the entire requirement and answers no question about one moment. Three parts, and none of them
+  removes a still: **(1)** `playwright.board.ts` records `video` on EVERY run, not only a board-started
+  one — the recording stopped being an extra and became the source of each moment's picture (screenshots
+  stay board-only; the webm is content-addressed into the data home and collected by reference like
+  every other blob). **(2)** The fold files each moment's SLICE of that recording beside it —
+  `tools/evidence.mjs` `beatSlices`/`videoSlices`, pure and unit-tested: the span that ENDS on the
+  moment's anchor (`window.from + at`), opening at the previous moment's anchor or at the beat's
+  window start, which is where the When begins, plus a `SLICE_SETTLE_MS` (400 ms) tail so the state it
+  proves is readable before the loop wraps. They are FROZEN beside the recording (`video.beats`) for
+  the same reason `video.from`/`video.to` are: a later video-less fold moves every window with its
+  fresh frames and must never re-aim a recording it did not cut. A beat with no window, an untimed
+  value, or anchors that disagree with the window yields NOTHING and the row keeps its still (rule 3).
+  **(3)** The reader's ACTUAL cell stacks one muted, inert `<video class="camsub pclive">` in the same
+  `.fsteps` grid cell as the frames — so the ONE camera transforms it with everything else — seeks it
+  to the moment's slice, plays to the slice's end and loops there while the moment is parked
+  (`sliceOf`/`liveLayer`, tools/board/client.js; `pointer-events:none`, because a click on a proof
+  opens the lightbox on the FRAME, which is the evidence). The reader-wide speed dropdown drives it
+  through `playbackRate`. The still underneath is the fallback, the subject of `npm run proof mirror`,
+  and what the lightbox opens — **stills are still captured for every moment and nothing may stop
+  capturing them.** Two consequences that cost time to find: `libvpx-vp9` defaults to a keyframe every
+  9999 frames, so `ffmpegVideoArgs` now passes `-g 25 -keyint_min 25` or every per-moment seek lands
+  on frame 0 and each row plays the top of the run; and a requirement the screen's PRIMARY recording
+  never covered now rides ITS OWN capture's recording (`resolvePrimaryVideo`) instead of none — null
+  was honest while only board runs recorded, but a screen proven by a dozen tests has a dozen
+  recordings and eleven rows that could otherwise never play their own gestures. **And the WHEN must
+  be PERFORMED**: `fill()` sets a value in one frame, so on video the text teleports — `spec/_base.ts`
+  exports `typeInto(target, text, { clear })` (click, optionally select-all, then `pressSequentially`
+  at `BOARD_TYPE_DELAY_MS`, default 55 ms a key) and `actPause(ms)` for a deliberate beat after a
+  gesture. Fixture setup keeps `fill()`; the pace belongs in the When's own gestures and nowhere else.
 - **Staleness is CONTENT-aware; mtime alone calls a clean checkout stale.** A pass counts only
   while current, but "the source moved" was measured purely by mtime — and a fresh clone stamps
   every file with checkout time, so the GitHub Actions gate read every requirement untested on a

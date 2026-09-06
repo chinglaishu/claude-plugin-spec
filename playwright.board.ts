@@ -97,7 +97,16 @@ export default defineConfig({
     // which turns a data-dense screen (a chart over a rent-roll grid) into an illegible thumbnail
     // (board R10). Pin the video size to the viewport so the frame shows what is being proven. The
     // narration topbar (spec/_base.ts) is burned into these frames, so they must be readable.
-    video: process.env.BOARD_RECORD ? { mode: 'on', size: { width: 1440, height: 900 } } : 'off',
+    //
+    // ON FOR EVERY HARVEST since 2026-09-06 (the human: "i expect each small step could be gif /
+    // live-action (like within a small step, really see the text input being change)"). The recording
+    // stopped being an extra a board run asked for and became the SOURCE of each moment's picture:
+    // the reader plays the span of it that ends on the moment (tools/evidence.mjs beatSlices), so a
+    // run that recorded nothing harvests rows that can only ever show stills. Screenshots stay
+    // board-only — those are a record of the run, not of a requirement — and the recording is
+    // content-addressed into the data home and collected by reference like every other blob, so what
+    // this costs on disk is bounded by what the store still points at.
+    video: { mode: 'on', size: { width: 1440, height: 900 } },
     // A watchable run pauses between actions so a person can follow along — the board sets
     // BOARD_SLOWMO from the Setup page's "time between steps". Zero (or unset) on a normal run,
     // because slowing a headless suite down helps no one.

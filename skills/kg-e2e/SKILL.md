@@ -203,6 +203,27 @@ way. Read it before writing your first one.
    Expected shows only your component: it shows the page it lives on, so a beat whose ring lands on
    an element the base never had is a picture a reader will notice.
 
+   **EACH STEP IS LIVE ACTION — the Actual plays the recording slice, so the When must be PERFORMED**
+   *(2026-09-06 — the human: "i expect each small step could be gif / live-action (like within a small
+   step, really see the text input being change)")*. Every harvest records now, and the fold files
+   beside each moment the span of that recording which **ends on it** — from the previous moment's
+   anchor (or the beat's window start, where the When begins) to its own, plus a short settle. The
+   ACTUAL cell plays that span, looping while the moment is parked; the still stays underneath as the
+   fallback, as what `npm run proof mirror` composes against, and as what the lightbox opens.
+   **What this asks of you as an author:**
+   - **A When that types must TYPE.** `fill()` sets a value in one frame — on video the text
+     teleports and the moment "You typed the task" is a still wearing a video's clothes. Use
+     `typeInto(target, text)` (spec/_base.ts), and `typeInto(target, text, { clear: true })` where an
+     existing value is being replaced, so the old text is on screen until the first key lands. The
+     pace is one knob, `BOARD_TYPE_DELAY_MS` (default 55 ms a key; 0 turns it off).
+   - **Put an `actPause()` after a click whose effect the next moment is about** — the tick, the
+     press, the double-click — so the recording carries the frames in which the app responds rather
+     than cutting straight to the assertion.
+   - **Fixture setup keeps `fill()`.** Seeding a page, signing in and arranging a fixture are
+     plumbing nobody watches; the pace belongs in the When's own gestures and nowhere else.
+   - **Nothing is invented.** A harvest with no recording, or a beat whose window and offsets the fold
+     could not reconcile, keeps today's still — never a span guessed to fill the cell (rule 3).
+
    **A watchable beat: every named control on screen, every named state visible, no scene wasted**
    *(2026-08-30 — the human, on the Tsumiki demo's R1)*. The row's one camera frames the **union of the
    beat's rings**, and each `proveVisible` is a **distinct scene** in the loop, so what you ring is
@@ -363,7 +384,7 @@ either.
 ## The shape
 
 ```ts
-import { test, expect, checkReq, coverReqs, waitForContent } from '../_base'
+import { test, expect, checkReq, coverReqs, waitForContent, typeInto, actPause } from '../_base'
 
 // A FEW comprehensive flows, each proving several requirements. Name the test by the FLOW it runs
 // (what it does), NOT by a single requirement — under many-to-many the tags carry the requirement
@@ -384,7 +405,7 @@ test('editing a line item recomputes the total and carries it to the schedule', 
 
   await checkReq('R4', async () => {
     const amount = page.getByTestId('lineitem-amount').first()
-    await amount.click(); await amount.pressSequentially('13100')   // TYPE, never fill() (see traps)
+    await typeInto(amount, '13100')                 // TYPE at a watchable pace, never fill() (see traps)
     await expect(page.getByTestId('schedule-total')).toHaveText('£13,100')  // the EFFECT, not the control
   })
 
@@ -457,8 +478,9 @@ export const BEATS = [
 // It never calls checkReq itself — the caller wraps it — and it never re-hardcodes a number a
 // previous beat already gave it.
 export async function addTask (page: Page, state: FlowState): Promise<void> {
-  await page.getByTestId('new-task').pressSequentially('Water the plants')
+  await typeInto(page.getByTestId('new-task'), 'Water the plants')   // TYPED, at a watchable pace
   await page.keyboard.press('Enter')
+  await actPause()                                   // let the new row land in the recording
   await expect(page.getByTestId('task-row')).toHaveCount(state.rows + 1)   // the EFFECT, exact
   state.rows += 1; state.open += 1
 }

@@ -1645,12 +1645,92 @@ const B = window.__BOARD__ || {}
     return Math.round(at.x - a.stood.x) + ' ' + Math.round(at.y - a.stood.y)
   }
 
+  // ── LIVE ACTION: A MOMENT PLAYS ITS OWN SLICE OF THE RECORDING ───────────────────────────────
+  // (the human, 2026-09-06: "i expect each small step could be gif / live-action (like within a
+  // small step, really see the text input being change)".)
+  //
+  // The still a moment shows is the frame the check was photographed on — the gesture that produced
+  // it fell BETWEEN two stills. The fold now files, beside each moment, the span of the run's own
+  // recording that ends on it (tools/evidence.mjs beatSlices, frozen with the recording it indexes),
+  // and where the harvest has both a recording and that span the ACTUAL cell plays it: seeked to the
+  // slice's start, playing to its end, looping while the moment is parked. The recording already
+  // carries the live ring and callout — they are painted in the page on every run — so this is the
+  // same picture the still is, moving.
+  //
+  // THE STILL NEVER LEAVES. It is the fallback (no recording, an old harvest, a browser that will
+  // not play), it is what `npm run proof mirror` composes against, and it is what the lightbox opens.
+  // A moment with no honest slice shows it, and nothing is invented (rule 3).
+  //
+  // sliceOf(shot, video) → { from, to } in SECONDS for a <video>, or null. Lifted verbatim by
+  // tools/slice.test.mjs, so the rule the board runs is the rule the test checks.
+  function sliceOf (shot, video) {
+    if (!video || !shot) return null
+    const s = shot.slice
+    if (!s) return null
+    const from = Number(s.from)
+    const to = Number(s.to)
+    if (!isFinite(from) || !isFinite(to) || from < 0 || !(to > from)) return null
+    return { from: from / 1000, to: to / 1000 }
+  }
+  // The layer itself: one muted, inert <video> stacked in the same grid cell as the stills, framed by
+  // the very same camera transform (it wears .camsub, so aimCamera/aimFrame move it with everything
+  // else). `pointer-events:none` — a click on the proof still opens the lightbox on the FRAME, which
+  // is the evidence; the moving picture is a view over it, never a target.
+  function liveLayer (stage, src, shots) {
+    const vid = document.createElement('video')
+    vid.className = 'camsub pclive'
+    vid.src = src
+    vid.muted = true
+    vid.defaultMuted = true
+    vid.playsInline = true
+    vid.setAttribute('playsinline', '')
+    vid.setAttribute('aria-hidden', 'true')
+    vid.preload = 'auto'
+    stage.appendChild(vid)
+    let cur = null
+    // LOOP INSIDE THE SLICE, never past it: a moment that ran off its own end would show the next
+    // moment's action under this moment's chip — a picture claiming to be one thing while showing
+    // another, which is the whole class of drift the row exists to refuse.
+    const hold = function () {
+      if (!cur) return
+      if (vid.currentTime >= cur.to || vid.currentTime < cur.from - 0.25) {
+        try { vid.currentTime = cur.from } catch (e) { /* not seekable yet */ }
+      }
+    }
+    vid.addEventListener('timeupdate', hold)
+    vid.addEventListener('ended', function () {
+      if (!cur) return
+      try { vid.currentTime = cur.from } catch (e) { /* not seekable yet */ }
+      const p = vid.play(); if (p && p.catch) p.catch(function () { /* autoplay refused — the still stands */ })
+    })
+    const show = function (i) {
+      cur = sliceOf(shots[i], src)
+      vid.classList.toggle('on', !!cur)
+      if (!cur) { try { vid.pause() } catch (e) { /* nothing playing */ } return }
+      try { vid.currentTime = cur.from } catch (e) { /* seek once metadata lands — loadeddata re-aims */ }
+      vid.playbackRate = (PLAY_SPD > 0 ? PLAY_SPD : 1)
+      const p = vid.play(); if (p && p.catch) p.catch(function () { /* autoplay refused — the still stands */ })
+    }
+    // a seek asked for before the metadata arrived is silently dropped by the element, so re-aim once
+    // it is ready — otherwise the first moment plays from 0 and the row opens on the wrong action
+    vid.addEventListener('loadeddata', function () {
+      if (!cur) return
+      try { vid.currentTime = cur.from } catch (e) { /* still not seekable — the still stands */ }
+      const p = vid.play(); if (p && p.catch) p.catch(function () { /* autoplay refused */ })
+    })
+    onSpd(vid, function (sp) { vid.playbackRate = (sp > 0 ? sp : 1) })
+    return { el: vid, show: show }
+  }
+
   // ── THE FRAME-STEPPER, at any scale ──────────────────────────────────────────────────────────
   // Task 13's player, extracted from the old media pane so a per-beat proof CELL can play its own
   // pair: the frames stacked, one on show, over a slim bar of exact dots and the mono n / N count.
   // It carries data-stepper so closeFocus's sweep finds it wherever it is mounted, and it re-arms
   // itself at the reader's one speed.
-  function makeStepper (frames) {
+  // `live` is the moment's own slice of the run's recording where the harvest has one (see sliceOf
+  // above): the stills are still what is stacked and stepped, and the moving picture rides over the
+  // moment on show.
+  function makeStepper (frames, live) {
     const el = document.createElement('div'); el.className = 'fsteps-wrap'; el.dataset.stepper = '1'
     const stage = document.createElement('div'); stage.className = 'fsteps'
     frames.forEach(function (f) {
@@ -1659,12 +1739,18 @@ const B = window.__BOARD__ || {}
       const img = document.createElement('img'); img.className = 'camsub'; img.src = f.src; img.alt = f.alt || ''
       stage.appendChild(img)
     })
+    // …and the LIVE LAYER over them where this beat's harvest carries the recording and the moments'
+    // own slices of it (the human, 2026-09-06). It is stacked in the same grid cell as the frames and
+    // moved by the same camera; a moment with no slice simply leaves it off and the still shows.
+    const player = (live && live.src) ? liveLayer(stage, live.src, frames) : null
     // NO dots and NO n/N counter in the proof cell any more (the human, 2026-09-02): the row's ONE
     // moment strip over the pictures (momentStrip, fed by _onStep below) is the single readout and
     // walk for the beat, so the frames stack alone here with nothing under them.
     const timing = window.SBStepper.stepperHolds(frames.map(function (f) { return f.anchor }))
     const holds = timing.holds
-    const imgs = [].slice.call(stage.children)
+    // the FRAMES, not everything in the stage: the live layer is stacked in the same grid cell, and
+    // counting it as a frame would add a phantom moment to every loop and to the strip that reads it
+    const imgs = [].slice.call(stage.querySelectorAll('img'))
     const reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
     let cur = 0
     let timer = null
@@ -1681,6 +1767,9 @@ const B = window.__BOARD__ || {}
       // on one region at every moment of the beat — not only at its start.
       if (el._onScene) el._onScene(i)
       imgs.forEach(function (im, k) { im.classList.toggle('on', k === i) })
+      // …and the moving picture moves with them: this moment's own slice of the recording, seeked
+      // and looping, over the still it is the live version of
+      if (player) player.show(i)
       // the row's MOMENT STRIP is the readout now — it lights the segment of the moment on show
       // (the human, 2026-09-02), tracking the loop in auto and the walk in step alike.
       if (el._onStep) el._onStep(cur)
@@ -1969,7 +2058,13 @@ const B = window.__BOARD__ || {}
         // Actual half of it is the photograph this same `shot` carries. A moment with none renders
         // the honest per-moment placeholder — never the app's own markup under a chip saying
         // "expected" (final review R2).
-        return shot(v.frame, name, at, v.focus, v.replicaExpected || '', 'expected', claim)
+        const s = shot(v.frame, name, at, v.focus, v.replicaExpected || '', 'expected', claim)
+        // …and THIS MOMENT'S SLICE of the run's recording (the human, 2026-09-06): the span that ends
+        // on this anchor, so the ACTUAL cell plays the gesture that produced the fact instead of only
+        // photographing its result. Frozen at the fold beside the recording it indexes; a moment
+        // whose harvest carries none keeps its still.
+        if (v.slice) s.slice = v.slice
+        return s
       })
     }
     // THE ROW OPENS ON THE WHEN (the human, 2026-08-31: "first screen in when/then should already
@@ -1985,14 +2080,20 @@ const B = window.__BOARD__ || {}
       // …and the beat's OPENING picture is its BASE since phase 8 (2026-09-05): the body-rooted
       // capture of the Given, one blob shared by every beat that starts from that page. A legacy
       // entry still carries `replicaExpectedBefore`, and this reads whichever the fold left.
-      if (b.before && !vals.length) out.push(shot(b.before, capA, b.window ? b.window.from : null, b.aimBefore, b.base || b.replicaExpectedBefore || '', 'expected', null))
+      if (b.before && !vals.length) {
+        const s0 = shot(b.before, capA, b.window ? b.window.from : null, b.aimBefore, b.base || b.replicaExpectedBefore || '', 'expected', null)
+        if (b.sliceBefore) s0.slice = b.sliceBefore
+        out.push(s0)
+      }
       for (const v of vals) out.push(v)
       // the beat's RESULT takes its Expected — the intended state, which on a failed beat is the last
       // one the app got right plus every claim (spec/_replica.mjs intendedLayout's own rule) — and it
       // is FILMED ONLY BY A BEAT THAT PHOTOGRAPHED NOTHING (showsResult, the human 2026-09-06).
       if (showsResult(b, vals)) {
-        out.push(shot(b.after, capB, b.window ? b.window.to : null, b.aimAfter,
-          b.replicaExpectedAfter || '', 'expected', null, null, true))
+        const sr = shot(b.after, capB, b.window ? b.window.to : null, b.aimAfter,
+          b.replicaExpectedAfter || '', 'expected', null, null, true)
+        if (b.sliceAfter) sr.slice = b.sliceAfter
+        out.push(sr)
       }
       // THE RESULT STANDS WHERE THE BEAT LAST STOOD (phase 4b). A beat's RESULT moment records no
       // ring of its own — the run paints one around each value it checks, not around the page it
@@ -2105,6 +2206,15 @@ const B = window.__BOARD__ || {}
     // then never aim at anything.
     const useFrame = !!(vpIn && vp && focus && hasReplicas(r))
     cell._vp = vp
+    // LIVE ACTION (the human, 2026-09-06). Where the harvest kept the run's recording AND this beat's
+    // moments carry their own slices of it, the ACTUAL cell plays each moment's span instead of
+    // showing only the frame it was photographed on. Both halves are required — a recording with no
+    // slices could only be played from the top, which is a picture of the whole requirement under one
+    // moment's chip — and where either is missing the cell is exactly the still it was.
+    const live = (r.ev.video && got.shots.some(function (s) { return !!s.slice }))
+      ? { src: r.ev.video }
+      : null
+    cell._live = !!live
     const cam = document.createElement('div'); cam.className = 'pccam'
     if (got.shots.length > 1) {
       // THE LOOP — one camera box, the frames played in it, armed on build. The cell is still
@@ -2113,8 +2223,8 @@ const B = window.__BOARD__ || {}
       // isConnected guard stops orphans, never this.
       const sbox = document.createElement('div'); sbox.className = 'pcbox pcplay'
       const step = makeStepper(got.shots.map(function (s) {
-        return { src: s.src, alt: s.cap, anchor: s.anchor }
-      }))
+        return { src: s.src, alt: s.cap, anchor: s.anchor, slice: s.slice || null }
+      }), live)
       sbox.appendChild(step)
       cam.appendChild(sbox)
       if (useFrame) {
@@ -2166,7 +2276,18 @@ const B = window.__BOARD__ || {}
       const fig = document.createElement('figure'); fig.className = 'pcfig'
       const box = document.createElement('div'); box.className = 'pcbox'
       const im = document.createElement('img'); im.className = 'camsub'; im.src = s.src; im.alt = s.cap
-      box.appendChild(im); fig.appendChild(box)
+      // ONE moment can still be live (a beat that proved a single fact). Only THEN is the frame put
+      // inside a `.fsteps` grid, so the moving picture stacks in the same cell the still occupies —
+      // a cell with no slice keeps the plain `.pcbox > img` arrangement it has always had, and the
+      // Given/context rows (which never carry a slice) are untouched.
+      if (live) {
+        const stage1 = document.createElement('div'); stage1.className = 'fsteps'
+        im.classList.add('on')
+        stage1.appendChild(im)
+        box.appendChild(stage1)
+        liveLayer(stage1, live.src, got.shots).show(0)
+      } else box.appendChild(im)
+      fig.appendChild(box)
       strip.appendChild(fig)
       cam.appendChild(strip)
       // ONE CAMERA, WHATEVER THE MOMENT COUNT (final review R5, 2026-09-04). `useFrame` was only

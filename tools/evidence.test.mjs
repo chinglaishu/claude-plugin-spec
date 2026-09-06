@@ -62,11 +62,18 @@ test('T16: evidenceVideoPath names the screen\'s committed recording by content 
   const { evidenceVideoPath } = await import('./evidence.mjs')
   assert.equal(evidenceVideoPath('board', 'abc123def456'), 'spec/board/evidence/abc123def456.webm')
 })
-test('T16: ffmpegVideoArgs downscales to the house 1280 and re-encodes small (vp9 crf38, no audio)', async () => {
+// …AND IT IS SEEKABLE (2026-09-06, live action). The reader now plays ONE MOMENT'S SLICE of this
+// recording — seeked to the slice's own start — and libvpx-vp9's default keyframe distance is 9999
+// frames, i.e. a six-minute recording with one keyframe: every seek lands on it and every moment
+// would play from the top of the run. A keyframe every 25 frames (Playwright records at 25 fps, so
+// one a second) is what makes a per-moment seek land where it says it does. It costs bitrate, and
+// bitrate is what this argument list has always been spending to buy legibility.
+test('T16: ffmpegVideoArgs downscales to the house 1280, re-encodes small (vp9 crf38, no audio) and stays seekable', async () => {
   const { ffmpegVideoArgs } = await import('./evidence.mjs')
   assert.deepEqual(ffmpegVideoArgs('spec/_runs/x/video.webm', 'spec/board/evidence/abc.webm'),
     ['-y', '-i', 'spec/_runs/x/video.webm', '-vf', 'scale=1280:-2:flags=lanczos',
       '-c:v', 'libvpx-vp9', '-crf', '38', '-b:v', '0', '-cpu-used', '5', '-row-mt', '1', '-an',
+      '-g', '25', '-keyint_min', '25',
       'spec/board/evidence/abc.webm'])
 })
 

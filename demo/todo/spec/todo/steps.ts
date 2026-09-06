@@ -1,4 +1,4 @@
-import { expect, proveVisible, MISSING, reveal, hudCheck, recordHold, waitForContent } from '../_base'
+import { expect, proveVisible, MISSING, reveal, hudCheck, recordHold, waitForContent, typeInto, actPause } from '../_base'
 import type { Page } from '@playwright/test'
 import { APP_BASE, FROZEN_NOW } from '../_app'
 
@@ -71,7 +71,12 @@ export const BEATS = [
 // re-proving the typed string on the new row's .ttl — the redundant scene removed here.
 export async function addTask (page: Page, state: FlowState): Promise<void> {
   await reveal(page.locator('.addrow'))
-  await page.locator('#nt').pressSequentially('Water the plants')
+  // THE WHEN IS PERFORMED AT A WATCHABLE SPEED (the human, 2026-09-06: "i expect each small step
+  // could be gif / live-action (like within a small step, really see the text input being change)").
+  // The row's first moment plays the span of the recording that ENDS on it, so this typing is the
+  // picture that moment shows — at `pressSequentially`'s default zero delay it was a single frame in
+  // which the whole title appeared at once, which is a still wearing a video's clothes.
+  await typeInto(page.locator('#nt'), 'Water the plants')
   // SCENE 1 — the WHEN's own value: the text now sitting in the Add box.
   // …AND THE LABEL NAMES THE GESTURE (the human, 2026-09-06: "It's not obvious enough when user
   // action is … mention in the explaining text box"). The chip over each picture now opens with this
@@ -85,6 +90,7 @@ export async function addTask (page: Page, state: FlowState): Promise<void> {
   await proveVisible(page.locator('.go'), 'Add',
     'Your typing enabled the Add button — the one you press next', { soft: true })
   await page.locator('.go').click()
+  await actPause()          // let the new row land in the recording before the next moment is read
   const row = rowByTitle(page, 'Water the plants')
   await expect(row.locator('.cb'), 'the new row is a leaf with its own checkbox').toHaveCount(1)
   // the named STATE, made assertable: the new row starts UNCHECKED (its checkbox has no .on). The
@@ -148,6 +154,7 @@ export async function renameInPlace (page: Page, state: FlowState): Promise<void
   const at = (await rowIds(page)).indexOf(id)
   expect(at, 'the row we are about to rename is on screen').toBeGreaterThan(-1)
   await rowByTitle(page, state.task).locator('.ttl').dblclick()
+  await actPause()          // the editor opens on the next frame — the moment below plays it opening
   const edit = page.locator('.edit')
   // SCENE 1 — THE WHEN FROM ITS FIRST GESTURE (the human, 2026-09-06: "It should start from user
   // click on the title to start edit, instead of the edit is finish at the first step"). The beat
@@ -157,7 +164,10 @@ export async function renameInPlace (page: Page, state: FlowState): Promise<void
   // and the only frame in which "in place" means anything yet.
   await proveVisible(edit, state.task,
     'You double-clicked — the editor opened on the old text', { soft: true })
-  await edit.fill('Water the office plants')
+  // …AND THE RETYPE IS TYPED (the human, 2026-09-06). `fill` replaced the title in one frame, so the
+  // moment that names the gesture — "You retyped the title" — had no frame of anyone retyping
+  // anything. `clear: true` selects the old text first, so it is on screen until the first key lands.
+  await typeInto(edit, 'Water the office plants', { clear: true })
   // SCENE 2 — the retyped text, still in the box. It is gone from the box the instant Enter lands,
   // so without this frame the film has no picture of the typing at all. Its label NAMES THE GESTURE
   // too (the human, 2026-09-06): the chip over the picture is where a reader learns a hand did this.
@@ -193,8 +203,10 @@ export async function addSubTaskGrowsRing (page: Page, state: FlowState): Promis
   await proveVisible(rowById(page, k).locator('.trow > .cb'), MISSING,
     'The parent still has no checkbox of its own',
     { soft: true, anchor: rowById(page, k).locator('.trow'), phrase: 'no checkbox — only a ring' })
-  await page.locator('#sub-' + k).fill('Order name badges')
+  // the When types the sub-task's name, so the moment that follows plays the typing (2026-09-06)
+  await typeInto(page.locator('#sub-' + k), 'Order name badges')
   await page.locator('#sub-' + k).press('Enter')
+  await actPause()          // the ring grows on the next frame — let the recording carry it
   state.ring.total += 1
   state.leaves += 1
   state.sub = 'Order name badges'
@@ -207,6 +219,7 @@ export async function tickOneSubTask (page: Page, state: FlowState): Promise<voi
   const left = page.locator('#left')
   await proveVisible(left, String(state.leaves), 'To do — ' + state.leaves + ' leaves of work left', { soft: true })
   await subById(page, 'k1b').locator('.scb').click()
+  await actPause()          // the tick, and the count moving with it, in the recording
   state.leaves -= 1
   state.ring.done += 1
   await proveVisible(left, String(state.leaves), 'One sub-task done — the count drops by exactly one', { soft: true })
@@ -219,6 +232,7 @@ export async function finishContainerRollsUp (page: Page, state: FlowState): Pro
   await subById(page, 'k1c').locator('.scb').click()
   await rowById(page, k).locator('.srow', { has: page.getByText(state.sub, { exact: true }) })
     .locator('.scb').click()
+  await actPause()          // the last tick rolls the parent up — let that land on film
   const open = state.ring.total - state.ring.done - 2   // what was still open before these two ticks, minus them
   state.ring.done = state.ring.total
   state.leaves -= 2

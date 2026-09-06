@@ -232,9 +232,15 @@ export function evidenceVideoPath (screen, hash) {
 // but softens the very text the proof exists to show), cpu-used 5 + row-mt so the encode runs
 // ~0.65× realtime inside the reporter's onEnd, and -an because a Playwright recording has no audio
 // track worth carrying. Without ffmpeg the caller copies the source as-is — bigger, still honest.
+// …AND SEEKABLE, BECAUSE A MOMENT PLAYS ONE SLICE OF IT (2026-09-06, live action). libvpx-vp9
+// defaults to a keyframe distance of 9999 frames — a whole run with a single keyframe — so every
+// per-moment seek would land on frame 0 and each row would play the top of the test under whatever
+// moment happened to be parked. `-g 25 -keyint_min 25` is one keyframe a second at Playwright's 25
+// fps: it costs bitrate, which is the same thing every other argument here spends to buy legibility.
 export function ffmpegVideoArgs (srcRel, outRel) {
   return ['-y', '-i', srcRel, '-vf', 'scale=1280:-2:flags=lanczos',
     '-c:v', 'libvpx-vp9', '-crf', '38', '-b:v', '0', '-cpu-used', '5', '-row-mt', '1', '-an',
+    '-g', '25', '-keyint_min', '25',
     outRel]
 }
 
@@ -342,7 +348,15 @@ export function resolvePrimaryVideo (harvest) {
         // opinion about which file proved what.
         testFile: h.testFile || null,
         testTitle: h.testTitle || null,
-        srcVideo: usePrimary ? primary : null
+        // …AND A REQUIREMENT THE PRIMARY NEVER COVERED RIDES ITS OWN (2026-09-06, live action). This
+        // read `usePrimary ? primary : null`, and null was the honest answer while only a BOARD run
+        // recorded: the alternative was nothing. Every harvest records now, and a screen proven by a
+        // dozen separate tests has a dozen recordings — one primary and eleven requirements that
+        // could not play their own gestures. The fallback is not a second guess: `cap` above is
+        // already that requirement's own capture, so its frames, its window, its skeletons AND this
+        // recording all come from one page of one test, which is exactly what makes a seek index the
+        // picture being shown. A capture from no recording still carries none (rule 3).
+        srcVideo: usePrimary ? primary : (cap.srcVideo || null)
       }
     }
   }
@@ -499,6 +513,74 @@ export function claimSlot (slot, owner) {
 
 export function valueLanded (got) {
   return !!(got && (got.frame || got.layout))
+}
+
+// ── LIVE ACTION: THE SLICE OF THE RECORDING ONE MOMENT IS ─────────────────────────────────────
+// (the human, 2026-09-06: "i expect each small step could be gif / live-action (like within a small
+// step, really see the text input being change)".)
+//
+// A moment's picture used to be a STILL — the frame taken at the instant the check read the value —
+// and the GESTURE that produced it happened between two stills, on screen nowhere but the
+// whole-requirement video band, which plays the entire requirement and answers no question about one
+// moment. The slice is that gesture's own span of the recording: it ENDS on the moment's anchor, so
+// it opens on the state before and closes on the state the moment proves.
+//
+//   before   [window.from, window.from]            the beat's opening state — a hold, nothing moved yet
+//   value k  [anchor(k-1) or window.from, anchor k] the gesture that produced this fact
+//   after    [last anchor or window.from, window.to] what the beat resolved into
+//
+// …each with `settle` added to its END, so the state the moment proves is readable before the loop
+// wraps rather than flashing past on the last frame.
+//
+// Every number is already harvested: `window` is the `proves` step's span in the recording
+// (clipWindows above) and each value's `at` is its offset from that step's start (spec/_base.ts
+// snapValue → valueMeta). This is arithmetic on the harvest — never a second capture, and never an
+// invented pace: a beat with no window, an untimed value, or anchors that disagree with the window
+// yields NOTHING and the reader keeps the still it already has (rule 3).
+export const SLICE_SETTLE_MS = 400
+// how far past the window's own end an anchor may sit and still be read as rounding rather than as
+// disagreement: `d` is rounded to whole ms and the last check can land on the step's closing edge
+const SLICE_SLACK_MS = 250
+export function beatSlices (beat, opts = {}) {
+  const settle = Number.isFinite(Number(opts.settle)) ? Number(opts.settle) : SLICE_SETTLE_MS
+  const w = beat && beat.window
+  const from = w ? Number(w.from) : NaN
+  const to = w ? Number(w.to) : NaN
+  if (!Number.isFinite(from) || !Number.isFinite(to) || !(to > from)) return null
+  const values = Array.isArray(beat.values) ? beat.values : []
+  const anchors = []
+  let prev = from
+  for (const v of values) {
+    const at = v ? Number(v.at) : NaN
+    if (!Number.isFinite(at)) return null              // a chain with a hole cannot be paced honestly
+    const a = from + at
+    if (!(a >= prev) || a > to + SLICE_SLACK_MS) return null
+    anchors.push(a)
+    prev = a
+  }
+  const span = (a, b) => ({ from: a, to: b + settle })
+  const last = anchors.length ? anchors[anchors.length - 1] : from
+  return {
+    before: span(from, from),
+    values: anchors.map((a, i) => ({ k: Number(values[i].k) || (i + 1), ...span(i === 0 ? from : anchors[i - 1], a) })),
+    after: span(last, Math.max(to, last))
+  }
+}
+
+// …and THE WHOLE ENTRY'S INDEX, frozen beside the recording it points into. It is computed where the
+// video is COMMITTED and carried with it, for exactly the reason `video.from`/`video.to` are frozen
+// (foldEvidence's carry): a later video-less fold moves every window with the fresh frames, and a
+// recording it did not cut must never be re-aimed by them. Keyed by beat number; a beat this cannot
+// time contributes nothing rather than a zero span.
+export function videoSlices (beats) {
+  const out = {}
+  for (const b of (Array.isArray(beats) ? beats : [])) {
+    const n = b ? Number(b.n) : NaN
+    if (!Number.isFinite(n)) continue
+    const s = beatSlices(b)
+    if (s) out[String(n)] = s
+  }
+  return out
 }
 
 // THE FOCUS RECT (2026-08-28): where the ring was when the beat's AFTER frame was taken, in page

@@ -743,6 +743,49 @@ export async function reveal (target: Locator, opts: { hold?: number } = {}): Pr
   if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(hold).catch(() => {})
 }
 
+// ── THE WHEN IS PERFORMED AT A WATCHABLE SPEED (the human, 2026-09-06) ────────────────────────────
+// "i expect each small step could be gif / live-action (like within a small step, really see the text
+// input being change)". The reader now plays the span of the recording that ends on each moment
+// (tools/evidence.mjs beatSlices), so the GESTURE a When names is finally on screen — and `fill()`
+// sets a field's value in one frame, so on video the text teleports and there is nothing to watch.
+// A When that types must type.
+//
+// `typeInto` is that gesture: focus the field the way a person does, optionally clear what is in it
+// so the old value visibly goes, then press the keys one at a time. The pace is ONE knob,
+// BOARD_TYPE_DELAY_MS, so a project can slow it for a demo or set it to 0 and pay nothing — the
+// default is deliberately small (55 ms a key: a 20-character title costs ~1.1 s) because it is paid
+// on every run now that every run records.
+//
+// It is for the WHEN's own gestures, never for fixture setup: seeding a page, logging in and
+// arranging a fixture are plumbing nobody watches, and they keep `fill()`.
+export const TYPE_DELAY_MS = (() => {
+  const v = Number(process.env.BOARD_TYPE_DELAY_MS)
+  return Number.isFinite(v) && v >= 0 ? v : 55
+})()
+export async function typeInto (target: Locator, text: string, opts: { clear?: boolean, delay?: number } = {}): Promise<void> {
+  const el = target.first()
+  const delay = Number.isFinite(Number(opts.delay)) ? Number(opts.delay) : TYPE_DELAY_MS
+  await el.click()
+  if (opts.clear) {
+    // select-all then type OVER it: the old value is on screen until the first key lands, which is
+    // what makes "retyped" a thing a watcher can see. `fill('')` would blank it in one frame and the
+    // recording would show a field that was empty for no reason anyone could point at.
+    await el.press('ControlOrMeta+a')
+    await actPause(Math.min(240, delay * 4))
+  }
+  if (delay > 0) await el.pressSequentially(String(text), { delay })
+  else await el.pressSequentially(String(text))
+}
+// A DELIBERATE BEAT BETWEEN GESTURES. A click lands in one frame whatever we do; what a watcher
+// needs is a moment either side of it, so the recording shows the state the click acted on and the
+// state it produced. Bounded and tied to the same knob, so a project that sets the pace to 0 pays
+// nothing here either.
+export async function actPause (ms?: number): Promise<void> {
+  const hold = Number.isFinite(Number(ms)) ? Number(ms) : TYPE_DELAY_MS * 4
+  if (!(hold > 0) || !CURRENT_PAGE) return
+  await CURRENT_PAGE.waitForTimeout(Math.min(1500, hold)).catch(() => {})
+}
+
 // Point the recording at a value WITHOUT scrolling to it — the ring + dim band alone. For cells a
 // flow brings on screen through the APP's own navigation (an AG Grid keyboard walk across
 // virtualised columns, a carousel, a stepper): there `reveal()`'s raw scrollIntoView would desync

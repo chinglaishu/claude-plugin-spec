@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { foldByScreen, recordRunEntry, DATA_HOME, RESULTS_SCRATCH, ROOT } from '../tools/spec-store.mjs'
 import { putBlob, openStore } from '../tools/store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindows, ffmpegDownscaleArgs, deriveFacesCss, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, parseFontFacesAttachment, focusFromLayouts, baseBody, valueMeta, valueLanded, claimSlot, ffmpegVideoArgs, resolvePrimaryVideo, qidOfKey } from '../tools/evidence.mjs'
+import { clipWindows, ffmpegDownscaleArgs, deriveFacesCss, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, parseFontFacesAttachment, focusFromLayouts, baseBody, valueMeta, valueLanded, claimSlot, ffmpegVideoArgs, resolvePrimaryVideo, qidOfKey, videoSlices } from '../tools/evidence.mjs'
 // what a landed replica says about itself (phase 3, 2026-09-03): how many gaps the in-page gate
 // found, and whether it was gated at all. One reader, shared with `npm run proof mirror`.
 import { replicaNote } from '../tools/replica-gate.mjs'
@@ -434,7 +434,19 @@ export async function harvestEvidence (harvest, ranAt) {
     }
     if (r.srcVideo) {
       const rel = await commitVideo(r.srcVideo, scr, cache)
-      if (rel) entry.video = { path: rel, from: entry.window ? entry.window.from : null, to: entry.window ? entry.window.to : null }
+      // …and the MOMENTS' OWN SLICES of it, frozen here beside the offsets (the human, 2026-09-06:
+      // "i expect each small step could be gif / live-action"). They index THIS recording, so they
+      // are frozen with it for the reason `from`/`to` are: a later video-less fold moves every window
+      // with its fresh frames, and a recording it did not cut must never be re-aimed by them. Pure
+      // arithmetic on the beats this same capture produced (tools/evidence.mjs beatSlices).
+      if (rel) {
+        entry.video = {
+          path: rel,
+          from: entry.window ? entry.window.from : null,
+          to: entry.window ? entry.window.to : null,
+          beats: videoSlices(entry.beats)
+        }
+      }
     }
     out[key] = entry
   }
