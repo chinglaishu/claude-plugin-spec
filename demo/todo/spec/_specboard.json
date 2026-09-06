@@ -1,10 +1,10 @@
 {
-  "version": "0.46.3",
+  "version": "0.46.4",
   "files": {
     "tools/spec-store.mjs": "7dffd7b061a3e5eb3e8e99376fc25cf6eba6c891ff7b17c1da7ee9bc562169e5",
     "tools/coverage.mjs": "2f97051ed7035c0d75255a957d9c8ffd56192f920b3e6ad4fc7888dcbb902397",
     "tools/journey.mjs": "8ea1d34d2db8a4152e15a0dc123b61bee5b8c5efaa1fbfcf95945533031fecfa",
-    "tools/build-board.mjs": "3f1c57e1410baae150eb9d856f6b65039bb737513f37e2145cf176a98c46d6b6",
+    "tools/build-board.mjs": "6375d3b121ab374e05fdcd4d0bea65dd7d7002568ae33931d6a2534a10600d03",
     "tools/behavior.mjs": "e8e77bd5993afddd792716ae333068ecf35027ea3fbd930bc20de8257c03a445",
     "tools/flow.mjs": "4051dcf5db27b585edba65b85bf1bc3eca1232f4233c6fc8d177da80f5fe16d4",
     "tools/reqhash.mjs": "212fac74a5e289dbc3ca3b556fe0f6bf0fd5e6bc1513ab28eb8421be04cc0e89",
@@ -15,7 +15,7 @@
     "tools/viz-derive.mjs": "a7d8693aec7188c717ee45bca4bbf0e0b6b18b46f1f45d7cce9084bea056a719",
     "tools/evidence.mjs": "1d4527d2292c727bbfd8a0128805b50ec56ffc2ec75f7f40f20b82e04f546adc",
     "tools/compose.mjs": "0bc7cda2ef3ece3df0c522265eb9d38b95663384d41b00e664d300c49ae6a76f",
-    "tools/board/client.js": "38aee897e7526eeebacf4cd24f98da6430daeb5922f4ffd6a2d5d6e42845ba45",
+    "tools/board/client.js": "135b5fc0d5255ea694bf7e063f70a5bd6804429632ed3835509b90d6d2b9b5fa",
     "tools/board/stepper.js": "2aabd2034f328509f8a0185d8d6e02a622b9bc57cb57947c40728931184750d6",
     "tools/serve-board.mjs": "4284d3b8ccf2e2981ff7dc0bffec04bd741b9290bf8807be22a39b824805900f",
     "tools/watch-dir.mjs": "d990826c25a9a26ecd4d5862a4c5d8cb3055088892b66abd77322f71244d916a",
@@ -37,7 +37,7 @@
     "spec/_seed.ts": "0d769678a64a44f986909d158d17e12f6d216fe6a7eb83666a93c32fd5b7db8e",
     "spec/_escapes.md": "8f6b115b794be1c19a3e830d98b9f3dd81acc4fe1b2341a9a2fbb73c2d60a0ed",
     "spec/_layout-walk.mjs": "577896db75ebbc170b4cc7a3a7cba0460a9d62357c73cfee1787020328529b00",
-    "spec/_replica.mjs": "080dc3b71720e735f218ecdb062b65626623a283ccfa05e4a955b8302b7487e4",
+    "spec/_replica.mjs": "9a8bbd72f181f0b06929bb37339ad7cb9039c14d949e1002421a0893d712fd4b",
     "tools/board/words.js": "81badf895a3d1c632dfa145a457b0e1c654ddd3b82a2d32163324f6e4ac1d0f0",
     "tools/replica-gate.mjs": "69fb211d5b7c249a2796970b863e1e9527e6aef9c1ff7429f8e6fbf5e0e64d93",
     "tools/_skeleton.mjs": "9ebc2b48a4dc112a24736d75caccf62067708e6c7a2a7ffa4c5f2605032aa5f7",
@@ -51,7 +51,7 @@
     "tools/store-blob-s3.mjs": "672647354e6a59fda2aba152936768b44377d84b0cb4b6dcd3d7bb95b7020202",
     "tools/store-import.mjs": "8619e0d6b7bf3a014040acc0dba1732aff81a9280d574cdb67e7f92c71542374",
     "tools/static-allow.mjs": "0e241e37ee2c0b76449c51eac27d59edcdf7292030d2526d1923b4630aa07dfa",
-    "tools/board/graft.js": "22659ea59dcf76fe2a6be833d8d3bfff2f611bf13dc2d1f691774e71b9b1d158",
+    "tools/board/graft.js": "6f321ff69081a5258c074f33301c07744c32de4e83c36be57e0a2bce205ee52b",
     "templates/specboard-ci.yml": "c82af522c0304ba9ce59ba0d74e6afdf2b45ef9f4192d37f687df3f257eb143d"
   },
   "project": {
