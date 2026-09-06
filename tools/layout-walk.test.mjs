@@ -299,6 +299,24 @@ test('a focused wrapper spanning TWO OR MORE separate text-bearing controls does
   assert.ok(L.els.some(e => e.text === '1×'))
 })
 
+// A CONTROL'S VALUE IS NOT A TEXT LEAF, ON EITHER SIDE OF THE GATE (2026-09-06). A live `<input>`
+// keeps its value and its placeholder in properties, not in text nodes, so it counts ZERO leaves —
+// but the REPLICA renders every live control as a `<span>` carrying that same value (marked
+// `data-control`), which counted ONE. Tsumiki's sub-task add row is exactly that shape (input + Add
+// button): live the wrapper had one leaf and took the innerText fallback, in the replica it had two
+// and took none, and the gate reported `moved-text Add` on a picture whose every box was right.
+test('a replica\'s rendered control counts as the control it is, not as a text leaf — the two walks agree', () => {
+  const box = el('span', [10, 10, 120, 20], { text: 'Add a sub-task…', attrs: { 'data-control': 'input', 'data-ph': '1' } })
+  const go = el('button', [140, 10, 40, 20], { text: 'Add' })
+  const row = el('div', [0, 0, 200, 40], { children: [box, go] })
+  const body = el('body', [0, 0, 1440, 900], { children: [row] })
+  const L = walk(body, { x: 0, y: 0, width: 200, height: 40 }, row)
+  const rec = L.els.find(e => e.tag === 'div' && e.focus)
+  assert.ok(rec, JSON.stringify(L.els))
+  assert.equal(rec.text, 'Add a sub-task… Add',
+    'one control plus one button is ONE worded thing beside a value, so the wrapper still aggregates: ' + JSON.stringify(rec))
+})
+
 test('a focused wrapper with exactly ONE text-bearing leaf still gets its fallback text — a single value nested a level deep', () => {
   const icon = el('svg', [4, 4, 12, 12], { children: [] })     // small, decorative, no text of its own
   const valueSpan = el('span', [20, 4, 30, 12], { text: '24' })

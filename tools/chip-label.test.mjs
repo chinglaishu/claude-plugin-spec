@@ -29,9 +29,10 @@ const chip = (() => {
     return SRC.slice(at, nl)
   }).join('\n')
   const body = [consts, lift(SRC, 'quoteVal'), lift(SRC, 'wantsNothing'), lift(SRC, 'expectedWords'),
-    lift(SRC, 'actualWords'), lift(SRC, 'chipLines'), lift(SRC, 'chipLabel'), lift(SRC, 'chipRows')].join('\n')
+    lift(SRC, 'actualWords'), lift(SRC, 'chipLines'), lift(SRC, 'chipLabel'), lift(SRC, 'chipHead'),
+    lift(SRC, 'chipRows')].join('\n')
   // eslint-disable-next-line no-new-func
-  return new Function(body + '; return { chipLines, chipLabel, chipRows }')()
+  return new Function(body + '; return { chipLines, chipLabel, chipHead, chipRows }')()
 })()
 
 const moment = (cap, claim) => ({ cap, claim, aim: { x: 0, y: 0, w: 10, h: 10 } })
@@ -75,4 +76,24 @@ test('a moment with a generic caption reserves only its claim lines', () => {
 test('a moment that claimed nothing reserves nothing — no chip is drawn at all', () => {
   assert.equal(chip.chipRows(moment('You pressed Add', null), 'expected'), 0,
     'a chip with a name and nothing to say is chrome, not a label')
+})
+
+// NEVER THE SAME WORDS TWICE. An ABSENCE speaks its own label on the EXPECTED side — that IS what
+// the requirement asks for (`expectedWords`) — so on that cell the leading line and the value line
+// came back identical: "active — no done task is on screen / EXPECTED active — no done task is on
+// screen". "Every text once" (the human, 2026-09-02) still holds inside one chip.
+const ABSENT = { expected: '(missing)', got: '(missing)', ok: true, missing: true,
+  label: 'active — no done task is on screen', phrase: 'not one done row in the list' }
+
+test('an absence does not say its own label twice — the EXPECTED side drops the leading line', () => {
+  const m = moment('active — no done task is on screen', ABSENT)
+  assert.equal(chip.chipHead(m, 'expected'), '', 'the value line already IS the label')
+  assert.equal(chip.chipRows(m, 'expected'), 1)
+})
+
+test('…and the ACTUAL side keeps both, because there the two lines say different things', () => {
+  const m = moment('active — no done task is on screen', ABSENT)
+  assert.equal(chip.chipHead(m, 'actual'), 'active — no done task is on screen')
+  assert.equal(chip.chipLines(m, 'actual')[0].text, 'not one done row in the list')
+  assert.equal(chip.chipRows(m, 'actual'), 2)
 })

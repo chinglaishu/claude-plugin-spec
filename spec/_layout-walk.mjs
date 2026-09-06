@@ -190,6 +190,16 @@ export function snapLayoutWalk (arg) {
   // `hasPlatedMedia`: depth-capped, and an early exit the moment a second leaf is found.
   const countTextLeaves = (node, depth, capAt) => {
     if (!node || depth > 40) return 0
+    // A CONTROL'S VALUE IS NOT A TEXT LEAF, ON EITHER SIDE OF THE GATE (2026-09-06). A live
+    // `<input>` holds its value and its placeholder in properties, not in text nodes, so it counts
+    // ZERO here — but the replica renders every live control as a `<span>` carrying that same value
+    // (spec/_replica.mjs marks it `data-control`), which counted ONE. Tsumiki's sub-task add row is
+    // exactly that shape: input + Add button. Live, the wrapper had one text leaf and took the
+    // innerText fallback ("Add"); in the replica it had two and took none, so the gate reported
+    // `moved-text Add` on a picture whose every box was right. The rule this serves — a wrapper that
+    // spans a GROUP of controls must not blur them into one blob — is unchanged: it is about how many
+    // separate WORDED things a wrapper holds, and a control's own value was never one of them.
+    if (node.getAttribute && node.getAttribute('data-control')) return 0
     if (nonPseudoChildren(node) === 0) return ownWords(node) ? 1 : 0
     const kids = node.children
     if (!kids) return 0

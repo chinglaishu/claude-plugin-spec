@@ -324,7 +324,9 @@ are read by a person scanning a row, so both are part of the proof, not decorati
   A label that is a sentence from somewhere else makes both the strip and the chip read as a
   different requirement from the words beside them. Keep it to one clause — the chip clamps at two
   lines, with the whole of it one hover away.
-- **The chip carries the promised words verbatim, under the moment's label.** EXPECTED prints the requirement's own value,
+- **The chip carries the promised words verbatim, under the moment's label** — and **never the same
+  words twice**: an absence's EXPECTED line IS its label, so that cell prints it once and drops the
+  leading line, while the ACTUAL cell keeps both. EXPECTED prints the requirement's own value,
   ACTUAL what the app showed, so the `expected` argument is the Then's word or number as written —
   never a paraphrase, never a value you read off the page and echoed back (that is a tautology, and
   the golden number belongs in `state`).

@@ -1643,7 +1643,13 @@ test('mirror-11: the demo\'s real harvest is unmoved — zero gaps, the same rin
   // was a WRAPPER whose leaf drew a second halo inside it, and the two scenes that replaced it ring
   // one leaf each. Halo == veil == ringed scene again, which is exactly what "ring the smallest
   // element that carries the value" means in the drawing. Zero gaps throughout.)
-  for (const [id, vals, rings, veils] of [['R1', ['v1', 'v2', 'v3', 'v4'], 5, 5], ['R3', ['v1', 'v2'], 3, 3]]) {
+  // (rule 4 a FOURTH time, 2026-09-06: the human's anchored-absence rule reached R3 — "the parent
+  //  still has no checkbox of its own" now names its anchor, the container's own `.trow`, instead of
+  //  inheriting the ring of the claim before it. That moment gained a ring, so R3's veil count went
+  //  2 → 3, and its halo count 3 → 6: `.trow` is a WRAPPER, so each of its ringed scenes draws a
+  //  halo for the wrapper AND one for the leaf inside it — the same per-ringed-SHAPE rule the note
+  //  above records. Zero gaps throughout.)
+  for (const [id, vals, rings, veils] of [['R1', ['v1', 'v2', 'v3', 'v4'], 5, 5], ['R3', ['v1', 'v2'], 6, 3]]) {
     const L = n => demoSkel(id, n)
     const beat = { before: L('before'), after: L('after'), values: vals.map(L) }
     const d = renderWireframe([beat], { behavior: GUARDB, id, pass: true })

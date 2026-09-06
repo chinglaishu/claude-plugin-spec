@@ -347,6 +347,22 @@ export function captureReplica (arg) {
       if (area >= rArea * 3 && area <= vArea && containsRegion(r, MIN_REGION)) { root = a; break }
     }
   }
+  // …AND A RING TOO BIG FOR ANY CONTEXT IS ITS OWN SCENE (2026-09-06). The loop above demands an
+  // ancestor at least 3× the ring AND no bigger than the viewport — two demands no ancestor can meet
+  // once the ring itself covers more than a THIRD of the viewport. Every such moment fell all the way
+  // to the BODY: "a whole app shell", which is the very thing the `<= vArea` clause exists to
+  // prevent. A body-rooted scene of a scrolled page then pictures the shell around the thing being
+  // proven and gates on it — the demo's R6 anchors its "no done task is on screen" absences to the
+  // LIST (740×650 of a 1440×900 viewport, the human's anchored-absence rule), and the two gaps that
+  // came back were a sidebar icon straddling the fold and a sub-task row inside another card, neither
+  // of them anything the claim is about. So when the 3× demand is UNSATISFIABLE, the RINGED ELEMENT
+  // is the scene: it is what the beat is about, it fits the viewport, and it is strictly closer to
+  // the truth than the whole page. A small ring is untouched — its ancestors can still qualify — and
+  // the body stays the fallback for a moment that rang nothing at all, which is every base capture.
+  if (!root && focusEl && rb && rb.w * rb.h * 3 > vArea) {
+    const fr = rectOf(focusEl)
+    if (fr && containsRegion(fr, MIN_REGION)) root = focusEl
+  }
   if (!root) root = doc.body || null
   if (!root) return null
   // WHERE THE PATCH GOES BACK (phase 8 A2, 2026-09-05): the element-child path from body down to this
@@ -675,6 +691,17 @@ export function captureReplica (arg) {
   // margins, so the flow after it is unchanged. Nothing about its paint travels, and its subtree is
   // dropped — which is the whole saving.
   const placeholder = (node, cs, shift, r0) => {
+    // A PLATE INSIDE AN SVG BREAKS THE SVG (2026-09-06). A plate is an HTML `<div>`, and the HTML
+    // parser treats a `<div>` met inside foreign content as a BREAKOUT: it closes the `<svg>` and
+    // reopens the div in the HTML namespace, as a SIBLING. On Tsumiki's header logo — a 30×30 flex
+    // box centring one 16×16 icon — the icon's second path was plated, the svg ended early, and the
+    // plate became a second FLEX ITEM: the icon came back 5 px left of where the harvest measured it
+    // and the gate reported a missing box on a picture that was otherwise perfect. (Found on the
+    // demo's R6, whose absences anchor to the list and so picture the whole page, shell included.)
+    // An SVG child takes part in no CSS flow anyway, so there is no space for a plate to hold there:
+    // it is simply left out. The `<svg>` element ITSELF is an HTML flow item and still plates.
+    const pns = node && node.parentElement && node.parentElement.namespaceURI
+    if (pns && pns !== HTML_NS) return null
     const r = r0 || rectOf(node)
     if (!r || (r.width < 1 && r.height < 1)) return null
     if (capped()) { truncated = true; return null }

@@ -151,12 +151,20 @@ function coveredPage () {
   return { body, card, cardLeaf, panel, panelLeaf, dialog, point: () => dialog, hits: [panelLeaf, panel, dialog, card] }
 }
 
-test('what the walk drops as occluded, the capture plates — one rule, decided once (board R20)', () => {
+test('what the walk drops as occluded, the capture never pictures — one rule, decided once (board R20)', () => {
   const p = coveredPage()
   const out = run(p.body, { target: p.dialog, hits: p.hits, point: p.point, ring: { x: 0, y: 0, width: 1440, height: 900 } })
   assert.ok(!out.skel.els.some(e => /Home card/.test(e.text || '')), 'the skeleton never measured what is behind the dialog')
   assert.ok(!/Home card/.test(out.rep.html), 'and the replica does not picture it either: ' + out.rep.html.slice(0, 400))
-  assert.match(out.rep.html, /data-plate="space"/, 'it is plated, so the flow around it cannot move')
+  assert.ok(/Assigning work/.test(out.rep.html), 'what the dialog shows is what the picture is of')
+  // …AND THE SCENE IS THE DIALOG, NOT THE BODY (2026-09-06). A ring covering the whole viewport can
+  // have no ancestor that is both 3× it and no bigger than the viewport, so the capture used to fall
+  // to the body and picture the shell around it; the ringed element is its own scene now. The card
+  // behind the dialog is a SIBLING of it, so it is not inside the picture at all — which is why
+  // there is nothing left here to plate. Plating an occluded element that IS inside the scene root,
+  // so the flow around it cannot move, is pinned on the scrolled-pane fixture in
+  // tools/replica.test.mjs. Correctly broken by that change (rule 4), rewritten rather than dropped.
+  assert.ok(!out.rep.html.includes('data-replica-path=""'), 'the dialog is the scene, not the whole page')
 })
 
 test('the capture pictures the element the WALK measured under the ring, never one behind a dialog (board R22)', () => {

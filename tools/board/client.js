@@ -1140,11 +1140,23 @@ const B = window.__BOARD__ || {}
     if (s.indexOf('after — ') === 0) return ''
     return s
   }
+  // …AND NEVER THE SAME WORDS TWICE. An ABSENCE says its own label on the EXPECTED side (that IS the
+  // requirement's ask — see expectedWords), so on that cell the leading line and the value line came
+  // back identical: "active — no done task is on screen / EXPECTED active — no done task is on
+  // screen". "Every text once" (the human, 2026-09-02) still holds inside a chip: where the moment's
+  // label IS this side's only line, the label is not repeated above it. The ACTUAL side keeps both,
+  // because there the two say different things (the label, then "✓ not one done row in the list").
+  function chipHead (m, side) {
+    const name = chipLabel(m)
+    if (!name) return ''
+    const lines = chipLines(m, side)
+    return (lines.length === 1 && lines[0].text === name) ? '' : name
+  }
   // what the CAMERA must reserve for this chip: the claim lines plus the label's own line. A chip
   // that grew a line without the camera knowing hangs out of the cell it labels.
   function chipRows (m, side) {
     const n = chipLines(m, side).length
-    return n ? n + (chipLabel(m) ? 1 : 0) : 0
+    return n ? n + (chipHead(m, side) ? 1 : 0) : 0
   }
   // ONE CHIP LAYER PER CELL — built once, repainted per moment, positioned off the camera's own view
   // so it always lands over the picture it explains. It is inside the camera box: a chip that
@@ -1219,7 +1231,7 @@ const B = window.__BOARD__ || {}
       // THE MOMENT'S OWN WORDS FIRST (the human, 2026-09-06) — what the user just did, said on the
       // picture rather than only in the strip's caption under the row. Same text on both cells: one
       // wording source, so the two halves can never name the same moment differently.
-      const name = chipLabel(m)
+      const name = chipHead(m, side)
       if (name) {
         const ml = document.createElement('span'); ml.className = 'pcml'
         ml.textContent = name

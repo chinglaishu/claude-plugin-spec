@@ -85,11 +85,40 @@ test('the scene root is the smallest ancestor at least 3x the ring and no bigger
   assert.ok(r.html.includes('Draft'), 'and the words inside it come with it')
 })
 
-test('with no ancestor big enough the scene root is the body', () => {
+test('with nothing ringed at all the scene root is the body — every base capture', () => {
   const btn = el('button', [0, 0, 1440, 900], { text: 'huge' })
   const body = el('body', [0, 0, 1440, 900], { children: [btn] })
-  const r = cap(body, { target: btn, ring: { x: 0, y: 0, width: 1440, height: 900 } })
+  const r = cap(body, {})
   assert.deepEqual(r.region, { x: 0, y: 0, w: 1440, h: 900 })
+  assert.ok(r.html.includes('data-replica-path=""'), 'body-rooted: the empty path means the whole page')
+})
+
+// A RING TOO BIG FOR ANY CONTEXT IS ITS OWN SCENE (2026-09-06). The rule above wants an ancestor at
+// least 3× the ring AND no bigger than the viewport — two demands nothing can meet once the ring
+// itself covers more than a third of the viewport, so every such moment fell to the BODY: "a whole
+// app shell", which is what the `<= viewport` clause exists to prevent. Found on the demo's R6, whose
+// "no done task is on screen" absences anchor to the LIST (740×650 of 1440×900, the human's
+// anchored-absence rule): the body-rooted scene pictured the sidebar and another card's sub-task row,
+// and the gate reported both as gaps — on a page scrolled, so one of them straddled the fold.
+test('a ring too big for any context is its own scene — never the whole app shell', () => {
+  const row = el('div', [270, 200, 740, 60], { text: 'Pay the electricity bill' })
+  const list = el('div', [270, 146, 740, 650], { children: [row], cs: { 'background-color': 'rgb(255,255,255)' } })
+  const side = el('nav', [16, 40, 200, 700], { text: 'Completed' })
+  const main = el('main', [230, -48, 820, 948], { children: [list] })
+  const body = el('body', [0, -48, 1440, 948], { children: [side, main] })
+  const r = cap(body, { target: list, ring: { x: 270, y: 146, width: 740, height: 650 } })
+  assert.deepEqual(r.region, { x: 270, y: 146, w: 740, h: 650 }, 'the list itself is the scene')
+  assert.ok(r.html.includes('Pay the electricity bill'), 'what the claim is about comes with it')
+  assert.ok(!r.html.includes('Completed'), 'and the shell it could never contextualise does not')
+  assert.ok(!r.html.includes('data-replica-path=""'), 'this is not a body-rooted capture any more')
+})
+
+test('…but a SMALL ring still takes its context, and still falls to the body when none fits', () => {
+  const chip = el('span', [500, 92, 60, 20], { text: 'today' })
+  const body = el('body', [0, 0, 1440, 900], { children: [chip] })
+  const r = cap(body, { target: chip, ring: { x: 500, y: 92, width: 60, height: 20 } })
+  assert.deepEqual(r.region, { x: 0, y: 0, w: 1440, h: 900 }, 'a chip pictured alone would be a picture of nothing')
+  assert.ok(r.html.includes('data-replica-path=""'))
 })
 
 test('with no target the ringed element is found under the ring centre, as the skeleton walk does', () => {
@@ -439,6 +468,26 @@ test('…but a small inline icon still stays the component, verbatim — the bou
   const r = cap(body, { target: icon, ring: { x: 0, y: 0, width: 16, height: 16 } })
   assert.ok(!r.html.includes('data-plate="svg"'), 'a 16×16 icon is not a diagram')
   assert.ok(r.html.includes('<svg') && r.html.includes('<path'), 'it stays the component, shapes included: ' + r.html)
+})
+
+// A PLATE INSIDE AN SVG BREAKS THE SVG (2026-09-06). A plate is an HTML `<div>`, and the HTML parser
+// treats a `<div>` met inside foreign content as a BREAKOUT: it closes the `<svg>` and reopens the
+// div in the HTML namespace, as a SIBLING. Tsumiki's header logo is a 30×30 flex box centring one
+// 16×16 icon; one of the icon's paths was plated, the svg ended early, and the plate became a second
+// FLEX ITEM — the icon came back 5 px left of where the harvest measured it, reported as a missing
+// box on a picture that was otherwise perfect. An SVG child takes part in no CSS flow, so there is no
+// space for a plate to hold there: it is left out. The `<svg>` element itself still plates (above).
+test('a shape inside an svg is never plated — an HTML div there would break the svg out of foreign content', () => {
+  const shown = el('path', [4, 4, 8, 8], { ns: 'http://www.w3.org/2000/svg', attrs: { d: 'M2 2l4 4', stroke: 'currentColor' } })
+  const gone = el('path', [6, 9, 5, 3], { ns: 'http://www.w3.org/2000/svg', cs: { visibility: 'hidden' }, attrs: { d: 'M4 12l8 4', stroke: 'currentColor' } })
+  const icon = el('svg', [24, 20, 16, 16], { ns: 'http://www.w3.org/2000/svg', children: [shown, gone], attrs: { viewBox: '0 0 24 24' } })
+  const logo = el('span', [16, 12, 30, 30], { children: [icon], cs: { display: 'flex', 'align-items': 'center', 'justify-content': 'center' } })
+  const brand = el('div', [16, 12, 200, 30], { children: [logo] })
+  const body = el('body', [0, 0, 1440, 900], { children: [brand] })
+  const r = cap(body, { target: logo, ring: { x: 16, y: 12, width: 30, height: 30 } })
+  assert.ok(r.html.includes('<svg'), 'the icon is still the component')
+  assert.ok(!/data-plate/.test(r.html),
+    'and the hidden shape inside it leaves NO plate — a div there would centre as a second flex item: ' + r.html)
 })
 
 // FIX ROUND 3 — this file's SVG_ICON_MAX and spec/_layout-walk.mjs's ICON_MAX must be the SAME
