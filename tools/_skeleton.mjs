@@ -104,6 +104,13 @@ export const FILES = [
   // read by the in-page gate at capture time (spec/_base.ts) AND by `npm run proof mirror`
   // (tools/proof-integrity.mjs), so a scaffolded project cannot have one without the other.
   'tools/replica-gate.mjs',
+  // …AND THE READER'S HALF OF THAT GUARD (2026-09-06). replica-gate grades the committed file against
+  // the app; this composes it the way the BOARD does — the graft, the srcdoc sheet, the align pass,
+  // all lifted out of tools/board/client.js by tools/lift-client.mjs — and fails when the marked
+  // element does not land on its own ring. `npm run proof mirror` imports it, so a scaffolded project
+  // cannot have the gate without it either; lift-client.mjs is how it reads the reader's real bytes
+  // instead of a second copy of them.
+  'tools/reader-compose-check.mjs', 'tools/lift-client.mjs',
   // pure: maps _config.json's signIn + named authProfiles into Playwright projects (imported by
   // playwright.board.ts). Unit-tested in tools/auth-projects.test.mjs.
   'tools/auth-projects.mjs',

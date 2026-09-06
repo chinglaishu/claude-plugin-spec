@@ -23,6 +23,9 @@ import { renderWireframe, mirrorGaps, gapSummary, frameGroup, layoutHash } from 
 // decided in ONE place (tools/replica-gate.mjs), read by the in-page gate at capture time and by
 // this CLI alike. A gate that restates the capture's rules drifts from them.
 import { replicaAttrs, claimGaps, textOf, containsRun, containsRunLoose, GATE_TOL, GATE_MIN, NO_TEXT_TAGS } from './replica-gate.mjs'
+// …and the READER's own composition (2026-09-06): the guards above grade the committed file, this one
+// grades the page the board builds out of it, with the board's own bytes.
+import { checkReaderCompose, PLACE_TOL } from './reader-compose-check.mjs'
 // …and the PRD's own authorities on what a requirement SAYS: parsePrd for its blocks, parseBehavior
 // for its beats. The intent lint below weighs a beat's claims against the Then a HUMAN wrote, so it
 // has to read that Then through the very parsers the board renders it with — never its own reading.
@@ -1118,7 +1121,53 @@ async function runMirror () {
     console.log('the gaps survive it, the CAPTURE has stopped carrying something the app shows — fix that,')
     console.log('never the tolerance and never the guard.')
   }
-  process.exit(bad || repBad ? 1 : 0)
+
+  // ── …AND WHERE THE READER ACTUALLY DRAWS IT (2026-09-06) ────────────────────────────────────────
+  // Everything above asks whether the committed picture is faithful TO THE APP. It never asks the
+  // other half: whether the BOARD, which composes that file into an `<iframe srcdoc>` under a sheet
+  // of its own, renders the marked element where the capture recorded it. The reader's sheet has to
+  // reach into the app's own markup to tint a claim — and written for `position` instead of paint it
+  // moved that markup: demo/todo R3 and R4 shipped with the ring 29 px above the number it marks, in
+  // every moment of both requirements, on files this census reads green (the in-page gate walks the
+  // replica with NO board sheet over it). So the composition itself is now gated, with the reader's
+  // own bytes — see tools/reader-compose-check.mjs.
+  const t0 = Date.now()
+  let comp = []
+  let compErr = ''
+  try { comp = await checkReaderCompose() } catch (e) { compErr = String((e && e.message) || e) }
+  const secs = ((Date.now() - t0) / 1000).toFixed(1)
+  const tally = {}
+  for (const r of comp) tally[r.status] = (tally[r.status] || 0) + 1
+  let compBad = !!compErr
+  if (compErr) {
+    console.log(`\nthe reader-composition pass could not run — ${compErr}`)
+    console.log('it needs the Playwright chromium the suite already installs (`npx playwright install chromium`).')
+    console.log('A gate that cannot run is not a gate that passed (rule 3).')
+  } else if (comp.length) {
+    console.log('')
+    for (const r of comp) {
+      if (r.status === 'ok' || r.status === 'unringed') continue
+      if (r.status === 'off') compBad = true
+      const tag = r.status === 'off' ? 'READER MISPLACES IT' : 'debt · ' + r.status
+      console.log(`${r.screen} · ${r.id} b${r.beat} ${r.phase} · ${tag} · ${r.why}` +
+        (r.repalign ? ` · data-repalign "${r.repalign}"` : ''))
+    }
+    console.log(`the reader draws ${tally.ok || 0} of ${comp.length} harvested moments on its own ring, ` +
+      `within ${PLACE_TOL}px, in ${secs}s` +
+      ` — composed as the board composes them (graft · stand · the srcdoc sheet · the align pass).`)
+    const debts = (tally.refused || 0) + (tally.unplaceable || 0) + (tally.legacy || 0)
+    console.log(`${tally.unringed || 0} moment(s) had nothing asserted on them, so there is no ring to land on; ` +
+      `${debts} are listed above as debt — a refusal the reader made honestly, a ring the capture ` +
+      'marked no element for, or a beat too old to compose. None of those is a pass and none is a red row.')
+  } else {
+    console.log('\nno harvested moments to compose — the reader-composition pass had nothing to check')
+  }
+  if (compBad) {
+    console.log('\nThe BOARD is drawing a marked element somewhere its own harvest does not put it. Fix the')
+    console.log('reader — the srcdoc sheet may out-specify the replica for what it PAINTS and never for')
+    console.log('where the app put something. Never the tolerance and never the guard.')
+  }
+  process.exit(bad || repBad || compBad ? 1 : 0)
 }
 
 function runPerturb (screen) {

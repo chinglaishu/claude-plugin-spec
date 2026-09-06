@@ -77,6 +77,9 @@ jobs:
       # refuses a replica the harvest no longer matches; `proof lint` refuses a beat whose Then facts
       # are neither claimed nor honestly declared. They run AFTER the suite because the only harvest
       # a job can grade is the one it just produced — nothing derived is committed to grade before it.
+      # `proof mirror` also composes every harvested moment the way the BOARD's reader does and fails
+      # when the marked element does not land on its own ring, so it drives a real chromium: the
+      # `playwright install` step above is what it uses, and it must stay ahead of this one.
       - run: npm run proof mirror
         working-directory: specboard
 

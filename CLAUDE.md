@@ -190,6 +190,17 @@ tools/replica-gate.mjs       pure: THE REPLICA'S GUARD (phase 3, 2026-09-03) —
                              rendered replica's own skeleton, 1.5 px), claimGaps (a failed claim's value must be IN the
                              Expected), replicaAttrs/withReplicaAttrs/textOf/replicaNote. Read by BOTH the in-page gate at
                              capture time (spec/_base.ts) and `npm run proof mirror` (tools/proof-integrity.mjs checkReplicas)
+tools/reader-compose-check.mjs  THE READER'S HALF OF THAT GUARD (2026-09-06). replica-gate asks whether the committed file is
+                             faithful TO THE APP; this asks whether the BOARD draws it where the harvest says. It composes every
+                             harvested moment exactly as the reader does — SBGraft.graft + stand, the repSrcdoc sheet, the ring
+                             layer, the align pass — with the reader's OWN bytes LIFTED out of tools/board/client.js
+                             (tools/lift-client.mjs, which reads both `function f (` and `const f = function (`), renders it in
+                             headless chromium and FAILS when the marked element does not land within PLACE_TOL (2 px) of its own
+                             ring, measured INSIDE its own replica root so a graft's legitimate re-flow is not a false red. An
+                             alignment the reader honestly REFUSED (`data-repalign="refused"` — a fixed-position element a rigid
+                             page translation cannot move) is a listed DEBT, never a red row and never a silent pass; so is a ring
+                             the capture marked no element for, and a beat too old to compose. Pure parts unit-tested, the browser
+                             pass pinned red-first in tools/reader-compose.test.mjs. Runs inside `npm run proof mirror`
 tools/flow.mjs               pure: a recorded test's steps → its kind (unit/flow) and chapters for the Flow player
 tools/evidence.mjs           pure: the proves-step window, ffmpeg args (frame · downscale), evidence paths, the fold
 tools/board/stepper.js       pure: the gif-mode frame-stepper's timing math (holds off the window + frame anchors) —
@@ -267,7 +278,8 @@ npm run e2e            # the suite
 npm run board:build    # rebuild board.html only
 npm run test:tools     # the pure-function unit tests (coverage, prd-render, update, …)
 npm run staff          # the kg-staff briefing for a screen
-npm run proof          # proof-integrity check (`lint` = existence + authored intent, `mirror` = the pictures,
+npm run proof          # proof-integrity check (`lint` = existence + authored intent, `mirror` = the pictures AND the
+                       # page the READER composes from them — needs the Playwright chromium the suite already installs,
                        # `perturb` = the assertions still fail when the thing they prove is broken)
 # (`node tools/viz-derive.mjs` is GONE — the sketch it derived was retired by the human 2026-09-05,
 #  and the fold no longer spawns it. Nothing on the board is derived by hand any more: the Expected
@@ -482,7 +494,22 @@ change.
   failed claim's own value — the word rule exempting what a claim moved (a live element inside a
   claim's ring, or one whose text is that claim's `got`), because applying the claim is exactly what
   takes that text out of the picture. **When a real harvest shows a gap, fix the CAPTURE — never the
-  tolerance and never the guard.** **The capture spends its budget on the ring
+  tolerance and never the guard.**
+  **…AND THE OTHER HALF: THE READER MUST DRAW IT WHERE THE HARVEST SAYS** (the human approved the
+  extension, 2026-09-06). Everything above grades the committed file against the APP. Nothing graded
+  the page the BOARD builds out of it — and the board's srcdoc sheet has to reach INTO the app's own
+  markup to tint a claim, so a rule written for `position` instead of paint moves that markup: the
+  pre-0.46.3 tripled `[data-claim]` rule dropped demo/todo R3's and R4's ringed sub-task counter out
+  of its `absolute; inset:0` placement and the ring sat **29 px above the number it marks in every
+  moment of both requirements**, fully green here — the in-page gate walks the replica with NO board
+  sheet over it, so that drift exists only where a reader looks at it. `npm run proof mirror` now
+  composes every harvested moment the way the reader does, with the reader's OWN bytes
+  (tools/reader-compose-check.mjs), and fails when the marked element does not land within 2 px of
+  its own ring. **The sheet may out-specify the replica for what it PAINTS and never for where the
+  app put something.** A refusal the reader made honestly (`data-repalign="refused"`) is a listed
+  DEBT, not a red row — as is a ring the capture marked no element for, and a beat too old to
+  compose. Same rule as above: when a real harvest turns it red, fix the READER, never the tolerance.
+  **The capture spends its budget on the ring
   first, never in document order (2026-09-03, the human, on dojostack's House View: "the schematic is
   useless — off focus, the versioning component not shown").** The walk had one global 360-slot cap
   filled in DOM order — sidebar, header, wrapper divs — so on any page bigger than the cap the ringed

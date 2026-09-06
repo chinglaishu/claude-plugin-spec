@@ -1514,6 +1514,58 @@ const B = window.__BOARD__ || {}
       plates + body + over + note + '</body></html>'
   }
 
+  // ── THE ALIGN PASS ───────────────────────────────────────────────────────────────────────────
+  // Where the composed page STANDS, settled against its own ringed element once the document has
+  // been laid out. `stand` puts the page in the moment's frame by SCROLL alone, which is right
+  // exactly while the base's flow and the moment's flow agree — and a When that filters, collapses
+  // or adds rows is exactly when they do not (measured on this board: board R9 b1 rang a card 520 px
+  // above the one it names). So the document is READ, the element the capture rang is measured, and
+  // the wrapper is shifted so that element renders where the moment recorded it. A rigid translation:
+  // nothing inside is re-laid out, and the ring, the chips and the camera keep the moment's own
+  // coordinates.
+  //
+  // …AND THE SHIFT IS CHECKED, NEVER ASSUMED (found on dispatch R1): the rule above is a rigid
+  // translation, true for everything in normal flow and FALSE for a `position:fixed` element, which
+  // is laid out against the viewport and does not travel with its wrapper at all. So the document is
+  // asked again whether the element actually arrived; if it did not, the page goes back where
+  // `stand` had it and the answer is `refused` — never a page moved for nothing (rule 3).
+  //
+  // IT LIVES HERE, NOT INSIDE replicaCell (2026-09-06). `npm run proof mirror` now composes every
+  // harvested moment exactly as this reader does and fails when the marked element does not land on
+  // its ring (tools/reader-compose-check.mjs) — and a gate that restates the reader's rules drifts
+  // from them, which is the very class of defect it exists to catch. So the gate lifts THESE bytes
+  // (tools/lift-client.mjs) and there is one align pass, not two.
+  //
+  // repAlignIn(doc, a) → the value for `data-repalign`, or null where there was nothing to settle:
+  //   a.ring   the moment's own `data-ring-box`, in the srcdoc's coordinates
+  //   a.stood  where `stand` put the wrapper
+  //   a.ns     the moment's replica namespace, so the ringed element is looked for in THIS moment's
+  //            markup and not in a base that carries a stale mark
+  function repAlignIn (doc, a) {
+    if (!doc || !a || !a.ring || !a.stood) return null
+    const wrapper = doc.getElementById && doc.getElementById('sbstand')
+    if (!wrapper || !window.SBGraft || !window.SBGraft.ringTarget) return null
+    const nsOk = /^[A-Za-z0-9_-]+$/
+    const scope = (a.ns && nsOk.test(a.ns) && doc.querySelector('[data-replica-ns="' + a.ns + '"]')) || wrapper
+    const el = window.SBGraft.ringTarget(scope)
+    const b = el && el.getBoundingClientRect ? el.getBoundingClientRect() : null
+    if (!b || !(b.width > 0 || b.height > 0)) return null
+    const at = window.SBGraft.alignTo(a.stood, { x: b.left, y: b.top }, a.ring)
+    if (!at || at === a.stood) return '0 0'
+    wrapper.style.left = at.x + 'px'
+    wrapper.style.top = at.y + 'px'
+    const after = el.getBoundingClientRect()
+    if (Math.abs(after.left - a.ring.x) > 1.5 || Math.abs(after.top - a.ring.y) > 1.5) {
+      wrapper.style.left = a.stood.x + 'px'
+      wrapper.style.top = a.stood.y + 'px'
+      return 'refused'
+    }
+    // said out loud on the cell, like `data-repsrc` beside it: how far the composed page had to move
+    // to put its own element under its own ring is exactly the number a reader (or a test) wants
+    // when a picture looks wrong
+    return Math.round(at.x - a.stood.x) + ' ' + Math.round(at.y - a.stood.y)
+  }
+
   // ── THE FRAME-STEPPER, at any scale ──────────────────────────────────────────────────────────
   // Task 13's player, extracted from the old media pane so a per-beat proof CELL can play its own
   // pair: the frames stacked, one on show, over a slim bar of exact dots and the mono n / N count.
@@ -2168,43 +2220,18 @@ const B = window.__BOARD__ || {}
       // coordinates, and the two cells stay under ONE camera (board R19, which already asks in words
       // for "the grafted patch stands at its own page coordinates, so the ring lands on it").
       // Nothing to measure — no ring recorded, no element found, a document this page may not read —
-      // leaves the page exactly where `stand` put it (rule 3: never invent).
-      const NS_OK = /^[A-Za-z0-9_-]+$/
+      // leaves the page exactly where `stand` put it (rule 3: never invent). The pass itself is
+      // `repAlignIn` above, out here rather than in this closure so `npm run proof mirror` can
+      // compose every harvested moment with the READER'S OWN BYTES and check the landing
+      // (tools/reader-compose-check.mjs) instead of restating the rule and drifting from it.
       let aim = null                         // what the last show() handed over, for the load below
       const align = function () {
         const a = aim
-        if (!a || a.seq !== seq || !a.ring || !a.stood) return
+        if (!a || a.seq !== seq) return
         let doc = null
         try { doc = ifr.contentDocument } catch (e) { doc = null }
-        const wrapper = doc && doc.getElementById && doc.getElementById('sbstand')
-        if (!wrapper || !window.SBGraft || !window.SBGraft.ringTarget) return
-        const scope = (a.ns && NS_OK.test(a.ns) && doc.querySelector('[data-replica-ns="' + a.ns + '"]')) || wrapper
-        const el = window.SBGraft.ringTarget(scope)
-        const b = el && el.getBoundingClientRect ? el.getBoundingClientRect() : null
-        if (!b || !(b.width > 0 || b.height > 0)) return
-        const at = window.SBGraft.alignTo(a.stood, { x: b.left, y: b.top }, a.ring)
-        if (!at || at === a.stood) { fr.dataset.repalign = '0 0'; return }
-        wrapper.style.left = at.x + 'px'
-        wrapper.style.top = at.y + 'px'
-        // …AND THE SHIFT IS CHECKED, NEVER ASSUMED (2026-09-06, found on dispatch R1). The rule
-        // above is a rigid translation of the page — true for everything in normal flow, and FALSE
-        // for a `position:fixed` element, which is laid out against the viewport and does not move
-        // with its wrapper at all. dispatch's run panel is exactly that: the wrapper travelled
-        // 892×570 and the ringed span stayed at (85, 15), so the ring still missed it AND the page
-        // around it was now 892 px out. So the document is asked again whether the element actually
-        // arrived; if it did not, the page is put back where `stand` had it and the cell says the
-        // shift was refused. Never a page moved for nothing (rule 3).
-        const after = el.getBoundingClientRect()
-        if (Math.abs(after.left - a.ring.x) > 1.5 || Math.abs(after.top - a.ring.y) > 1.5) {
-          wrapper.style.left = a.stood.x + 'px'
-          wrapper.style.top = a.stood.y + 'px'
-          fr.dataset.repalign = 'refused'
-          return
-        }
-        // said out loud on the cell, like `data-repsrc` beside it: how far the composed page had to
-        // move to put its own element under its own ring is exactly the number a reader (or a test)
-        // wants when a picture looks wrong
-        fr.dataset.repalign = Math.round(at.x - a.stood.x) + ' ' + Math.round(at.y - a.stood.y)
+        const how = repAlignIn(doc, a)
+        if (how != null) fr.dataset.repalign = how
       }
       ifr.addEventListener('load', align)
       const show = function (doc, standOn) { aim = standOn || null; fr.dataset.repalign = ''; ifr.srcdoc = doc }

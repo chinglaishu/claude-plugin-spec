@@ -120,6 +120,15 @@ cannot catch on its own. Before you call the work done:
   into the skill that authored the weak proof. When in doubt whether a proof is real, run
   `npm run proof lint` — and `node tools/proof-integrity.mjs perturb <screen>` to demand the
   golden numbers actually bite.
+- **A picture is proven at BOTH ends, and touching the board's reader is touching a proof.**
+  `npm run proof mirror` grades the committed replica against the app *and* composes every harvested
+  moment the way the reader does — the graft, the srcdoc sheet, the align pass, all the reader's own
+  bytes — failing when the marked element does not land within 2 px of its own ring. It exists
+  because a board stylesheet that reaches into the app's markup to tint a claim once moved that
+  markup, and the ring sat 29 px above the number it marks in every moment of two requirements,
+  green everywhere. **The reader's sheet may out-specify a replica for what it PAINTS and never for
+  where the app put something** — so run `npm run proof mirror` after any change to the reader, not
+  only after a harvest, and when it turns red fix the reader, never the tolerance.
 
 ## Why this exists
 
