@@ -207,8 +207,10 @@ async function landFrame (srcAbs) {
   return land(srcAbs, 'png')
 }
 
-// Task 16 #1: keep ONE recording per source file — re-encoded small when ffmpeg is here
-// (tools/evidence.mjs ffmpegVideoArgs — measured ~0.75 MB for a 40s flow), landed as-is otherwise.
+// Task 16 #1: keep ONE recording per source file — REMUXED when ffmpeg is here (tools/evidence.mjs
+// ffmpegVideoArgs: `-c copy`, the run's own bytes with the Cues index rewritten so the reader can
+// seek into it per moment — 0.2 s, not the 5 minutes the old VP9 re-encode cost), landed as-is
+// otherwise.
 // Content-addressed like everything else, so the identical recording re-lands on itself and a
 // changed one is simply a different blob (the old one is collected once no row names it). Cached per
 // screen+source so one recording is encoded once per fold. Best-effort: a failed or timed-out encode

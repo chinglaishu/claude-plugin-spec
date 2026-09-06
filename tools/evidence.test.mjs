@@ -62,19 +62,20 @@ test('T16: evidenceVideoPath names the screen\'s committed recording by content 
   const { evidenceVideoPath } = await import('./evidence.mjs')
   assert.equal(evidenceVideoPath('board', 'abc123def456'), 'spec/board/evidence/abc123def456.webm')
 })
-// …AND IT IS SEEKABLE (2026-09-06, live action). The reader now plays ONE MOMENT'S SLICE of this
-// recording — seeked to the slice's own start — and libvpx-vp9's default keyframe distance is 9999
-// frames, i.e. a six-minute recording with one keyframe: every seek lands on it and every moment
-// would play from the top of the run. A keyframe every 25 frames (Playwright records at 25 fps, so
-// one a second) is what makes a per-moment seek land where it says it does. It costs bitrate, and
-// bitrate is what this argument list has always been spending to buy legibility.
-test('T16: ffmpegVideoArgs downscales to the house 1280, re-encodes small (vp9 crf38, no audio) and stays seekable', async () => {
+// …AND IT IS A REMUX NOW, NOT A RE-ENCODE (2026-09-06, live action — MEASURED, not assumed). The
+// reader plays ONE MOMENT'S SLICE of this recording, seeked to the slice's own start, and libvpx-vp9
+// defaults to a keyframe every 9999 frames — a whole run with one keyframe, so every seek lands on
+// frame 0. Forcing `-g 25` fixed the seek and broke everything else: on this repo's own 312-second
+// dispatch recording the VP9 pass took **5 minutes** and produced **26.6 MB from a 20.0 MB source** —
+// the keyframes ate the entire compression win the re-encode existed for, and seven dispatch tests
+// then timed out waiting for nested runs whose folds were encoding. Playwright's own recording is
+// already VP8 1440×900 at 25 fps **with a keyframe every 5.12 s**, which a browser seeks perfectly
+// well; what a MediaRecorder file lacks is the Cues index, and `-c copy` rewrites exactly that in
+// **0.2 s** at the same byte size. So the committed recording is the run's own bytes, indexed.
+test('T16: ffmpegVideoArgs REMUXES the recording (bytes kept, seek index rewritten) — never re-encodes', async () => {
   const { ffmpegVideoArgs } = await import('./evidence.mjs')
   assert.deepEqual(ffmpegVideoArgs('spec/_runs/x/video.webm', 'spec/board/evidence/abc.webm'),
-    ['-y', '-i', 'spec/_runs/x/video.webm', '-vf', 'scale=1280:-2:flags=lanczos',
-      '-c:v', 'libvpx-vp9', '-crf', '38', '-b:v', '0', '-cpu-used', '5', '-row-mt', '1', '-an',
-      '-g', '25', '-keyint_min', '25',
-      'spec/board/evidence/abc.webm'])
+    ['-y', '-i', 'spec/_runs/x/video.webm', '-c', 'copy', '-an', 'spec/board/evidence/abc.webm'])
 })
 
 // ── Task 13: the clip cutter is GONE — the frame-stepper plays harvested frames, so nothing

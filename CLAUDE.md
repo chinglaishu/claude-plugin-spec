@@ -436,9 +436,14 @@ change.
   opens the lightbox on the FRAME, which is the evidence). The reader-wide speed dropdown drives it
   through `playbackRate`. The still underneath is the fallback, the subject of `npm run proof mirror`,
   and what the lightbox opens — **stills are still captured for every moment and nothing may stop
-  capturing them.** Two consequences that cost time to find: `libvpx-vp9` defaults to a keyframe every
-  9999 frames, so `ffmpegVideoArgs` now passes `-g 25 -keyint_min 25` or every per-moment seek lands
-  on frame 0 and each row plays the top of the run; and a requirement the screen's PRIMARY recording
+  capturing them.** Two consequences that cost time to find: **the committed recording is a REMUX
+  now, not a re-encode** — `libvpx-vp9` defaults to a keyframe every 9999 frames, so every per-moment
+  seek landed on frame 0; forcing `-g 25` fixed the seek and destroyed the reason for the pass (on
+  this repo's own 312-second dispatch recording: **5 minutes to encode, 26.6 MB out of a 20.0 MB
+  source**, and seven dispatch specs then timed out waiting on nested runs whose folds were
+  encoding). Playwright's own file is VP8 1440×900 at 25 fps with a keyframe every 5.12 s, which a
+  browser seeks fine; what it lacks is the Cues index, so `ffmpegVideoArgs` is `-c copy -an` — 0.2 s,
+  same bytes, indexed. **Measure before spending an encode.** And a requirement the screen's PRIMARY recording
   never covered now rides ITS OWN capture's recording (`resolvePrimaryVideo`) instead of none — null
   was honest while only board runs recorded, but a screen proven by a dozen tests has a dozen
   recordings and eleven rows that could otherwise never play their own gestures. **And the WHEN must

@@ -1688,36 +1688,47 @@ const B = window.__BOARD__ || {}
     vid.preload = 'auto'
     stage.appendChild(vid)
     let cur = null
-    // LOOP INSIDE THE SLICE, never past it: a moment that ran off its own end would show the next
-    // moment's action under this moment's chip — a picture claiming to be one thing while showing
-    // another, which is the whole class of drift the row exists to refuse.
-    const hold = function () {
-      if (!cur) return
-      if (vid.currentTime >= cur.to || vid.currentTime < cur.from - 0.25) {
-        try { vid.currentTime = cur.from } catch (e) { /* not seekable yet */ }
-      }
+    let raf = 0
+    const play = function () {
+      const p = vid.play()
+      if (p && p.catch) p.catch(function () { /* autoplay refused, or no decoder — the still stands */ })
     }
-    vid.addEventListener('timeupdate', hold)
-    vid.addEventListener('ended', function () {
-      if (!cur) return
-      try { vid.currentTime = cur.from } catch (e) { /* not seekable yet */ }
-      const p = vid.play(); if (p && p.catch) p.catch(function () { /* autoplay refused — the still stands */ })
+    const rewind = function () { try { vid.currentTime = cur.from } catch (e) { /* not seekable yet */ } }
+    // LOOP INSIDE THE SLICE, never past it: a moment that ran off its own end would show the NEXT
+    // moment's action under this moment's chip — a picture claiming to be one thing while showing
+    // another, which is the whole class of drift the row exists to refuse. `timeupdate` fires about
+    // four times a second, which is coarser than the shortest slice (a beat's opening hold is 400 ms),
+    // so the wrap is watched on the animation frame and `timeupdate` is only the safety net.
+    const watch = function () {
+      raf = 0
+      if (!cur || !vid.isConnected) return
+      if (vid.currentTime >= cur.to || vid.currentTime < cur.from - 0.25) rewind()
+      raf = window.requestAnimationFrame ? requestAnimationFrame(watch) : 0
+    }
+    const arm = function () { if (!raf && window.requestAnimationFrame) raf = requestAnimationFrame(watch) }
+    const disarm = function () { if (raf && window.cancelAnimationFrame) cancelAnimationFrame(raf); raf = 0 }
+    vid.addEventListener('timeupdate', function () {
+      if (cur && (vid.currentTime >= cur.to || vid.currentTime < cur.from - 0.25)) rewind()
     })
+    vid.addEventListener('ended', function () { if (cur) { rewind(); play() } })
+    // A RECORDING THAT WILL NOT LOAD IS NOT A PICTURE. The still is stacked underneath and an empty
+    // <video> paints nothing, so the row already reads correctly — this just stops the layer trying
+    // again on every moment of every beat once the source has failed.
+    let dead = false
+    vid.addEventListener('error', function () { dead = true; cur = null; disarm(); vid.classList.remove('on') })
     const show = function (i) {
+      if (dead) return
       cur = sliceOf(shots[i], src)
       vid.classList.toggle('on', !!cur)
-      if (!cur) { try { vid.pause() } catch (e) { /* nothing playing */ } return }
-      try { vid.currentTime = cur.from } catch (e) { /* seek once metadata lands — loadeddata re-aims */ }
+      if (!cur) { disarm(); try { vid.pause() } catch (e) { /* nothing playing */ } return }
+      rewind()
       vid.playbackRate = (PLAY_SPD > 0 ? PLAY_SPD : 1)
-      const p = vid.play(); if (p && p.catch) p.catch(function () { /* autoplay refused — the still stands */ })
+      play()
+      arm()
     }
     // a seek asked for before the metadata arrived is silently dropped by the element, so re-aim once
     // it is ready — otherwise the first moment plays from 0 and the row opens on the wrong action
-    vid.addEventListener('loadeddata', function () {
-      if (!cur) return
-      try { vid.currentTime = cur.from } catch (e) { /* still not seekable — the still stands */ }
-      const p = vid.play(); if (p && p.catch) p.catch(function () { /* autoplay refused */ })
-    })
+    vid.addEventListener('loadeddata', function () { if (cur) { rewind(); play(); arm() } })
     onSpd(vid, function (sp) { vid.playbackRate = (sp > 0 ? sp : 1) })
     return { el: vid, show: show }
   }

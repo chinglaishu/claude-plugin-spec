@@ -227,21 +227,30 @@ export function evidenceVideoPath (screen, hash) {
   return `spec/${screen}/evidence/${hash}.webm`
 }
 
-// The committed cut: house 1280 wide (Task 16 #2's width — text stays legible), VP9 crf 38 which
-// took the measured 40.7s 1440×900 VP8 source from 3.0 MB to ~0.75 MB (crf 44 saved ~200 KB more
-// but softens the very text the proof exists to show), cpu-used 5 + row-mt so the encode runs
-// ~0.65× realtime inside the reporter's onEnd, and -an because a Playwright recording has no audio
-// track worth carrying. Without ffmpeg the caller copies the source as-is — bigger, still honest.
-// …AND SEEKABLE, BECAUSE A MOMENT PLAYS ONE SLICE OF IT (2026-09-06, live action). libvpx-vp9
-// defaults to a keyframe distance of 9999 frames — a whole run with a single keyframe — so every
-// per-moment seek would land on frame 0 and each row would play the top of the test under whatever
-// moment happened to be parked. `-g 25 -keyint_min 25` is one keyframe a second at Playwright's 25
-// fps: it costs bitrate, which is the same thing every other argument here spends to buy legibility.
+// THE COMMITTED RECORDING IS A REMUX, NOT A RE-ENCODE (2026-09-06 — MEASURED; this used to be a
+// downscale to 1280 plus VP9 crf 38 at cpu-used 5).
+//
+// The re-encode was bought for size: a measured 40.7 s 1440×900 VP8 source went 3.0 MB → ~0.75 MB.
+// Live action changed what the file is FOR — the reader seeks into it per moment — and libvpx-vp9
+// defaults to a keyframe every 9999 frames, i.e. a whole run with ONE keyframe, so every seek landed
+// on frame 0. Forcing `-g 25` restored the seek and destroyed the reason for the pass: on this repo's
+// own 312-second dispatch recording it took **5 minutes** and produced **26.6 MB out of a 20.0 MB
+// source**. It also blew the budget the dispatch specs give a nested run (300 s), and seven of them
+// failed waiting for folds that were encoding.
+//
+// Playwright's own recording is already VP8 1440×900 at 25 fps **with a keyframe every 5.12 s** —
+// which a browser seeks perfectly well. What a MediaRecorder file lacks is the Cues index, and that
+// is exactly what a remux rewrites: `-c copy` costs **0.2 s** at the same byte size, keeps the run's
+// own pixels, and leaves the file seekable. `-an` because a Playwright recording has no audio track
+// worth carrying. Without ffmpeg the caller lands the source as it is — unindexed, still honest, and
+// still seekable by decode-forward from the source's own keyframes.
+//
+// The size trade is stated rather than hidden: a screen now keeps the recordings its requirements
+// actually ride (see resolvePrimaryVideo's own-capture fallback) at the run's own bitrate. They are
+// blobs in the data home, collected by reference at every fold (tools/store.mjs gcBlobs), so what
+// stands is bounded by what the rows still name — never by history.
 export function ffmpegVideoArgs (srcRel, outRel) {
-  return ['-y', '-i', srcRel, '-vf', 'scale=1280:-2:flags=lanczos',
-    '-c:v', 'libvpx-vp9', '-crf', '38', '-b:v', '0', '-cpu-used', '5', '-row-mt', '1', '-an',
-    '-g', '25', '-keyint_min', '25',
-    outRel]
+  return ['-y', '-i', srcRel, '-c', 'copy', '-an', outRel]
 }
 
 // The PRIMARY recording per screen is the one that COVERS the most requirements — a union count,
