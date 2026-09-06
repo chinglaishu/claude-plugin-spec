@@ -53,7 +53,10 @@ function el (tag, rect, opts = {}) {
 const DEFAULTS = {}
 function env (body, opts = {}) {
   return {
-    window: { innerWidth: 1440, innerHeight: 900 },
+    // a page that has been scrolled says so through the window, exactly as a browser does — the
+    // capture records it on the root (`data-replica-scroll`) so a reader can put the replica's
+    // document coordinates and the ring's viewport ones back into one frame
+    window: { innerWidth: 1440, innerHeight: 900, ...(opts.scroll || {}) },
     document: {
       body,
       baseURI: opts.baseURI || 'https://app.example/board',
@@ -350,6 +353,38 @@ test('the root says what kit drew it, where it stood and where the ring was — 
   assert.ok(!r.html.includes('data-replica-layout'), 'the layout pin is phase 3, never invented here')
   assert.ok(!r.html.includes('data-claims'), 'and the claims ride the EXPECTED root, never this one')
   assert.ok(/\.rep\.r\d+\{/.test(r.html), 'the root\'s own class is addressable as the root, not only as a descendant')
+})
+
+// ── THE SCROLL THE PAGE STOOD AT (2026-09-06) ───────────────────────────────────────────────────
+// Everything else the root records is in VIEWPORT coordinates (the region, the ring box, the layout
+// skeleton the camera is aimed from), but a BODY-ROOTED replica's markup lays out in DOCUMENT
+// coordinates — the window's scroll is not baked into its flow, only a scrolled box's own scrollTop
+// is. A reader standing that page in a frame must shift it by the scroll to put the two frames back
+// together, and the number was recorded nowhere: on demo/todo the Expected's ring sat a whole row
+// above the element it marks. It is measured here, where it is known.
+test('the root records the page scroll the capture was taken at', () => {
+  const btn = el('button', [500, 92, 120, 36], { text: 'Version 3', cs: { border: '1px solid rgb(1,1,1)' } })
+  const bar = el('div', [400, 88, 640, 44], { children: [btn], cs: { display: 'flex', gap: '8px' } })
+  const body = el('body', [0, -89, 1440, 900], { children: [bar] })
+  const r = cap(body, { target: btn, ring: { x: 500, y: 92, width: 120, height: 36 }, scroll: { scrollX: 0, scrollY: 89 } })
+  assert.match(r.html, /data-replica-scroll="0 89"/, 'the scroll rides on the root: ' + r.html.slice(0, 400))
+})
+
+test('an unscrolled page records a scroll of zero — the attribute is always there to be read', () => {
+  const btn = el('button', [500, 92, 120, 36], { text: 'Version 3' })
+  const bar = el('div', [400, 88, 640, 44], { children: [btn] })
+  const body = el('body', [0, 0, 1440, 900], { children: [bar] })
+  const r = cap(body, { target: btn, ring: { x: 500, y: 92, width: 120, height: 36 } })
+  assert.match(r.html, /data-replica-scroll="0 0"/)
+})
+
+test('the older pageXOffset spelling is read, and an unreadable scroll is zero — never a guess', () => {
+  const btn = el('button', [500, 92, 120, 36], { text: 'Version 3' })
+  const body = el('body', [0, 0, 1440, 900], { children: [btn] })
+  const old = cap(body, { target: btn, ring: { x: 500, y: 92, width: 120, height: 36 }, scroll: { pageXOffset: 40, pageYOffset: 12 } })
+  assert.match(old.html, /data-replica-scroll="40 12"/)
+  const junk = cap(body, { target: btn, ring: { x: 500, y: 92, width: 120, height: 36 }, scroll: { scrollX: NaN, scrollY: null } })
+  assert.match(junk.html, /data-replica-scroll="0 0"/)
 })
 
 // ── B. the probe's toolbar, round-tripped ───────────────────────────────────────────────────────

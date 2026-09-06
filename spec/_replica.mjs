@@ -321,6 +321,14 @@ export function captureReplica (arg) {
     r.right >= box.x + box.w - 0.5 && r.bottom >= box.y + box.h - 0.5)
   const vw = (win && win.innerWidth) || 0
   const vh = (win && win.innerHeight) || 0
+  // the page's own scroll at this instant — see `data-replica-scroll` at the bottom of this file for
+  // what it is for. `pageXOffset` is the older spelling of the same number and is read where a stub
+  // (or an ancient engine) offers only that one; anything unreadable is 0, never a guess.
+  const scrollNum = (v) => (typeof v === 'number' && isFinite(v)) ? Math.round(v) : null
+  const scrollAt = {
+    x: (win ? (scrollNum(win.scrollX) ?? scrollNum(win.pageXOffset)) : null) || 0,
+    y: (win ? (scrollNum(win.scrollY) ?? scrollNum(win.pageYOffset)) : null) || 0
+  }
   const vArea = vw > 0 && vh > 0 ? vw * vh : Infinity
   let root = null
   if (focusEl) {
@@ -1404,7 +1412,19 @@ export function captureReplica (arg) {
     ['data-replica-kit', 'replica-1'],
     ['data-replica-ns', NS],
     ['data-replica-path', rootPath],
-    ['data-replica-region', reg.x + ' ' + reg.y + ' ' + reg.w + ' ' + reg.h]]
+    ['data-replica-region', reg.x + ' ' + reg.y + ' ' + reg.w + ' ' + reg.h],
+    // …AND THE SCROLL THE PAGE STOOD AT (2026-09-06). Everything else the root says is in VIEWPORT
+    // coordinates — the region, the ring box, and the layout skeleton the camera and the chips are
+    // aimed from. A BODY-ROOTED capture's markup, though, lays out in DOCUMENT coordinates: the
+    // window's scroll is not baked into its flow (only a scrolled BOX's own scrollTop is, above), so
+    // a reader standing that page in a frame must shift it by the scroll to put the two frames back
+    // together. That number was recorded nowhere, and the reader could only guess: it stood the base
+    // at the page origin — right only at scroll 0 — and before that at the base's own region.y,
+    // right only when the base and the moment happened to agree. On demo/todo the ring sat a whole
+    // row above the thing it marks. It is measured here, where it is known, and converted by
+    // tools/board/graft.js `stand`; a harvest from before this carries none, and no reader may
+    // invent one (rule 3).
+    ['data-replica-scroll', scrollAt.x + ' ' + scrollAt.y]]
   if (rb) rootAttrs.push(['data-ring-box', Math.round(rb.x) + ' ' + Math.round(rb.y) + ' ' + Math.round(rb.w) + ' ' + Math.round(rb.h)])
   if (truncated) rootAttrs.push(['data-replica-truncated', '1'])
   // the scene root is normally an ANCESTOR of the ringed element, but a body-rooted capture can be

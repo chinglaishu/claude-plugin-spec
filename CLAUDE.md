@@ -146,7 +146,9 @@ spec/_replica.mjs            the REPLICA's capture (2026-09-03), one self-contai
                              file is READ in, not the app whose own reset would otherwise be diffed away — an edge that
                              paints nothing where the tag draws none is not a declaration, and anything the picture does
                              not draw (faded, hidden, outside the scene root) becomes a placeholder that HOLDS ITS SPACE,
-                             subtree dropped, so nothing after it slides. A scrolled box's scroll is baked into the flow.
+                             subtree dropped, so nothing after it slides. A scrolled box's scroll is baked into the flow;
+                             the PAGE's is not, so the root records it (`data-replica-scroll`, 2026-09-06) for the reader
+                             to convert with — see tools/board/graft.js `stand`.
 spec/_layout-walk.mjs        the layout skeleton's WALK, one self-contained function Playwright serialises into the page
                              (snapLayout hands it the ring + the ringed element); unit-tested in tools/layout-walk.test.mjs
                              on a stub DOM — the ringed element first, the rest nearest the ring, no slot for an unpainted wrapper
@@ -197,7 +199,13 @@ tools/board/words.js         pure: the PROVED PHRASE rule (which words of a beat
 tools/board/graft.js         pure: THE GRAFT (phase 8, 2026-09-05) — the Expected of a moment is the beat's whole-page
                              BASE with that moment's patch standing at its recorded path, everything off that path
                              marked `data-ctx` and faded. A fourth file inlined verbatim into board.html, unit-tested
-                             via globalThis.SBGraft (tools/graft.test.mjs)
+                             via globalThis.SBGraft (tools/graft.test.mjs). It also owns `stand` (2026-09-06): WHERE
+                             that page stands in the cell's frame — a body-rooted replica's markup lays out in
+                             DOCUMENT coordinates while the ring, the camera and the chips are the VIEWPORT's, so the
+                             wrapper stands at MINUS the scroll THIS moment was captured at (`data-replica-scroll`),
+                             never at the page origin (right only at scroll 0) and never at the base's own region.y
+                             (right only where the two scrolls agree). A harvest from before the attribute carries no
+                             scroll and keeps the old answer — a scroll nobody measured is never invented (rule 3)
 tools/board/client.js        the board's browser behaviour (routing, run panel, focus reader, …) as a REAL
                              .js file — read verbatim into board.html, fed a JSON island (window.__BOARD__).
                              Edit/lint it like normal JS; no template-literal escaping traps.

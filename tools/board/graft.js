@@ -51,5 +51,44 @@
     at.replaceWith(patch)
     return { ok: true, why: '' }
   }
-  root.SBGraft = { graft: graft, walk: walk }
+  // WHERE THE PAGE STANDS IN THE FRAME (2026-09-06). The Expected cell is one srcdoc whose
+  // coordinates the ring, the camera and the chips all speak: the VIEWPORT of the moment on show.
+  // The markup standing in it does not necessarily speak the same frame —
+  //   · a BODY-ROOTED replica (every base, and every whole-page moment) lays out in DOCUMENT
+  //     coordinates. The window's scroll is not baked into its flow — the capture bakes only a
+  //     scrolled BOX's own scrollTop (spec/_replica.mjs) — so document y 0 sits at viewport
+  //     y = -scroll, and the wrapper stands at MINUS the moment's scroll.
+  //   · a CROPPED scene stands where its own root stood: its region, carried across whatever the
+  //     page scrolled between its capture and the moment on show (0 for every lone patch, which IS
+  //     its own moment).
+  // This is the defect the fix closes: the moment's scroll was recorded NOWHERE, so the reader
+  // could not convert. It stood a base at the page origin — right only at scroll 0 — and before
+  // that at the base's own region.y, right only when the two scrolls happened to agree; on
+  // demo/todo the ring sat a whole row above the thing it marks. `data-replica-scroll` records it
+  // at capture. A harvest from before that carries no scroll and gets exactly today's answer: a
+  // scroll nobody measured is never invented (rule 3).
+  //
+  // stand({ whole, region, scroll, moment }) → { x, y, w, h } | null
+  //   region  the replica's own `data-replica-region` — its scene root's rect at ITS capture
+  //   whole   is that replica the whole page (`data-replica-path` === '')?
+  //   scroll  the page scroll that replica was captured at, or null
+  //   moment  the page scroll of the moment the row is showing (the patch's own), or null
+  function stand (o) {
+    var reg = o && o.region
+    if (!reg || !isFinite(reg.w) || !isFinite(reg.h)) return null
+    var mv = num(o.moment)
+    // `|| 0` also folds the -0 an unscrolled page would otherwise carry into a style attribute
+    if (o.whole) return { x: mv ? (-mv.x || 0) : 0, y: mv ? (-mv.y || 0) : 0, w: reg.w, h: reg.h }
+    var own = num(o.scroll)
+    var dx = (mv && own) ? own.x - mv.x : 0
+    var dy = (mv && own) ? own.y - mv.y : 0
+    return { x: reg.x + dx, y: reg.y + dy, w: reg.w, h: reg.h }
+  }
+  // a scroll is a pair of finite numbers or it is nothing — the values come out of a committed file
+  function num (s) {
+    if (!s) return null
+    var x = Number(s.x); var y = Number(s.y)
+    return (isFinite(x) && isFinite(y)) ? { x: x, y: y } : null
+  }
+  root.SBGraft = { graft: graft, walk: walk, stand: stand }
 })(typeof globalThis !== 'undefined' ? globalThis : this)

@@ -96,3 +96,68 @@ test('a missing base or patch is refused rather than throwing — the reader fal
   assert.equal(globalThis.SBGraft.graft(null, node('div'), '0').ok, false)
   assert.equal(globalThis.SBGraft.graft(node('body', [node('div')]), null, '0').ok, false)
 })
+
+// ── WHERE THE PAGE STANDS IN THE FRAME (2026-09-06) ──────────────────────────────────────────────
+// The defect this closes, measured on demo/todo before the fix: in the Expected cell the ring sat a
+// whole row ABOVE the thing it marks. A body-rooted base's markup lays out in DOCUMENT coordinates
+// (the window's scroll is not baked into its flow — only a scrolled BOX's own scrollTop is), while
+// `data-ring-box`, the camera's rects and the chips are all VIEWPORT coordinates of the moment on
+// show. The two frames differ by exactly that moment's scroll, and the scroll was recorded NOWHERE,
+// so the reader could not convert: it stood the base at the page origin (right only at scroll 0) and
+// before that at the base's own region.y (right only when the two scrolls happened to agree).
+// `data-replica-scroll` records it at capture; `stand` is the conversion, and it never invents a
+// scroll it was not given (rule 3) — a legacy harvest keeps exactly today's answer.
+test('a whole-page base stands at MINUS the moment’s scroll, so a viewport ring lands on its element', () => {
+  const at = globalThis.SBGraft.stand({
+    whole: true,
+    region: { x: 0, y: -89, w: 1440, h: 900 },
+    scroll: { x: 0, y: 89 },
+    moment: { x: 0, y: 89 }
+  })
+  assert.deepEqual(at, { x: 0, y: -89, w: 1440, h: 900 })
+  // the element the ring marks sits at document y 869; the ring was measured at viewport y 780
+  assert.equal(at.y + 869, 780, 'the base’s own element renders under the ring, not 89 px below it')
+})
+
+test('the moment’s scroll is the patch’s, not the base’s — one base, two moments, two offsets', () => {
+  // demo/todo R7: one beat, one base, and the page scrolled between its two moments (129 → 112)
+  const base = { x: 0, y: -129, w: 1440, h: 900 }
+  assert.equal(globalThis.SBGraft.stand({ whole: true, region: base, scroll: { x: 0, y: 129 }, moment: { x: 0, y: 129 } }).y, -129)
+  assert.equal(globalThis.SBGraft.stand({ whole: true, region: base, scroll: { x: 0, y: 129 }, moment: { x: 0, y: 112 } }).y, -112)
+  // …and R8's second moment, back at the top of the page, must not move at all
+  assert.equal(globalThis.SBGraft.stand({ whole: true, region: base, scroll: { x: 0, y: 129 }, moment: { x: 0, y: 0 } }).y, 0)
+})
+
+test('an unscrolled moment stands exactly where it stands today — the zero cases do not move', () => {
+  const at = globalThis.SBGraft.stand({
+    whole: true, region: { x: 0, y: 0, w: 1440, h: 900 }, scroll: { x: 0, y: 0 }, moment: { x: 0, y: 0 }
+  })
+  assert.deepEqual(at, { x: 0, y: 0, w: 1440, h: 900 })
+})
+
+test('a harvest from before data-replica-scroll keeps today’s answer — no scroll is invented', () => {
+  assert.deepEqual(
+    globalThis.SBGraft.stand({ whole: true, region: { x: 0, y: -89, w: 1440, h: 900 }, scroll: null, moment: null }),
+    { x: 0, y: 0, w: 1440, h: 900 }, 'a whole page still stands at the page origin')
+  assert.deepEqual(
+    globalThis.SBGraft.stand({ whole: false, region: { x: 271, y: 195, w: 738, h: 70 }, scroll: null, moment: null }),
+    { x: 271, y: 195, w: 738, h: 70 }, 'and a lone patch still stands at its own region')
+})
+
+test('a lone cropped patch is its own moment: its region IS where it stands', () => {
+  const reg = { x: 271, y: 195, w: 738, h: 70 }
+  assert.deepEqual(
+    globalThis.SBGraft.stand({ whole: false, region: reg, scroll: { x: 0, y: 89 }, moment: { x: 0, y: 89 } }),
+    reg, 'the scene root’s own viewport rect, whatever the page was scrolled to')
+  // …and a cropped scene shown at a DIFFERENT moment is carried across the difference
+  assert.deepEqual(
+    globalThis.SBGraft.stand({ whole: false, region: reg, scroll: { x: 0, y: 89 }, moment: { x: 0, y: 0 } }),
+    { x: 271, y: 284, w: 738, h: 70 })
+})
+
+test('stand refuses to answer without a region, and the horizontal scroll counts too', () => {
+  assert.equal(globalThis.SBGraft.stand({ whole: true, region: null, scroll: { x: 0, y: 0 }, moment: { x: 0, y: 0 } }), null)
+  assert.deepEqual(
+    globalThis.SBGraft.stand({ whole: true, region: { x: 0, y: 0, w: 1440, h: 900 }, scroll: { x: 40, y: 10 }, moment: { x: 40, y: 10 } }),
+    { x: -40, y: -10, w: 1440, h: 900 })
+})

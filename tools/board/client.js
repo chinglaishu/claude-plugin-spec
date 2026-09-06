@@ -1328,6 +1328,23 @@ const B = window.__BOARD__ || {}
     const p = repAttr(text, name).trim().split(/\s+/).map(Number)
     return (p.length === 4 && p.every(function (n) { return isFinite(n) })) ? { x: p[0], y: p[1], w: p[2], h: p[3] } : null
   }
+  // THE SCROLL THE MOMENT WAS CAPTURED AT (2026-09-06) — `data-replica-scroll`, written by
+  // spec/_replica.mjs. `null` on a harvest from before it, which is exactly the input
+  // SBGraft.stand answers with today's behaviour for: a scroll nobody recorded is never invented.
+  const repScroll = function (text) {
+    const raw = repAttr(text, 'data-replica-scroll')
+    if (!raw) return null
+    const p = raw.trim().split(/\s+/).map(Number)
+    return (p.length === 2 && p.every(function (n) { return isFinite(n) })) ? { x: p[0], y: p[1] } : null
+  }
+  // where a replica's wrapper stands inside the srcdoc — one rule, in tools/board/graft.js, for both
+  // the lone picture and the grafted page (see `stand` there for the coordinate frames it converts
+  // between). A board built without the graft file falls back to what the reader did before it.
+  const repStand = function (o) {
+    if (window.SBGraft && window.SBGraft.stand) return window.SBGraft.stand(o)
+    if (!o.region) return null
+    return o.whole ? { x: 0, y: 0, w: o.region.w, h: o.region.h } : o.region
+  }
   // THE APP'S SHELL, AS BLANK PLATES (the plan's scene-root rule): the region is the component, and
   // the rest of the page is paper — but a component floating on blank paper loses where it SITS, so
   // the big painted boxes the harvest measured OUTSIDE the region are drawn as plates. No text on
@@ -2096,19 +2113,21 @@ const B = window.__BOARD__ || {}
           const paintLone = function () {
             // A BODY-ROOTED REPLICA IS THE PAGE, NOT A COMPONENT ON PAPER (2026-09-06). The Given
             // row's Expected is the BASE — the whole page — and a base carries two things a cropped
-            // patch does not. Its region carries the page's SCROLL (demo/todo R2's base measures
-            // `0 -89 1440 900`), and the capture already bakes a scrolled box's scroll into the
-            // flow, so positioning the wrapper by that y applies the offset twice: the same 89 px
-            // the grafted path already corrects below. And there is no shell to block in — the base
-            // IS the shell — so a plate here would be a washed rectangle painted over the page's own
-            // markup. Both are keyed off the replica's own `data-replica-path`: empty means the
-            // capture rooted at the body, which is exactly when its local frame IS the page frame.
+            // patch does not. Its markup lays out in DOCUMENT coordinates while the ring beside it
+            // is the VIEWPORT's, so the wrapper stands at minus the scroll the capture recorded
+            // (`stand`, tools/board/graft.js — demo/todo R2's base was taken 89 px down its page).
+            // And there is no shell to block in — the base IS the shell — so a plate here would be a
+            // washed rectangle painted over the page's own markup. Both are keyed off the replica's
+            // own `data-replica-path`: empty means the capture rooted at the body.
             const whole = !path
+            // a lone picture IS its own moment, so the scroll it was captured at is the scroll the
+            // ring and the camera speak
+            const sc = repScroll(got[0])
             show(repSrcdoc({
               body: body,
               faces: got[1] || '',
               plates: whole ? [] : repPlates(got[2], region, vp.vw, vp.vh),
-              region: (whole && region) ? { x: 0, y: 0, w: region.w, h: region.h } : region,
+              region: repStand({ whole: whole, region: region, scroll: sc, moment: sc }),
               ring: repRect(got[0], 'data-ring-box'),
               // the ring reddens where THIS moment failed — a value's own claim, or, on the beat's
               // result, any claim in its checklist that the app did not answer
@@ -2161,15 +2180,21 @@ const B = window.__BOARD__ || {}
               faces: got[1] || '',
               // no shell plates: the base IS the shell, measured rather than blocked in
               plates: [],
-              // THE BASE STANDS AT THE PAGE ORIGIN, NOT AT ITS OWN REGION'S y (2026-09-05, measured
-              // on demo/todo R3: the patch rendered 89 px above where its own capture said it
-              // stood, and the ring — drawn in the page's own coordinates — landed beside the thing
-              // it rings). A body-rooted base's region carries the page's SCROLL, and the capture
-              // already bakes a scrolled box's scroll into the flow, so its local frame IS the page
-              // frame; positioning the wrapper by that region applies the offset a second time. A
-              // lone patch is different and unchanged: its local origin is its scene root, which is
-              // exactly what its region names.
-              region: (function () { const r = repRect(baseText, 'data-replica-region'); return r ? { x: 0, y: 0, w: r.w, h: r.h } : null })(),
+              // THE BASE STANDS AT MINUS THIS MOMENT'S SCROLL (2026-09-06). The base's markup lays
+              // out in DOCUMENT coordinates — the window's scroll is not baked into its flow, only a
+              // scrolled BOX's own scrollTop is — while the ring, the camera and the chips are all
+              // the VIEWPORT coordinates of THIS moment. The two frames differ by exactly the scroll
+              // the patch was captured at, so that is what the wrapper is shifted by; the base's own
+              // scroll does not enter into it (`stand`, tools/board/graft.js). Standing it at the
+              // page origin instead — what this did between 2026-09-05 and today — is right only at
+              // scroll 0, and standing it at the base's own region.y (before that) only where the
+              // two scrolls happened to agree: on demo/todo the ring sat a row above its row.
+              region: repStand({
+                whole: !repAttr(baseText, 'data-replica-path'),
+                region: repRect(baseText, 'data-replica-region'),
+                scroll: repScroll(baseText),
+                moment: repScroll(got[0])
+              }),
               ring: repRect(got[0], 'data-ring-box'),
               ok: !failedClaims(sh).length,
               vw: vp.vw, vh: vp.vh
