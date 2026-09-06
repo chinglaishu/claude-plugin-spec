@@ -73,10 +73,17 @@ export async function addTask (page: Page, state: FlowState): Promise<void> {
   await reveal(page.locator('.addrow'))
   await page.locator('#nt').pressSequentially('Water the plants')
   // SCENE 1 — the WHEN's own value: the text now sitting in the Add box.
-  await proveVisible(page.locator('#nt'), 'Water the plants', 'The task typed into the Add box', { soft: true })
-  // SCENE 2 — the control the When NAMES, now enabled.
+  // …AND THE LABEL NAMES THE GESTURE (the human, 2026-09-06: "It's not obvious enough when user
+  // action is … mention in the explaining text box"). The chip over each picture now opens with this
+  // label, so a label that only DESCRIBES the state ("The task typed into the Add box") leaves a
+  // reader looking at a filled field with no word for who filled it. Every When-moment's label starts
+  // with the hand: "You typed …", "You double-clicked …".
+  await proveVisible(page.locator('#nt'), 'Water the plants',
+    'You typed the task — it sits in the Add box', { soft: true })
+  // SCENE 2 — the control the When NAMES, now enabled — and the label says what enabled it.
   await expect(page.locator('.go'), 'typing enabled the Add button').toBeEnabled()
-  await proveVisible(page.locator('.go'), 'Add', 'The Add button, now enabled', { soft: true })
+  await proveVisible(page.locator('.go'), 'Add',
+    'Your typing enabled the Add button — the one you press next', { soft: true })
   await page.locator('.go').click()
   const row = rowByTitle(page, 'Water the plants')
   await expect(row.locator('.cb'), 'the new row is a leaf with its own checkbox').toHaveCount(1)
@@ -149,12 +156,13 @@ export async function renameInPlace (page: Page, state: FlowState): Promise<void
   // now the editor the double-click OPENED, still holding the OLD title: proof the gesture landed,
   // and the only frame in which "in place" means anything yet.
   await proveVisible(edit, state.task,
-    'The double-click opened the editor, still on the old text', { soft: true })
+    'You double-clicked — the editor opened on the old text', { soft: true })
   await edit.fill('Water the office plants')
   // SCENE 2 — the retyped text, still in the box. It is gone from the box the instant Enter lands,
-  // so without this frame the film has no picture of the typing at all.
+  // so without this frame the film has no picture of the typing at all. Its label NAMES THE GESTURE
+  // too (the human, 2026-09-06): the chip over the picture is where a reader learns a hand did this.
   await proveVisible(edit, 'Water the office plants',
-    'The retyped text, still in the box', { soft: true })
+    'You retyped the title — the new text, still in the box', { soft: true })
   await edit.press('Enter')
   expect((await rowIds(page)).indexOf(id),
     'the SAME row, at the SAME position — the edit happened in place').toBe(at)
@@ -178,8 +186,13 @@ export async function addSubTaskGrowsRing (page: Page, state: FlowState): Promis
     'a container has no checkbox of its own — only a ring').toHaveCount(0)
   // …and THAT absence is claimed, not left to the count: MISSING passes exactly while the parent has
   // no checkbox and fails, with the box's own state, the moment one appears on it.
+  // …ANCHORED, so the ring is not right by luck (the human's anchored-absence rule, 2026-09-06). This
+  // one happened to inherit the ring from the claim above it — the container's own `.pct` — and read
+  // correctly by accident. The anchor states it: the place a parent's checkbox would live is the
+  // container's row, `.trow`, which is exactly where the reader must look to see that none is there.
   await proveVisible(rowById(page, k).locator('.trow > .cb'), MISSING,
-    'The parent still has no checkbox of its own', { soft: true })
+    'The parent still has no checkbox of its own',
+    { soft: true, anchor: rowById(page, k).locator('.trow'), phrase: 'no checkbox — only a ring' })
   await page.locator('#sub-' + k).fill('Order name badges')
   await page.locator('#sub-' + k).press('Enter')
   state.ring.total += 1
@@ -223,8 +236,13 @@ export async function finishContainerRollsUp (page: Page, state: FlowState): Pro
     'The container\'s title, struck through', { soft: true })
   // NOBODY TICKED THE PARENT — claimed as the absence it is: there is no checkbox on the container
   // to have ticked, so the roll-up can only have come from its own leaves.
+  // …AND IT IS ANCHORED to the container's own row (the human, 2026-09-06). With no anchor the ring
+  // stayed on the previous claim's element — the struck-through TITLE — so the picture behind
+  // "nobody ticked the parent" was a photograph of the title, not of the row where the missing box
+  // would be. `.trow` is that place.
   await proveVisible(rowById(page, k).locator('.trow > .cb'), MISSING,
-    'Nobody ticked the parent — it has no box to tick', { soft: true })
+    'Nobody ticked the parent — it has no box to tick',
+    { soft: true, anchor: rowById(page, k).locator('.trow'), phrase: 'no box on the parent' })
   await hudCheck('The container completed itself', 'true', await rowById(page, k).getAttribute('data-done'))
   expect(await rowById(page, k).getAttribute('data-done'),
     'the container rolled up to done on its own').toBe('true')
@@ -248,8 +266,12 @@ export async function containerIsNotAUnit (page: Page, state: FlowState): Promis
     'The container finished with them — and was never one of the four', { soft: true })
   // …NOT THREE: the container has no checkbox to have been counted as work in the first place, so
   // the two open leaves are the whole of the drop.
+  // …ANCHORED like every other absence on this board (the human, 2026-09-06): the ring it inherited
+  // from the claim above — the container's ring `.pct` — was the right neighbourhood by luck, not by
+  // statement. `.trow` is the place a container's own checkbox would sit.
   await proveVisible(rowById(page, state.container).locator('.trow > .cb'), MISSING,
-    'Never a unit of work — the container has no box of its own', { soft: true })
+    'Never a unit of work — the container has no box of its own',
+    { soft: true, anchor: rowById(page, state.container).locator('.trow'), phrase: 'no box to count' })
 }
 
 // R4, the other direction — reopening any sub-task reopens the container.
@@ -290,18 +312,28 @@ export async function walkSmartViews (page: Page, state: FlowState): Promise<voi
     // neighbour's positive fact instead of the fact itself — and it could not fail if every view
     // showed every task. The claim now rings the row that proves the view's own rule: the ones a
     // view EXCLUDES must be absent from the list, and All must still carry the done one.
+    // …AND EACH ABSENCE IS ANCHORED TO THE LIST (the human, 2026-09-06). These three claims are about
+    // WHAT THE LIST HOLDS, and with nothing to measure they inherited the ring from the claim above —
+    // the sidebar BADGE — so the picture behind "no done task is on screen" was a photograph of a
+    // number in the sidebar, with the list itself sometimes outside the frame. The anchor is `.list`:
+    // the place the excluded rows would be. It is a near-full-page ring, and that is the honest
+    // framing — the claim really is about the whole list.
+    const list = page.locator('.list')
     if (v === 'all') {
       await proveVisible(page.locator('.list .task[data-done="true"] .ttl'), state.doneTask,
         'all — every task shows, the done one included', { soft: true })
     } else if (v === 'active') {
       await proveVisible(page.locator('.list .task[data-done="true"]'), MISSING,
-        'active — no done task is on screen', { soft: true })
+        'active — no done task is on screen',
+        { soft: true, anchor: list, phrase: 'not one done row in the list' })
     } else if (v === 'today') {
       await proveVisible(page.locator('.list .task[data-done="true"], .list .task .chip.due'), MISSING,
-        'today — nothing done and nothing due later is on screen', { soft: true })
+        'today — nothing done and nothing due later is on screen',
+        { soft: true, anchor: list, phrase: 'nothing done, nothing due later' })
     } else {
       await proveVisible(page.locator('.list .task[data-done="false"]'), MISSING,
-        'completed — nothing still open is on screen', { soft: true })
+        'completed — nothing still open is on screen',
+        { soft: true, anchor: list, phrase: 'not one open row in the list' })
     }
     if (HOLD) await page.waitForTimeout(HOLD)
   }

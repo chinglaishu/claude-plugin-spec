@@ -1112,6 +1112,40 @@ const B = window.__BOARD__ || {}
       ? { mark: '', text: expectedWords(c), ok: true }
       : { mark: c.ok ? '✓' : '✕', text: actualWords(c), ok: !!c.ok }]
   }
+  // ── THE USER'S ACTION, NAMED ON THE PICTURE (the human, 2026-09-06) ──────────────────────────
+  // "It's not obvious enough when user action is, we need to either show it out (really edit it and
+  // shown to user) or mention in the explaining text box." A When-moment's picture shows a STATE —
+  // the box holding the retyped text — and nothing on it said a user had just ACTED, so a reader saw
+  // a filled field and had to infer the gesture that filled it. The chip now OPENS with the moment's
+  // own LABEL (the sentence fragment the run recorded beside the frame), above the EXPECTED / ACTUAL
+  // lines, on both cells, from one wording source — `m.cap`, which is also what the strip's segment
+  // is captioned with.
+  //
+  // A DELIBERATE EXCEPTION to design C's "every text once" (the human, 2026-09-02), taken on the
+  // human's own instruction above and recorded here rather than quietly: the strip's caption is under
+  // the row, and the eye reading a picture does not leave it. The other half of the ruling is
+  // AUTHORING — a When-moment's label must NAME THE GESTURE ("You double-clicked — the editor opened
+  // on the old text"), not merely describe the state; that half lives in the skills and the method.
+  // (Their alternative, drawing the gesture itself — a cursor or press glyph at the action point — is
+  // NOT built: it is noted as an open option in docs/testcase-method-2026-09-06.html.)
+  //
+  // A PHASE NAME IS NOT A MOMENT LABEL. `cap` is 'given' / 'before' / 'after — <the Then>' on the
+  // frames the reader captions itself; those are machine words about where the frame sits in the
+  // beat, and printing one over a picture would be worse than printing nothing.
+  const PHASE_CAPS = ['given', 'before', 'after']
+  function chipLabel (m) {
+    const s = (m && typeof m.cap === 'string') ? m.cap.replace(/\s+/g, ' ').trim() : ''
+    if (!s) return ''
+    if (PHASE_CAPS.indexOf(s) >= 0) return ''
+    if (s.indexOf('after — ') === 0) return ''
+    return s
+  }
+  // what the CAMERA must reserve for this chip: the claim lines plus the label's own line. A chip
+  // that grew a line without the camera knowing hangs out of the cell it labels.
+  function chipRows (m, side) {
+    const n = chipLines(m, side).length
+    return n ? n + (chipLabel(m) ? 1 : 0) : 0
+  }
   // ONE CHIP LAYER PER CELL — built once, repainted per moment, positioned off the camera's own view
   // so it always lands over the picture it explains. It is inside the camera box: a chip that
   // wandered outside would be chrome floating over the row rather than a label on this picture.
@@ -1182,9 +1216,20 @@ const B = window.__BOARD__ || {}
       const chip = document.createElement('button')
       chip.type = 'button'
       chip.className = 'pchip ' + side + (lines.some(function (l) { return !l.ok }) ? ' bad' : '')
+      // THE MOMENT'S OWN WORDS FIRST (the human, 2026-09-06) — what the user just did, said on the
+      // picture rather than only in the strip's caption under the row. Same text on both cells: one
+      // wording source, so the two halves can never name the same moment differently.
+      const name = chipLabel(m)
+      if (name) {
+        const ml = document.createElement('span'); ml.className = 'pcml'
+        ml.textContent = name
+        chip.appendChild(ml)
+      }
+      const rowl = document.createElement('span'); rowl.className = 'pcrow'
+      chip.appendChild(rowl)
       const lab = document.createElement('span'); lab.className = 'pcl'
       lab.textContent = side === 'expected' ? 'expected' : 'actual'
-      chip.appendChild(lab)
+      rowl.appendChild(lab)
       const body = document.createElement('span'); body.className = 'pcb'
       const full = []
       lines.forEach(function (l) {
@@ -1198,14 +1243,15 @@ const B = window.__BOARD__ || {}
         body.appendChild(row)
         full.push((l.mark ? l.mark + ' ' : '') + l.text)
       })
-      chip.appendChild(body)
+      rowl.appendChild(body)
       const tip = document.createElement('span'); tip.className = 'mtip'; tip.setAttribute('role', 'tooltip')
-      tip.textContent = (side === 'expected' ? 'expected' : 'actual') + ' — ' + full.join(' · ')
+      tip.textContent = (name ? name + ' — ' : '') +
+        (side === 'expected' ? 'expected' : 'actual') + ' — ' + full.join(' · ')
       chip.appendChild(tip)
       chip.setAttribute('aria-label', tip.textContent)
       layer.textContent = ''
       layer.appendChild(chip)
-      cur = { spot: chipSpot(m.aim, vp, lines.length), chip: chip, vp: vp }
+      cur = { spot: chipSpot(m.aim, vp, chipRows(m, side)), chip: chip, vp: vp }
       place(box._view, 0)
     }
     return layer
@@ -1225,7 +1271,7 @@ const B = window.__BOARD__ || {}
   function momentFrame (m, vp) {
     const ring = (m && (m.aim || m.focus)) ? (m.aim || m.focus) : null
     if (!ring || !vp) return { ring: ring, chip: null }
-    const lines = Math.max(chipLines(m, 'expected').length, chipLines(m, 'actual').length)
+    const lines = Math.max(chipRows(m, 'expected'), chipRows(m, 'actual'))
     return { ring: ring, chip: lines ? chipSpot(ring, vp, lines) : null }
   }
   // …and the moment's FAILED CLAIMS, asked once (the difference marker and the chips' ✕ both need
@@ -1827,6 +1873,21 @@ const B = window.__BOARD__ || {}
     const b = (r.ev.beats || []).filter(function (x) { return Number(x.n) === want })[0]
     return (b && b.focus) ? b.focus : null
   }
+  // ── THE TRAILING RECAP IS GONE (the human, 2026-09-06) ───────────────────────────────────────
+  // "The last small step (for show the list is meaningless) for expected and actual, please remove
+  // it." Every strip ended on the beat's RESULT: one photograph of the state it left, captioned with
+  // the whole Then and carrying a chip that LISTED every claim the beat had made — on the demo's R1
+  // that was six chips piled on the Add button, moment 7 of 7, ringing whatever the beat happened to
+  // ring last. Since soft claims made every fact of a Then its own filmed moment (phase 6), that
+  // segment only re-says what the moments before it already showed. The film ends on its last fact.
+  //
+  // NOTHING LEAVES THE HARVEST. The after frame is still captured, still folded, still the base every
+  // derived state is drawn from, and spec-store's `momentsOf` still counts it for the gates — this is
+  // a DISPLAY rule about which moments the row walks, the same shape as the 2026-08-30 rule that took
+  // the before frame out of a beat that films its own values. A beat that photographed NO facts still
+  // shows its result: there it is the only proof of what happened.
+  function showsResult (b, vals) { return !!(b && b.after) && !(vals && vals.length) }
+
   // ── THE PROOF a beat row shows ───────────────────────────────────────────────────────────────
   // `ev.beats` is the per-beat harvest: beat n's own before/after and the window it spans. An OLDER
   // harvest carries none, and then only the requirement-level pair is honest — its before opens the
@@ -1854,7 +1915,7 @@ const B = window.__BOARD__ || {}
     // the ONE value a value moment proved, `facts` the beat's whole CHECKLIST — every claim it made —
     // which is what its Then is the result of. Facts are the claims themselves, never a count of
     // them: "2 of 2 checks" is a scoreboard, and a reader cannot tell from it what was checked.
-    const shot = function (src, cap, anchor, aim, rep, repSide, claim, facts) {
+    const shot = function (src, cap, anchor, aim, rep, repSide, claim, facts, result) {
       return {
         src: src,
         cap: cap,                    // the moment's NAME — the strip's segment label AND the img alt
@@ -1864,7 +1925,8 @@ const B = window.__BOARD__ || {}
         rep: rep || '',
         repSide: rep ? (repSide || 'actual') : '',
         claim: claim || null,
-        facts: (facts && facts.length) ? facts : null
+        facts: (facts && facts.length) ? facts : null,
+        result: !!result             // the beat's RESULT moment — see showsResult
       }
     }
     // THE ASSERTED VALUES BETWEEN THE ENDS (2026-08-29, the human: the When has to be visible in the
@@ -1914,13 +1976,11 @@ const B = window.__BOARD__ || {}
       if (b.before && !vals.length) out.push(shot(b.before, capA, b.window ? b.window.from : null, b.aimBefore, b.base || b.replicaExpectedBefore || '', 'expected', null))
       for (const v of vals) out.push(v)
       // the beat's RESULT takes its Expected — the intended state, which on a failed beat is the last
-      // one the app got right plus every claim (spec/_replica.mjs intendedLayout's own rule)
-      if (b.after) {
-        // the result's chips are the beat's CHECKLIST — every claim it made, in the order it made
-        // them. A beat that claimed nothing has no checklist and shows no chip at all.
+      // one the app got right plus every claim (spec/_replica.mjs intendedLayout's own rule) — and it
+      // is FILMED ONLY BY A BEAT THAT PHOTOGRAPHED NOTHING (showsResult, the human 2026-09-06).
+      if (showsResult(b, vals)) {
         out.push(shot(b.after, capB, b.window ? b.window.to : null, b.aimAfter,
-          b.replicaExpectedAfter || '', 'expected',
-          null, vals.map(function (v) { return v.claim }).filter(Boolean)))
+          b.replicaExpectedAfter || '', 'expected', null, null, true))
       }
       // THE RESULT STANDS WHERE THE BEAT LAST STOOD (phase 4b). A beat's RESULT moment records no
       // ring of its own — the run paints one around each value it checks, not around the page it
@@ -2002,6 +2062,10 @@ const B = window.__BOARD__ || {}
     const got = beatShots(r, i, nbeats, thenTxt)
     // the row's MOMENTS, in order — what the strip names its segments after (buildStoryline reads it)
     cell._moments = got.shots.map(function (s) { return s.cap })
+    // …and WHERE the beat's result sits in that list, or -1 when the film has none (the trailing
+    // recap, removed 2026-09-06 — showsResult). Only that moment may be renamed by the beat's whole
+    // Then: renaming a FACT moment with it would put the whole sentence over one fact's picture.
+    cell._resultAt = got.shots.reduce(function (at, s, k) { return s.result ? k : at }, -1)
     // …and the SHOTS themselves, so the Expected cell beside this one renders the SAME ordered list
     // of moments (phase 4a). One list, two renderings — never two lists to be kept in step.
     cell._shots = got.shots
@@ -2572,7 +2636,11 @@ const B = window.__BOARD__ || {}
         const moments = (pc._moments && pc._moments.length ? pc._moments.slice() : [])
         if (rowDriver) {
           for (let m = moments.length; m < rowDriver.count; m++) moments.push('scene ' + (m + 1))
-          if (thenTxt && rowDriver.count > 0) moments[rowDriver.count - 1] = thenTxt
+          // the whole Then names the beat's RESULT moment — and only that one. Since 2026-09-06 a beat
+          // that filmed its facts has no result moment at all (showsResult), and its last segment
+          // keeps the name of the fact it photographs.
+          const resAt = (typeof pc._resultAt === 'number') ? pc._resultAt : -1
+          if (thenTxt && resAt >= 0 && resAt < rowDriver.count) moments[resAt] = thenTxt
         }
         const tc = textCell(markCol(i + 1), html)
         // …and WHAT each moment proved, so the strip's tooltip can say both values beside the name

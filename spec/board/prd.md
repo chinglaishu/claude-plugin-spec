@@ -488,7 +488,7 @@ sides carry that beat and no other — is unchanged.*
 - **When** its row renders
 - **Then** the Actual cell frames the thing being proven and nothing around it — no media toolbar, no dots, no `n / N` counter — with the whole screenshot one click away in the proof lightbox; the beat's position is read and walked on ONE stepper strip spanning both pictures, one segment per moment the beat proved, each named by the assertion the run recorded
 - **When** the moment on show claimed a value
-- **Then** each picture carries ONE chip and it says only what that side holds — `EXPECTED "…"` over the replica, `ACTUAL ✓ "…"` or `ACTUAL ✕ "…"` over the photograph, the mark carrying the state beside the hue — wrapped to read WHOLE inside the cell with the whole text in a hover tooltip, and on the beat's result the two chips are CHECKLISTS of the claims it made; a moment that claimed nothing carries no chip at all
+- **Then** each picture carries ONE chip, LED BY THE MOMENT'S OWN WORDS — the label the run recorded, the same on both cells — and under it only what that side holds: `EXPECTED "…"` over the replica, `ACTUAL ✓ "…"` or `ACTUAL ✕ "…"` over the photograph, the mark carrying the state beside the hue — wrapped to read WHOLE inside the cell with the whole text in a hover tooltip; a moment that claimed nothing carries no chip at all
 - **When** the reader opens
 - **Then** it opens in **step** — each beat held on its first scene — with the reader-wide controls (the **auto ↔ step** pair and the speed) on the requirement's title row, left of its ⋯ menu
 - **When** you walk a beat — its strip's `‹ ›`, a click on one of its named segments, or the ← → keys while its row is the **selected** one (visibly marked) — with ↑ ↓ selecting which When/Then and PgUp / PgDn paging the requirement
@@ -511,12 +511,18 @@ frame button and also the dots … in proof as it already did in the step on beh
 readout and walk** for a beat is the **stepper strip over its two pictures**.
 
 A beat is **one ordered list of moments** — every value the test proved, in the order it proved them,
-then the beat's result — and the drawing and the photograph are two **renderings of that one list**
+and the film **ends on the last of them** *(the human, 2026-09-06: "The last small step (for show the
+list is meaningless) for expected and actual, please remove it" — a trailing moment re-listing every
+claim the beat had already filmed, ringing whatever it happened to ring last; a beat that filmed NO
+values still shows its result, which is then its only proof)* — and the drawing and the photograph
+are two **renderings of that one list**
 (the human, 2026-09-02: "schematic and proof should share same stepper (as their steps must be
 same???), please think about the product and really fix the problem"). So the row has **one stepper**,
 sitting across both pictures because that is what it steps, and each segment is **named by the
-assertion the run recorded** — never `when 1`; the last segment is the beat's **Then**, marked with
-the word as well as the hue. A harvest that named nothing falls back to a generic name rather than
+assertion the run recorded** — never `when 1`; the last segment is where the beat **resolves**, marked
+with the word `then` as well as the hue, and it is now the beat's **last filmed fact** rather than a
+recap of all of them *(the human, 2026-09-06)*; a beat that filmed a single fact has a single moment
+and no strip at all, exactly like the Given row. A harvest that named nothing falls back to a generic name rather than
 inventing one, and a **drawing that splits the beat into a different number of moments than the
 harvest holds is parked, not stepped**, with the storyline's stale banner saying so: two clocks on one
 row is the defect this replaced.
@@ -576,7 +582,18 @@ Then / Given at body size. Amended 2026-09-04 for the CHIPS (the human's design 
 the words cell, the moment's name once in the strip, and the chip over each picture says ONLY that
 side's value, so the burned callout card left the still frames and the two chips replace it. A Then
 proves several facts at once, so its chips are the beat's checklist rather than one value; and a
-moment that claimed nothing shows no chip, because a label with nothing to say is chrome.*
+moment that claimed nothing shows no chip, because a label with nothing to say is chrome. **Amended
+2026-09-06 on the human's two rulings** on the demo this reader shows: (1) "It's not obvious enough
+when user action is, we need to either show it out (really edit it and shown to user) or mention in
+the explaining text box" — the chip now LEADS with the moment's own label, the same words on both
+cells, so a picture of a filled box says which hand filled it; a deliberate exception to "every text
+once", taken because the strip's caption sits under the row and the eye reading a picture does not
+leave it. (2) "The last small step (for show the list is meaningless) for expected and actual, please
+remove it" — the beat's trailing RESULT moment, whose chips were the checklist named in the sentence
+above, is gone from the film: soft claims made every fact of a Then its own filmed moment, so the
+recap only re-said them while ringing whatever came last. The checklist sentence above therefore
+stands only as the history of what this requirement used to say — a beat that films no values at all
+still shows its result, and there its chip is that one moment's own.*
 
 <!-- Proven by spec/board/test.spec.ts, "The proof plays itself …" — beat 1 asserts a harvested beat
      row's proof cell carries NO dots, NO n/N counter and NO full-frame toggle (only the row's one

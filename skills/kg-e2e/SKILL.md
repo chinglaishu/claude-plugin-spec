@@ -165,9 +165,17 @@ way. Read it before writing your first one.
       way — `proveVisible(page.locator('.go:not([disabled])'), MISSING, …, { anchor: page.locator('.go'),
       phrase: 'disabled' })` fails the moment the button can be pressed — with the hard
       `expect(…).toBeDisabled()` pinned **after** every soft claim.
-   4. **The RESULT, where it happened.** The same row, the same position — "in place" is itself a
-      checkable fact, so prove the row is the row (by its id, at its index), not merely that *a* row
-      somewhere now reads the new text.
+   4. **The RESULT, where it happened — as the LAST FACT, not as an extra moment.** The same row, the
+      same position — "in place" is itself a checkable fact, so prove the row is the row (by its id,
+      at its index), not merely that *a* row somewhere now reads the new text. **The film ENDS on that
+      last fact** *(the human, 2026-09-06: "The last small step (for show the list is meaningless) for
+      expected and actual, please remove it")*. The board used to add a trailing moment of its own —
+      the beat's resting state, captioned with the whole Then, its chip listing every claim the beat
+      had made, ringing whatever came last. Soft claims already film every fact, so that moment only
+      re-said them. It is gone. Two things follow for you: **order the beat so its last `proveVisible`
+      is the one you want the film to close on**, and know that a beat filming a **single** fact has a
+      single moment and no strip to walk — if a beat is worth a strip, its Then has more than one fact
+      and each of them deserves its own photograph anyway.
 
    Camera rules for the whole beat: **ONE camera**, framing the union of all its rings — never
    re-cropped per moment. **Every control the When names must be inside that frame.** And **no two
@@ -302,13 +310,21 @@ are read by a person scanning a row, so both are part of the proof, not decorati
   holds the number — `proveVisible(row.locator('.meta'), 'edited just now', …)`, never
   `proveVisible(row, …)`. Two things go wrong when a container is ringed: the callout names a value
   the ringed box only *contains*, and the beat's union camera opens far wider than the beat needs.
-- **The segment name is a FRAGMENT OF THE THEN, in the requirement's own words.** The strip under the
-  two pictures names each moment from its label, one ellipsised line, full text on hover — so
-  `'The stamp flipped to edited'` (the Then's own clause), not `'check meta'` and not
-  `'Double-click and retype'` (that is the When; the When has its own moment). A label that is a
-  sentence from somewhere else makes the strip read as a different requirement from the words beside
-  it.
-- **The chip carries the promised words verbatim.** EXPECTED prints the requirement's own value,
+- **The label is read TWICE, so write it as a sentence.** It names the moment in the strip under the
+  pictures **and it LEADS the chip over each picture** *(the human, 2026-09-06: "It's not obvious
+  enough when user action is, we need to either show it out (really edit it and shown to user) or
+  mention in the explaining text box")*. A picture of a filled box is a STATE; without words on it a
+  reader cannot tell that a hand just filled it.
+  - A **Then-moment's** label is a **FRAGMENT OF THE THEN**, in the requirement's own words —
+    `'The stamp flipped to edited just now'` (the Then's own clause), not `'check meta'`.
+  - A **When-moment's** label **NAMES THE GESTURE** — `'You double-clicked — the editor opened on the
+    old text'`, `'You retyped the title — the new text, still in the box'`, `'You typed the task — it
+    sits in the Add box'`. Not `'The retyped text, still in the box'`: that describes the state and
+    leaves the hand out of the film, which is exactly what the human ruled against.
+  A label that is a sentence from somewhere else makes both the strip and the chip read as a
+  different requirement from the words beside them. Keep it to one clause — the chip clamps at two
+  lines, with the whole of it one hover away.
+- **The chip carries the promised words verbatim, under the moment's label.** EXPECTED prints the requirement's own value,
   ACTUAL what the app showed, so the `expected` argument is the Then's word or number as written —
   never a paraphrase, never a value you read off the page and echoed back (that is a tautology, and
   the golden number belongs in `state`).

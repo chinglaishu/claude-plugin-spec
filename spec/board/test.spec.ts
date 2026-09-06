@@ -906,10 +906,21 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // replica. Proven against the HARVEST rather than against a tween: the fold names each moment's
     // replica in data-ev-beats, and the cell says which one it is showing (data-repsrc), so a cell
     // that stopped stepping — or stepped to another moment's picture — fails here.
-    const beatFr = rows.nth(1).locator('.sbframe')
+    // …AND THE WALK IS PROVEN ON A BEAT THAT HAS SOMEWHERE TO WALK (rule 4, 2026-09-06). It was
+    // proven here on R13's OWN beat until today — but R13 films a SINGLE fact, and since the human
+    // removed the trailing recap ("The last small step (for show the list is meaningless) for
+    // expected and actual, please remove it") a one-fact beat has exactly ONE moment and carries no
+    // strip at all, exactly like the Given row. The requirement did not move; the specimen did, to a
+    // beat the walk can actually happen on. R13's own reader is restored right after.
+    const walkRid = multiMomentSpecimen()
+    expect(walkRid, 'a board beat that filmed more than one fact — the walk needs somewhere to walk').toBeTruthy()
+    await page.goto('/#/board/' + walkRid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(String(walkRid))
+    const wrow = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
+    const beatFr = wrow.locator('.sbframe')
     const repOf = () => beatFr.evaluate(f => String((f as HTMLElement).dataset.repsrc || ''))
-    const want = await ov.locator('.fread').evaluate(() => {
-      const node = document.querySelector('.dt[data-screen="board"] .reqpane .req[data-r="R13"]')
+    const want = await ov.locator('.fread').evaluate((_el, rid) => {
+      const node = document.querySelector('.dt[data-screen="board"] .reqpane .req[data-r="' + rid + '"]')
       const bs = JSON.parse(node!.getAttribute('data-ev-beats') || '[]')
       const b = bs.filter((x: any) => Number(x.n) === 1)[0] || {}
       const vals = (b.values || []).filter((v: any) => v && v.frame)
@@ -920,9 +931,13 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
       // this walk claim a moment the reader never shows. Correctly broken by that change (rule 4).
       if (b.before && !vals.length) out.push(b.base || b.replicaExpectedBefore || '')
       for (const v of vals) out.push(v.replicaExpected || '')
-      if (b.after) out.push(b.replicaExpectedAfter || '')
+      // …and the beat's RESULT only where it has no facts of its own to end on (the human,
+      // 2026-09-06: "The last small step (for show the list is meaningless) … please remove it").
+      // Mirrors tools/board/client.js `showsResult`, which is what the cell actually steps through.
+      // Correctly broken by that change (rule 4).
+      if (b.after && !vals.length) out.push(b.replicaExpectedAfter || '')
       return out
-    })
+    }, walkRid)
     expect(want.length, 'the harvest recorded this beat\'s moments').toBeGreaterThan(1)
     // …and a committed replica for the moments that HAVE one — "or honestly no picture" is half of
     // what this requirement says (corrected 2026-09-04, rule 4). A moment whose ringed element the
@@ -942,16 +957,19 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // the per-cell dots are gone (the human, 2026-09-02) and so is the gutter's ‹ n / N › (the same
     // day): the row's ONE moment strip over the two pictures is the walk, and STEP is the default so
     // the loop holds while we walk it.
-    const strip = rows.nth(1).locator('.mstrip')
+    const strip = wrow.locator('.mstrip')
     const tpos = strip.locator('.mpos')
     const tposN = async () => Number(((await tpos.textContent()) || '0 / 0').split('/')[0].trim())
     await expect(strip, 'ONE stepper on the row, over both pictures').toHaveCount(1)
-    await expect(rows.nth(1).locator('.mseg'), 'one segment per moment of the beat').toHaveCount(want.length)
+    await expect(wrow.locator('.mseg'), 'one segment per moment of the beat').toHaveCount(want.length)
     await expect(tpos).toHaveText('1 / ' + want.length)                // both halves agree on the moment count
     for (let i = 0; i < want.length && (await tposN()) < want.length; i++) { await strip.locator('.mnext').click(); await page.waitForTimeout(60) }
     await expect.poll(repOf, { timeout: 8000 }).toBe(want[want.length - 1])
     await strip.locator('.mnext').click()                              // ↺ wraps to the first moment
     await expect.poll(repOf, { timeout: 8000 }).toBe(want[0])
+    // …and back to R13, whose reader the rest of this beat reads
+    await page.goto('/#/board/R13')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R13')
     // ONE reader control group, ONE speed (the human, 2026-08-28 — superseding the per-pane dropdowns;
     // on the TITLE ROW since 2026-09-02): the schematic frames, every beat cell's stepper and the video
     // are views of the SAME beat, so they play at one pace.
@@ -1349,6 +1367,21 @@ const replicaSpecimens = () => {
   return out.sort((a, b) => (b.lay && b.lay.ring ? 1 : 0) - (a.lay && a.lay.ring ? 1 : 0))
 }
 
+// A BOARD BEAT THAT FILMED MORE THAN ONE FACT — somewhere the strip's walk can actually happen
+// (2026-09-06). Since the human removed the trailing recap ("The last small step (for show the list
+// is meaningless) for expected and actual, please remove it") a beat's moments ARE its filmed facts,
+// so a beat that proved one fact has one moment and no strip, exactly like the Given row. Anything
+// asserting the walk picks its specimen here rather than naming a requirement whose harvest may hold
+// a single claim. Lowest requirement id first, so the pick is stable across runs.
+const multiMomentSpecimen = (): string | null => {
+  const ev = (readResults().board && readResults().board.evidence) || {}
+  const ok = Object.keys(ev).filter(rid => {
+    const b = ((ev[rid] || {}).beats || [])[0]
+    return b && (b.values || []).filter((v: any) => v && v.frame && v.replicaExpected).length > 1
+  })
+  return ok.sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)))[0] || null
+}
+
 // the requirement's authored beats, read straight from the prd — the oracle for what BOTH sides of a
 // row must be saying (parseBehavior is the same parser the board and the viz pass each use, read
 // here independently of either render)
@@ -1601,14 +1634,24 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
     // showing one. Forced by removing one moment's replica from the row's own harvest attribute (the
     // input, not the state under test — a capture that ran out of bytes produces exactly this), then
     // walking to it.
-    const gapSpec = replicaSpecimens()[0]
+    // …and the specimen is a beat with SEVERAL pictured moments (2026-09-06). With the trailing recap
+    // gone the beat's moments ARE its value moments, so `replicaExpectedAfter` is no longer one of
+    // them and deleting it makes no gap at all — correctly broken by that change (rule 4). Stripping
+    // the LAST VALUE's picture is the same fixture on the side that is now the film's end, and a beat
+    // with two of them still leaves the row a picture to walk from.
+    const gapSpec = replicaSpecimens().find(s => (s.beat.values || [])
+      .filter((v: any) => v && v.frame && v.replicaExpected).length > 1) || replicaSpecimens()[0]
     const gapNode = dt.locator(`.reqpane .req[data-r="${gapSpec.rid}"]`)
     const savedEv = await gapNode.getAttribute('data-ev-beats')
     try {
       await gapNode.evaluate(el => {
         const bs = JSON.parse(el.getAttribute('data-ev-beats') || '[]')
         const b = bs.find((x: any) => Number(x.n) === 1)
-        delete b.replicaExpectedAfter                                 // the LAST moment lost its picture
+        // the LAST moment of the film loses its picture — the last VALUE where the beat films facts
+        // (2026-09-06, the recap's removal), the after where it films none
+        const vs = (b.values || []).filter((v: any) => v && v.frame && v.replicaExpected)
+        if (vs.length > 1) delete vs[vs.length - 1].replicaExpected
+        else delete b.replicaExpectedAfter
         // …and ONLY it (corrected 2026-09-04, rule 4 — the fixture was the wrong side). This also
         // stripped every VALUE moment's replica, which was a no-op while no board beat rang a value:
         // with one, the beat's before frame stops being a moment of its own (a beat's moments are
@@ -1855,6 +1898,13 @@ const armFocus = async (dt: any, rid: string) =>
 // beat whose harvest carries a real claim on a real value frame. Read off the fold's own record.
 const claimSpecimen = () => replicaSpecimens().find(s => (s.beat.values || [])
   .some((v: any) => v && v.frame && v.claim && typeof v.claim.expected === 'string' && v.claim.expected.trim()))
+// …and one whose beat filmed SEVERAL facts (2026-09-06). With the trailing recap gone a beat's
+// moments ARE its filmed facts, so a one-fact beat has one moment and no strip to walk — and its
+// only claim is the one the fixture arms as failed, leaving nothing unarmed to read at the end of
+// the film. Anything that walks a strip and reads its last moment picks its specimen here.
+const claimSpecimenMulti = () => replicaSpecimens().find(s => (s.beat.values || [])
+  .filter((v: any) => v && v.frame && v.claim && typeof v.claim.expected === 'string' && v.claim.expected.trim())
+  .length > 1)
 // …and the fixture that makes that claim FAIL. The board's own suite passes (that is the point of
 // it), so nothing in this repo's harvest is red — the failed moment R23 is about is DERIVED, the
 // same established data-ev-beats technique R18 and R20 already use: the committed frames, layouts
@@ -2483,9 +2533,12 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
   // out of the page — so a chip that showed the neighbouring moment's value, or the same value on
   // both sides regardless of what the app did, fails here.
   await checkReq('R20', async () => {
-    const cs = claimSpecimen()
-    expect(cs, 'a board beat whose harvest carries a claim').toBeTruthy()
+    // a beat with SEVERAL filmed facts (2026-09-06): the film ends on its last one, so the row needs
+    // more than one moment for "ends on the last fact" to mean anything at all
+    const cs = claimSpecimenMulti()
+    expect(cs, 'a board beat whose harvest carries more than one claim').toBeTruthy()
     const vals = (cs!.beat.values || []).filter((v: any) => v && v.frame && v.claim)
+    const framed = (cs!.beat.values || []).filter((v: any) => v && v.frame).length
     const claims = vals.map((v: any) => v.claim)
     // back to STEP: the leg above left the reader in auto at 4×, and the play mode is reader-wide and
     // session-scoped (it survives the rebuild below on purpose), so a chip read while the loop was
@@ -2520,6 +2573,18 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     // off something that is there, so it stays a hard assertion (below, on the Given row).
     await proveVisible(eChip.locator('.pcl'), 'expected', 'The Expected cell\'s one chip', { soft: true })
     await proveVisible(aChip.locator('.pcl'), 'actual', 'The Actual cell\'s one chip', { soft: true })
+    // …AND THE CHIP OPENS WITH THE MOMENT'S OWN WORDS (the human, 2026-09-06: "It's not obvious
+    // enough when user action is, we need to either show it out (really edit it and shown to user) or
+    // mention in the explaining text box"). A When-moment's picture shows a STATE — the box holding
+    // the retyped text — and nothing on it said a user had just ACTED, so the chip now LEADS with the
+    // moment's own label, the same words over both pictures. The oracle is the run's own record of
+    // what it named that moment, read out of the fold — never off the chip being checked.
+    const capName = String(vals[0].label || '').replace(/\s+/g, ' ').trim()
+    expect(capName, 'the run named the moment these chips are of').toBeTruthy()
+    await expect(eChip.locator('.pcml'), 'the Expected chip leads with the moment’s own words')
+      .toHaveText(capName)
+    await proveVisible(aChip.locator('.pcml'), capName,
+      'The user\'s action, named on the picture itself', { soft: true })
     const eSaid = plain(await eChip.locator('.pcv').innerText())
     const aSaid = plain(await aChip.locator('.pcv').innerText())
     expect(eSaid, 'the Expected chip says what the requirement asks for').toContain(plain(c0.expected))
@@ -2601,23 +2666,26 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     expect(stipText, '…what the requirement expected').toContain(plain(c0.expected))
     expect(stipText, '…and what the app actually gave').toContain(plain(wrong))
     await row.locator('.sbtext').hover()
-    // …AND THE BEAT'S RESULT IS A CHECKLIST. Walk to the last moment: the two chips list one item per
-    // claim the beat made — the facts, never a count of them.
+    // …AND THE FILM ENDS ON ITS LAST FACT — THERE IS NO RECAP MOMENT (the human, 2026-09-06: "The
+    // last small step (for show the list is meaningless) for expected and actual, please remove
+    // it"). This block asserted the OPPOSITE until today: a trailing moment whose two chips were
+    // CHECKLISTS of every claim the beat had made, ringing whatever the beat rang last. Since soft
+    // claims made every fact of a Then its own filmed moment, that segment only re-said what the
+    // moments before it had already shown. Correctly broken by that change (rule 4) — and rewritten
+    // to pin what replaced it, never deleted: one segment per fact, and one line on the last chip.
     const strip = row.locator('.mstrip')
+    await expect(row.locator('.mseg'), 'one segment per fact the beat filmed — and no recap after them')
+      .toHaveCount(framed)
     const n = await row.locator('.mseg').count()
     for (let k = 1; k < n; k++) await strip.locator('.mnext').click()
     await expect(row.locator('.mseg').last()).toHaveClass(/\bcur\b/)
-    await expect(row.locator('.sbframe .pchip .pcvr'), 'the Expected checklist has one item per claim')
-      .toHaveCount(claims.length)
-    await expect(row.locator('.sbproof .pchip .pcvr'), '…and so does the Actual')
-      .toHaveCount(claims.length)
-    await hudCheck('the beat’s result is a checklist', claims.length + ' fact(s)',
+    await expect(row.locator('.sbproof .pchip .pcvr'), 'the last moment says ONE fact, not a list of them')
+      .toHaveCount(1)
+    await hudCheck('the film ends on its last fact', '1 fact(s)',
       (await row.locator('.sbproof .pchip .pcvr').count()) + ' fact(s)')
-    // …and the CHECKLIST itself, claimed: the beat's result lists the FACTS it claimed, so its first
-    // line is the first claim's own value — never a count of them.
-    await proveVisible(row.locator('.sbproof .pchip .pcvr').first(), plain(wrong),
-      'The beat\'s result — a checklist of the claims it made',
-      { soft: true, match: (shown: string) => plain(shown).includes(plain(wrong)) })
+    await proveVisible(row.locator('.sbproof .pchip .pcvr'), plain(claims[claims.length - 1].got),
+      'The film ends on its last fact — one value, never a recap of all of them',
+      { soft: true, match: (shown: string) => plain(shown).includes(plain(claims[claims.length - 1].got)) })
     // …AND THE FOURTH FACT, CLAIMED AS AN ABSENCE (fix round 1, 2026-09-04): the context row claims
     // nothing, so it carries no chip at all. `proveVisible(…, MISSING, …)` passes exactly while the
     // chip is gone and fails, with the chip's own words as `got`, the moment one appears.
@@ -2693,7 +2761,11 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
       // this walk claim a moment the reader never shows. Correctly broken by that change (rule 4).
       if (b.before && !vals.length) out.push(b.base || b.replicaExpectedBefore || '')
       for (const v of vals) out.push(v.replicaExpected || '')
-      if (b.after) out.push(b.replicaExpectedAfter || '')
+      // …and the beat's RESULT only where it has no facts of its own to end on (the human,
+      // 2026-09-06: "The last small step (for show the list is meaningless) … please remove it").
+      // Mirrors tools/board/client.js `showsResult`, which is what the cell actually steps through.
+      // Correctly broken by that change (rule 4).
+      if (b.after && !vals.length) out.push(b.replicaExpectedAfter || '')
       return out
     })
     expect(sub.length, 'the harvest recorded this beat\'s moments, each with its own replica').toBeGreaterThan(1)
@@ -3303,7 +3375,11 @@ test('The proof is scannable as frames — one still per checked value, cut from
       const src = document.querySelector('.dt[data-screen="board"] .reqpane .req[data-r="' + rid + '"]')
       const b = JSON.parse(src!.getAttribute('data-ev-beats') || '[]').find((x: any) => Number(x.n) === 1) || {}
       const vals = (b.values || []).filter((v: any) => v && v.frame)
-      return (vals.length ? vals.length : (b.before ? 1 : 0)) + (b.after ? 1 : 0)
+      // …and the beat's RESULT is filmed ONLY when it photographed no values (the human, 2026-09-06:
+      // "The last small step (for show the list is meaningless) … please remove it"). Mirrors
+      // tools/board/client.js `showsResult`. Correctly broken by that change (rule 4): this counted
+      // an after moment onto every beat, and a beat that films its facts no longer has one.
+      return vals.length ? vals.length : ((b.before ? 1 : 0) + (b.after ? 1 : 0))
     })
     expect(nMoments, 'the harvest recorded this beat\'s moments').toBeGreaterThan(1)
     await expect(beatCell.locator('.fsteps img')).toHaveCount(nMoments)

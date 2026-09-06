@@ -84,6 +84,7 @@ mark.f{background:var(--indigo-tint);color:var(--indigo);padding:0 3px;border-ra
 .anat .labels .lb small{color:var(--mute)}
 .chipbox{position:absolute;left:24px;bottom:10px;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:5px 10px;font:12px ui-monospace,Menlo,monospace;box-shadow:0 2px 6px rgba(0,0,0,.08)}
 .chipbox .lab{color:var(--mute);letter-spacing:.06em;font-size:10.5px}
+.chipbox .cml{display:block;font:12px/1.35 -apple-system,Helvetica,Arial,sans-serif;color:var(--mute);margin-bottom:3px;max-width:280px}
 
 img.shot{width:100%;border:1px solid var(--line);border-radius:8px;display:block;margin:10px 0}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -100,7 +101,7 @@ img.shot{width:100%;border:1px solid var(--line);border-radius:8px;display:block
 </style>
 
 <h1>How to write a test case — the specboard method</h1>
-<p class="sub">2026-09-06 · the ONE recipe every screen follows, worked end-to-end on the todolist demo (Tsumiki, its real R1–R9). <b>Accepted</b> and baked into the <span class="k">kg-deep</span> and <span class="k">kg-e2e</span> skills in 0.47.0; <b>refined 0.47.1</b> by the human's two rulings on the demo it produced — <i>film the When from its first gesture</i> (step 3) and <i>an absence is anchored and worded</i> (steps 3 and 4). <span class="note">(Corrected in place, rule 6: this read "a proposal … on your yes this bakes into" — it is no longer a proposal.)</span></p>
+<p class="sub">2026-09-06 · the ONE recipe every screen follows, worked end-to-end on the todolist demo (Tsumiki, its real R1–R9). <b>Accepted</b> and baked into the <span class="k">kg-deep</span> and <span class="k">kg-e2e</span> skills in 0.47.0; <b>refined 0.47.1</b> by the human's two rulings on the demo it produced — <i>film the When from its first gesture</i> (step 3) and <i>an absence is anchored and worded</i> (steps 3 and 4) — and <b>again in 0.47.2</b> by three more: <i>the user's action is named on the picture</i> (steps 3 and 4), <i>no trailing recap frame</i> (step 3), and <i>every remaining inheritance-ringed absence gets its anchor</i>. <span class="note">(Corrected in place, rule 6: this read "a proposal … on your yes this bakes into" — it is no longer a proposal.)</span></p>
 
 <div class="hero">A test case is a <b>short film of one promise</b>.<br>
 One page state → one user action → facts a camera can check.<br>
@@ -180,16 +181,16 @@ If you cannot film it, you cannot prove it — rewrite the promise until you can
     <div class="scene">
       <div class="row dim"><span class="cb"></span> Pay the electricity bill</div>
       <div class="row dim"><span class="cb done"></span> Buy a birthday gift</div>
-      <div class="inputrow ring" data-c="the editor opened, still the old text">Water the plants▌</div>
+      <div class="inputrow ring" data-c="You double-clicked — the editor opened on the old text">Water the plants▌</div>
     </div>
     <div class="cap"><b>The FIRST gesture, photographed first</b> — the double-click has opened the editor and it still holds the OLD title. Proof the gesture landed, and the only frame in which "in place" means anything yet.</div></div>
   <div class="frame whn"><header>3 · THE WHEN, VISIBLE</header>
     <div class="scene">
       <div class="row dim"><span class="cb"></span> Pay the electricity bill</div>
       <div class="row dim"><span class="cb done"></span> Buy a birthday gift</div>
-      <div class="inputrow ring" data-c="the retyped text, still in the box">Water the office plants▌</div>
+      <div class="inputrow ring" data-c="You retyped the title — the new text, still in the box">Water the office plants▌</div>
     </div>
-    <div class="cap"><b>Then the changed value</b> — photographed while it is still in the box. (It's gone by the after-photo; without this frame the film skips the act.)</div></div>
+    <div class="cap"><b>Then the changed value</b> — photographed while it is still in the box. (It's gone by the after-photo; without this frame the film skips the act.) Both When-frames' labels <b>name the gesture</b>, because those words land on the picture itself.</div></div>
   <div class="frame thn"><header>4 · FACT — the stamp</header>
     <div class="scene">
       <div class="row dim"><span class="cb"></span> Pay the electricity bill</div>
@@ -197,14 +198,15 @@ If you cannot film it, you cannot prove it — rewrite the promise until you can
       <div class="row"><span class="cb"></span> Water the office plants <span class="stamp ring" data-c="edited just now">edited just now</span></div>
     </div>
     <div class="cap"><b>One photo per fact.</b> The stamp is its own claim, ringed on the smallest element that carries it.</div></div>
-  <div class="frame thn"><header>5 · THEN — the row</header>
+  <div class="frame thn"><header>5 · THEN — the row · <i>the film ends here</i></header>
     <div class="scene">
       <div class="row dim"><span class="cb"></span> Pay the electricity bill</div>
       <div class="row dim"><span class="cb done"></span> Buy a birthday gift</div>
       <div class="row ring" data-c="the same row, new text, in place"><span class="cb"></span> Water the office plants <span class="stamp">edited just now</span></div>
     </div>
-    <div class="cap"><b>The result, where it happened.</b> Same row, same position — "in place" is itself a checkable fact.</div></div>
+    <div class="cap"><b>The result, where it happened.</b> Same row, same position — "in place" is itself a checkable fact. <b>And this is the last frame</b> — there is no sixth.</div></div>
 </div>
+<div class="dec"><b>NO RECAP FRAME — the film ends on its last fact</b> <span class="note">(the human, 2026-09-06: "The last small step (for show the list is meaningless) for expected and actual, please remove it")</span>. The board used to add a moment of its own after the ones above: the beat's resting state, captioned with the <i>whole</i> Then, its chip a CHECKLIST of every claim the beat had made, ringing whatever the beat happened to ring last. On R1 that was <b>six chips piled on the Add button</b>, moment 7 of 7. Since every fact of a Then became its own filmed moment (the soft claim), that frame only re-said what the frames before it had already shown — beside a picture that was about none of them. It is gone from the strip and from both cells. <b>Two things follow for the author:</b> order the beat so its <b>last <span class="k">proveVisible</span> is the one the film should close on</b>, and expect a beat that films a <b>single</b> fact to have a single moment and <b>no strip to walk</b> — if a beat is worth walking, its Then has more than one fact and each deserves its own photograph. <span class="note">Nothing leaves the harvest: the after frame is still captured, still folded, and is still the base every intended state is drawn from. This is a display rule.</span></div>
 <div class="dec"><b>Film the When from its FIRST GESTURE</b> <span class="note">(the human, 2026-09-06, on this very beat: "It should start from user click on the title to start edit, instead of the edit is finish at the first step")</span>. The moment the interaction <b>begins</b> is photographed first — the editor the double-click just opened, <b>still holding the old value</b>; the control just pressed; the row still there before the delete — and only then the changed value, then the facts. A beat that opens on the retyped text shows the answer before the question, and the gesture the When names never appears in the film at all. Both moments are needed and neither substitutes for the other: the value is gone from the box the instant it is committed.</div>
 <div class="dec"><b>An absence is ANCHORED and WORDED</b> <span class="note">(the human, 2026-09-06: "The 'nothing there' is weird")</span>. A claim on a thing that is not there has nothing to measure, so its ring silently keeps <b>whatever the beat rang last</b> — on R1 that photographed the <i>Add button</i> under a chip talking about the new row's checkbox. So an absence claim names <b>the place the absent thing would live</b> and says what it is in its own words: <span class="k">proveVisible(row.locator('.cb.on'), MISSING, "The new row's checkbox — empty, nothing ticked", { soft: true, anchor: row.locator('.cb'), phrase: 'empty' })</span> → EXPECTED <i>the checkbox — empty, nothing ticked</i> · ACTUAL <i>✓ empty</i>. With no anchor the ring stays where it was — honest and visible, never invented — and the generic sentence stands. A <b>state with no readable text</b> (a disabled button) is claimed the same way: <span class="k">.go:not([disabled])</span> is MISSING exactly while the button cannot be pressed.</div>
 <div class="dec"><b>The show-it rule (the R9 lesson):</b> a When that acts on a thing rings <b>that thing before</b> the action and <b>the place it changed after</b> — and only then the number. R9's film must show the row being deleted, the Undo appearing, <i>and then</i> "To do" still reading 5. A film whose only frames ring a counter claims the action happened without ever showing it.</div>
@@ -217,12 +219,14 @@ If you cannot film it, you cannot prove it — rewrite the promise until you can
     <div class="row"><span class="cb"></span> Water the office plants
       <span class="stamp ring" data-c="">edited just now</span></div>
     <div class="row dim"><span class="cb done"></span> Buy a birthday gift <span class="stamp">done</span></div>
-    <div class="chipbox"><span class="lab">EXPECTED</span> "edited just now"</div>
+    <div class="chipbox"><span class="cml">The stamp flipped to edited just now</span><span class="lab">EXPECTED</span> "edited just now"</div>
   </div>
   <div class="labels">
     <div class="lb"><b>The focus element = the smallest thing that carries the value</b><small>The stamp — not the row, not the list, not the page. A container never gets the ring when a leaf holds the number.</small></div>
-    <div class="lb"><b>The segment name = a fragment of the Then</b><small>"The stamp flipped to edited" — the strip under the pictures names each moment in the requirement's own words, one line, full text on hover.</small></div>
-    <div class="lb"><b>The chip = the exact promised words</b><small>EXPECTED carries the requirement's words; ACTUAL what the app showed.</small></div>
+    <div class="lb"><b>The label is read TWICE — write it as a sentence</b><small>It names the moment in the strip under the pictures <b>and it leads the chip ON the picture</b> (the human, 2026-09-06: "It's not obvious enough when user action is … mention in the explaining text box"). A picture of a filled box is a state; without words on it, nobody can tell a hand just filled it.</small></div>
+    <div class="lb"><b>A Then-moment's label = a fragment of the Then</b><small>"The stamp flipped to edited just now" — the requirement's own words, one line, full text on hover.</small></div>
+    <div class="lb"><b>A When-moment's label NAMES THE GESTURE</b><small>"You double-clicked — the editor opened on the old text"; "You retyped the title — the new text, still in the box"; "You typed the task — it sits in the Add box". Never "The retyped text, still in the box": that describes the state and leaves the hand out of the film.</small></div>
+    <div class="lb"><b>The chip = the label, then the exact promised words</b><small>The moment's own sentence on top, then EXPECTED with the requirement's words and ACTUAL with what the app showed. Same label on both cells — one wording source, so the two halves can never name a moment differently.</small></div>
     <div class="lb"><b>An absence says what is not there</b><small>EXPECTED speaks the claim's own label — "the checkbox — empty, nothing ticked" — and ACTUAL the author's short <span class="k">phrase</span>: "✓ empty". The generic pair ("nothing here — this element must be absent" / "✓ nothing was there") is the fallback for a claim that named neither. An empty input value is an absence too: <span class="k">EXPECTED “”</span> tells a reader nothing.</small></div>
     <div class="lb"><b>The context stays visible</b><small>Everything the moment is not about is faded once — still readable, so both cells read as the same page.</small></div>
   </div>
@@ -247,17 +251,19 @@ If you cannot film it, you cannot prove it — rewrite the promise until you can
   <li><b>When</b>: physical verbs; one action per beat.</li>
   <li><b>Then</b>: exact words and numbers; every fact separately claimable; absences said out loud; name the forbidden wrong answer where it teaches.</li>
   <li>Every noun in a Then must be <b>visible on screen</b>, or the gap is declared as visible debt.</li>
-  <li><b>Moments</b> = Given + the When from its FIRST gesture + the changed value + one photo per fact + the result where it happened.</li>
+  <li><b>Moments</b> = Given + the When from its FIRST gesture + the changed value + one photo per fact, <b>ending on the last of them</b> — no trailing recap frame <span class="k">(the human, 2026-09-06)</span>.</li>
   <li><b>Show it</b>: ring the acted-on thing before, the changed place after, the counter last.</li>
   <li><b>One camera</b> per beat; every named control in frame; no two photos alike.</li>
   <li><b>Focus</b> = the smallest element carrying the value; never a container over a leaf. An <b>absence</b> rings the place the absent thing would live (<span class="k">anchor</span>), never a neighbour by accident.</li>
-  <li><b>Words</b>: segment names are fragments of the Then; chips carry the promised words verbatim; an absence speaks its own label and its <span class="k">phrase</span>, the generic sentence only as fallback.</li>
+  <li><b>Words</b>: a moment's label is read TWICE — in the strip AND leading its chip on the picture <span class="k">(the human, 2026-09-06)</span>. A Then-moment's label is a fragment of the Then; a <b>When-moment's label NAMES THE GESTURE</b> ("You double-clicked — the editor opened on the old text"), never just the state. Chips carry the promised words verbatim under it; an absence speaks its own label and its <span class="k">phrase</span>, the generic sentence only as fallback.</li>
   <li>Write the test <b>red-first</b>, watch it fail, and let each claim be soft — the beat reaches every fact and fails once at the end with the whole list.</li>
 </ol></div>
 
 <h2>Where this method bites — said before you agree</h2>
 <div class="dec warn"><b>Exact numbers are brittle on purpose.</b> Change the seed and half the Thens go red — that is the design (the seed is golden and frozen), but it means seed changes are requirement changes and get treated with the same care.</div>
 <div class="dec warn"><b>Absences must be written to be shown.</b> The board can only film an absence someone claimed. The method forces the sentence ("still has no checkbox") — reviewers must reject a Then that leaves its absences implicit.</div>
+<div class="dec"><b>OPEN OPTION — draw the gesture itself.</b> The human's ruling on naming the action offered two ways: "either <b>show it out (really edit it and shown to user)</b> or mention in the explaining text box". <b>Only the second is built.</b> The first would draw the gesture at the point it happened — a cursor or press glyph on the ringed control, an insertion caret in the field, a double-click mark — burned into the frame at capture time so both cells carry it. It is the stronger answer (a picture that shows the hand needs no sentence at all) and it is <b>not built</b>: it needs a gesture kind recorded per moment (`proveVisible` knows the target, not the verb that produced it), a glyph in the design system, and a re-harvest of every board. Noted here so the choice is visible, not lost.</div>
+<div class="dec warn"><b>A label now lands in two places, so a lazy label costs twice.</b> The moment's words are read in the strip AND on the picture. A label like "check meta" was merely unhelpful in a caption; over the picture it is the only thing telling a reader what they are looking at.</div>
 <div class="dec warn"><b>Some facts have no screen surface.</b> An API-only fact or a geometry gets a declared gap, not a photo. The debt list is part of the product — it must stay short and be read.</div>
 
 <p class="note" style="margin-top:30px">Sources: the todolist demo's real <span class="k">spec/todo/prd.md</span> (R1–R9 quoted verbatim), CLAUDE.md's rules 1–3 and 8, the watchable-beat and asserted-values-visible rulings, and the 2026-09-02 one-stepper/named-moments decisions. On your yes: the rule card lands in <span class="k">skills/kg-deep</span> (steps 1–2) and <span class="k">skills/kg-e2e</span> (steps 3–4), each rule with its todolist example.</p>

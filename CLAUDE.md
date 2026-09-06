@@ -350,11 +350,21 @@ change.
   `data-viz-subphases` and was driven through them by `frameCell._drive` / `data-driven`. The human
   retired the sketch; `frameCell`, its park points and the driven-frame rAF went with it.)* **ONE STEPPER PER ROW, over the two pictures
   (2026-09-02, the human: "schematic and proof should share same stepper (as their steps must be
-  same???)").** A beat is one ordered list of MOMENTS — every value it proved, then its result — and
+  same???)").** A beat is one ordered list of MOMENTS — every value it proved, and **the film ends on
+  the last of them** *(the human, 2026-09-06: "The last small step (for show the list is meaningless)
+  for expected and actual, please remove it". The trailing RESULT moment re-listed every claim the beat
+  had already filmed, ringing whatever came last; `showsResult` in client.js now films it ONLY for a
+  beat that photographed no values, where it is the only proof there is. The after frame stays in the
+  harvest, in `momentsOf`, and as the base of every derived state — this is a DISPLAY rule)* — and
   the two cells are renderings of that one list, so a row has exactly one `.mstrip` (`momentStrip`),
   spanning `.pics`, one `.mseg` per moment NAMED by the assertion the run recorded (`snapValue` puts
   the CLAIM's label on the value's layout skeleton → `valueMeta` at the fold → `values[].label` in
-  `data-ev-beats`), the last segment the beat's Then. The `‹ n / N ›` that sat in the words' gutter
+  `data-ev-beats`), the last segment where the beat resolves; a beat that filmed ONE fact has one
+  moment and no strip at all, like the Given row. That same label also LEADS the chip over each
+  picture (`.pcml`, `chipLabel`) — the human's other 2026-09-06 ruling, "It's not obvious enough when
+  user action is, we need to either show it out … or mention in the explaining text box" — so a
+  When-moment's label must NAME THE GESTURE ("You double-clicked — the editor opened on the old
+  text"), never merely describe the state. The `‹ n / N ›` that sat in the words' gutter
   (`sceneRail`/`.tourstep`, 2026-09-01) is GONE with the two clocks it read from — and a drawing whose
   park points do not match the harvest's moment count no longer free-runs: it PARKS and the storyline's
   stale banner says "behind the harvest". A row with no proof loop at all has one moment on both

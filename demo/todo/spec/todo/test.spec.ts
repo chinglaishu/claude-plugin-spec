@@ -154,8 +154,10 @@ test('R9 (demo) — a deleted task should be reversible, keeping the count — I
     // really delete a subtask — please show it out in visual, not just text"). The When acts on a
     // task, so the task is ringed BEFORE the action and the list is ringed AFTER it, where the row
     // used to be — a beat whose only frames are a counter is not watchable.
+    // …and its label NAMES THE GESTURE (the human, 2026-09-06): the chip over the picture says a hand
+    // is about to act, not merely that a row exists.
     await proveVisible(row('k2').locator('.ttl'), 'Pay the electricity bill',
-      'The open task about to be deleted — Pay the electricity bill', { soft: true })
+      'The row you press delete on — Pay the electricity bill', { soft: true })
     await page.locator('.task[data-id="k2"] .del').click()          // delete it (Tsumiki hard-deletes)
     // THE THEN, AS WRITTEN — every fact of it, each a SOFT claim so the beat reaches all three and
     // fails at its end (the human, 2026-09-02: "the schematic should be correct, only the proof

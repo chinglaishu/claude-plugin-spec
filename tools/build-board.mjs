@@ -2279,10 +2279,13 @@ export function build () {
      photographing ITSELF: a replica re-renders the chip under a new parent, and a 90% cap
      resolved against that one came back 126 px where the harvest measured 140, which the mirror gate
      rightly refused) — and it WRAPS to at most
-     three lines, so a typical value shows whole; only a genuinely long one clamps, with the full
-     text still one hover or focus away in the .mtip. The strip's segment NAME is untouched — one
-     ellipsised line, every strip one height (the human's own 2026-09-02 ruling) — and client.js
-     clamps the grown chip inside the cell so a third line cannot fall out of the picture.
+     two lines, so a typical value shows whole; only a genuinely long one clamps, with the full
+     text still one hover or focus away in the .mtip. (Three lines until 2026-09-06, when the same
+     human's action ruling put the moment's own LABEL on top of the chip — the caption takes up to
+     two lines of its own, so the value came down one to keep the chip inside its cell.) The strip's
+     segment NAME is untouched — one ellipsised line, every strip one height (the human's own
+     2026-09-02 ruling) — and client.js clamps the grown chip inside the cell so a last line cannot
+     fall out of the picture.
      It lives INSIDE the camera box on purpose — it is a label on THIS picture, and the camera's edge
      is where the picture stops.
      Measured: --ink on --paper 15.9:1, --ink-3 on --paper 6.42:1, --bengara on --bengara-tint
@@ -2296,20 +2299,33 @@ export function build () {
      Same pattern the strip's segments already use. Button resets, because the design system's own
      chrome must not inherit the UA's. */
   .pcbox .pchip { position:absolute; left:0; top:0; transform-origin:0 0; pointer-events:auto;
-    display:flex; align-items:baseline; gap:var(--s2); min-width:0; max-width:360px;
+    display:flex; flex-direction:column; align-items:stretch; gap:3px; min-width:0; max-width:360px;
     padding:var(--s2) var(--s3); background:var(--paper); border:1px solid var(--line2);
     border-radius:var(--r); box-shadow:var(--sh-md);
     font:inherit; text-align:left; cursor:default; -webkit-appearance:none; appearance:none; }
   .pcbox .pchip:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+  /* THE MOMENT'S OWN WORDS, ON TOP (the human, 2026-09-06: "It's not obvious enough when user action
+     is … mention in the explaining text box"). The gesture that made this picture, said on the
+     picture: --t-sm on the reader's ladder, one step under the value it introduces, in --ink-3 so it
+     reads as the caption it is and never competes with the value. Two lines at most — the chip's
+     whole height is what the camera reserves (chipRows), and a caption that grew without end would
+     push the value out of the cell. Measured: --ink-3 on --paper 6.42:1. */
+  .pcbox .pchip .pcml { min-width:0; font:var(--t-sm)/1.35 var(--sans); color:var(--ink-3);
+    white-space:normal; overflow-wrap:anywhere;
+    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2;
+    overflow:hidden; }
+  .pcbox .pchip .pcrow { display:flex; align-items:baseline; gap:var(--s2); min-width:0; }
   .pcbox .pchip .pcl { flex:none; font:var(--t-sm) var(--mono); letter-spacing:.1em;
     text-transform:uppercase; color:var(--ink-3); }
   .pcbox .pchip .pcb { min-width:0; display:flex; flex-direction:column; gap:2px; }
   .pcbox .pchip .pcvr { display:flex; align-items:baseline; gap:6px; min-width:0;
     font:600 var(--t-md)/1.3 var(--mono); color:var(--ink); }
-  /* wraps, then clamps at three lines with the ellipsis -webkit-line-clamp puts there; a value with
-     no spaces in it (a hash, a url) breaks rather than pushing the chip past its max width */
+  /* wraps, then clamps with the ellipsis -webkit-line-clamp puts there; a value with no spaces in it
+     (a hash, a url) breaks rather than pushing the chip past its max width. TWO lines since
+     2026-09-06, not three: the label line above it is the third, and the chip must still fit the
+     cell it labels. */
   .pcbox .pchip .pcv { min-width:0; white-space:normal; overflow-wrap:anywhere;
-    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3;
+    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2;
     overflow:hidden; }
   .pcbox .pchip .pcm { flex:none; font-weight:700; color:var(--koke); }
   .pcbox .pchip .pcvr.no, .pcbox .pchip .pcvr.no .pcm { color:var(--bengara); }
