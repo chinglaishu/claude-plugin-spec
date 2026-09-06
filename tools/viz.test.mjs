@@ -1424,9 +1424,12 @@ const demoLayout = n => demoSkel('R1', n)
 
 test('mirrorGaps: the demo\'s real harvest draws everything it measured — zero gaps, every frame', (t) => {
   if (!demoHas('R1')) return t.skip(NO_DEMO)
-  const beat = { before: demoLayout('before'), after: demoLayout('after'), values: ['v1', 'v2', 'v3'].map(demoLayout) }
+  // (rule 4, 2026-09-06: R1's beat gained a fourth value when the method ruling split its one
+  // outcome claim in two — the empty checkbox claimed as the absence it is, then the stamp on
+  // `.meta` rather than on the whole `.trow`. The harvest moved; the pin moves with it.)
+  const beat = { before: demoLayout('before'), after: demoLayout('after'), values: ['v1', 'v2', 'v3', 'v4'].map(demoLayout) }
   const d = renderWireframe([beat], { behavior: GUARDB, id: 'R1', pass: true })
-  assert.equal(d.gaps.length, 5, 'one report per drawn frame: the given, three asserted values, the result')
+  assert.equal(d.gaps.length, 6, 'one report per drawn frame: the given, four asserted values, the result')
   for (const g of d.gaps) {
     assert.deepEqual(g.gaps, [], `frame ${g.frame} — ${gapSummary(g.gaps)}`)
   }
@@ -1634,7 +1637,13 @@ test('mirror-11: the demo\'s real harvest is unmoved — zero gaps, the same rin
   // ring a wrapper AND the leaf inside it, so one scene draws two halos. The VEIL is the per-scene
   // signature — one wash per ringed scene — so the two are pinned as the different numbers they are
   // rather than being asserted equal. The harvest moved; the pin moves with it.)
-  for (const [id, vals, rings, veils] of [['R1', ['v1', 'v2', 'v3'], 6, 4], ['R3', ['v1', 'v2'], 3, 3]]) {
+  // (rule 4 a third time, 2026-09-06: the method ruling split R1's outcome claim in two — the empty
+  // checkbox as its own absence, then the stamp ringed on `.meta` instead of on the whole `.trow`.
+  // Four values now, and the halo count went 6 → 5 while the veil count went 4 → 5: the `.trow` ring
+  // was a WRAPPER whose leaf drew a second halo inside it, and the two scenes that replaced it ring
+  // one leaf each. Halo == veil == ringed scene again, which is exactly what "ring the smallest
+  // element that carries the value" means in the drawing. Zero gaps throughout.)
+  for (const [id, vals, rings, veils] of [['R1', ['v1', 'v2', 'v3', 'v4'], 5, 5], ['R3', ['v1', 'v2'], 3, 3]]) {
     const L = n => demoSkel(id, n)
     const beat = { before: L('before'), after: L('after'), values: vals.map(L) }
     const d = renderWireframe([beat], { behavior: GUARDB, id, pass: true })

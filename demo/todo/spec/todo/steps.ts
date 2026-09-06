@@ -34,8 +34,13 @@ export async function openSeededBoard (page: Page): Promise<FlowState> {
   await page.evaluate(() => localStorage.clear())
   await page.goto(URL, { waitUntil: 'domcontentloaded' })
   await waitForContent(rowById(page, 'k1'))
-  return { leaves: 5, ring: { done: 1, total: 3 }, container: 'k1' }
+  return { leaves: 5, ring: { done: 1, total: 3 }, container: 'k1', containerTitle: 'Plan the team offsite', doneTask: 'Buy a birthday gift for Mia' }
 }
+
+// the ids of the task rows the list shows right now, in order — the only way to say "the SAME row,
+// in the SAME place" (R2's "in place") without trusting the title we just changed.
+const rowIds = (page: Page) =>
+  page.locator('.list .task').evaluateAll(els => els.map(e => e.getAttribute('data-id')))
 
 export const BEATS = [
   { fn: 'addTask', proves: 'R1', name: 'type "Water the plants" and press Add — a new row at the bottom, stamped added just now', needs: ['seeded'], gives: ['task'] },
@@ -52,12 +57,15 @@ export const BEATS = [
 
 // R1 — typing enables the Add button; pressing it drops a new row at the bottom, its checkbox EMPTY,
 // stamped "added just now". A WATCHABLE beat (kg-e2e "a watchable beat", the human 2026-08-30 on this
-// very beat) — three DISTINCT scenes, every named control in frame, the named state visibly different:
+// very beat) — four DISTINCT scenes, every named control in frame, the named state visibly different:
 //   scene 1 — the filled Add box carrying the typed text (the action's own value, proveVisible reads it)
 //   scene 2 — the Add button it names, now ENABLED (the actor of "press Add", ringed so the union
 //             camera keeps it in frame — the crop that hid it is the defect this fixes)
-//   scene 3 — the new row at the bottom: its checkbox EMPTY, sitting under the already-done "Buy a
-//             birthday gift for Mia" so unchecked reads as a CONTRAST, stamped "added just now"
+//   scene 3 — the new row's checkbox EMPTY, claimed as the absence it is, sitting under the
+//             already-done "Buy a birthday gift for Mia" so unchecked reads as a CONTRAST
+//   scene 4 — the stamp itself, "added just now", ringed on `.meta`
+// (Scenes 3 and 4 were ONE scene ringing `.trow` until 2026-09-06 — the method ruling's step 2/4:
+//  two facts of the Then behind one claim, and a container ringed over the leaf that holds the value.)
 // The old beat clicked .go WITHOUT ringing it (the tight camera cropped the Add button away — "it says
 // press Add but there's no Add button"), never showed the unchecked state, and spent a third scene
 // re-proving the typed string on the new row's .ttl — the redundant scene removed here.
@@ -76,27 +84,49 @@ export async function addTask (page: Page, state: FlowState): Promise<void> {
   // contrast row "Buy a birthday gift for Mia" sits done just above it, so the empty box reads as a
   // difference the watcher can see, not a claim on faith.
   await expect(row.locator('.cb'), 'the new row starts UNCHECKED — still to do').not.toHaveClass(/\bon\b/)
-  // SCENE 3 — the OUTCOME: ring the new row so its empty checkbox and its "added just now" stamp are
-  // both in frame (proveVisible reads the row's text for the stamp; the empty .cb sits at its left edge).
-  await proveVisible(row.locator('.trow'), 'added just now',
-    'The new row — its checkbox empty, stamped added just now',
+  // SCENE 3 — the Then's FIRST outcome fact, CLAIMED AS THE ABSENCE IT IS (the method's step 4, the
+  // human 2026-09-06): "its checkbox empty" is a fact of its own, so it gets a photograph of its own.
+  // A ticked checkbox is `.cb.on`, so MISSING passes exactly while nothing on this row is ticked and
+  // fails, with the box's own state, the moment one is. (Until 2026-09-06 this fact rode inside
+  // scene 4's label with only the hard `not.toHaveClass` above to catch it — a fact hidden behind
+  // another fact's green, which is what the lint's coarse Then-split cannot see.)
+  await proveVisible(row.locator('.cb.on'), MISSING,
+    'The new row\'s checkbox — empty, nothing ticked', { soft: true })
+  // SCENE 4 — the Then's SECOND outcome fact, on the SMALLEST ELEMENT THAT CARRIES IT (same ruling):
+  // the stamp is `.meta`, not the row. This rang `.trow` and recorded got "Water the plantsadded just
+  // now" — the whole row's text for a claim about a stamp: a container ringed over the leaf that
+  // holds the value. The union camera still frames the row, so the empty checkbox stays on screen
+  // beside the already-done "Buy a birthday gift for Mia" exactly as before.
+  await proveVisible(row.locator('.meta'), 'added just now',
+    'The new row\'s stamp — added just now',
     { soft: true, match: s => /added just now/.test(s) })
   state.task = 'Water the plants'
   state.leaves += 1
 }
 
-// R2 — the row shows the new text, and the stamp flips added → edited.
+// R2 — the SAME row shows the new text IN PLACE, and the stamp flips added → edited.
 export async function renameInPlace (page: Page, state: FlowState): Promise<void> {
+  // "IN PLACE" IS ITSELF A CHECKABLE FACT (the method's step 3, the human 2026-09-06). Until
+  // 2026-09-06 this beat found the row BY ITS NEW TITLE after the edit — so an app that deleted the
+  // task and appended a brand-new row carrying the new text would have passed it green, and the
+  // Then's own words ("the same row … in place") were the one thing the test did not prove. Pin the
+  // row's identity and its position BEFORE the edit, and read them back after.
+  const id = await rowByTitle(page, state.task).getAttribute('data-id')
+  const at = (await rowIds(page)).indexOf(id)
+  expect(at, 'the row we are about to rename is on screen').toBeGreaterThan(-1)
   await rowByTitle(page, state.task).locator('.ttl').dblclick()
   const edit = page.locator('.edit')
   await edit.fill('Water the office plants')
   await edit.press('Enter')
-  const row = rowByTitle(page, 'Water the office plants')
+  expect((await rowIds(page)).indexOf(id),
+    'the SAME row, at the SAME position — the edit happened in place').toBe(at)
+  const row = rowById(page, String(id))
   await proveVisible(row.locator('.ttl'), 'Water the office plants',
-    'The renamed task, read back off its row', { soft: true })
+    'The same row reads the new text, in place', { soft: true })
   await proveVisible(row.locator('.meta'), 'edited just now',
-    'The stamp flipped to edited', { soft: true, match: s => /edited just now/.test(s) })
+    'The stamp flipped to edited just now', { soft: true, match: s => /edited just now/.test(s) })
   state.task = 'Water the office plants'
+  state.taskId = id
 }
 
 // R3 — a container shows a derived ring, no checkbox, and the ring grows when a sub-task is added.
@@ -142,6 +172,15 @@ export async function finishContainerRollsUp (page: Page, state: FlowState): Pro
   expect(open, 'the two ticks were the container\'s LAST open sub-tasks').toBe(0)
   await proveVisible(rowById(page, k).locator('.pct'), `${state.ring.total}/${state.ring.total}`,
     'Every sub-task done — the ring is full', { soft: true })
+  // "TITLE STRUCK THROUGH" — the Then's second fact, and until 2026-09-06 the one fact of this beat
+  // NO claim covered: the lint's Then-split reads "the container completes itself — ring 4/4, title
+  // struck through" as ONE fact, so the strike hid behind the ring's green (the method's step 2,
+  // the human 2026-09-06 — every fact of a Then is separately claimable). The strike is drawn by
+  // CSS (`.done .ttl { text-decoration: line-through }`), so the claim RINGS the title — the
+  // smallest element that carries it, and the picture a reader checks — while the hard assertion
+  // below pins the `done` class that draws it, which is the thing that can actually fail.
+  await proveVisible(rowById(page, k).locator('.ttl'), state.containerTitle,
+    'The container\'s title, struck through', { soft: true })
   // NOBODY TICKED THE PARENT — claimed as the absence it is: there is no checkbox on the container
   // to have ticked, so the roll-up can only have come from its own leaves.
   await proveVisible(rowById(page, k).locator('.trow > .cb'), MISSING,
@@ -149,6 +188,10 @@ export async function finishContainerRollsUp (page: Page, state: FlowState): Pro
   await hudCheck('The container completed itself', 'true', await rowById(page, k).getAttribute('data-done'))
   expect(await rowById(page, k).getAttribute('data-done'),
     'the container rolled up to done on its own').toBe('true')
+  // …and the class the strike is drawn from, asserted LAST so a broken strike still lets every soft
+  // claim above photograph its moment first.
+  await expect(rowById(page, k), 'the `done` class is what strikes the container\'s title through')
+    .toHaveClass(/\bdone\b/)
 }
 
 // R5 — completing a container of two open leaves dropped the count by two, not three: the
@@ -175,7 +218,12 @@ export async function reopenSubTaskReopensParent (page: Page, state: FlowState):
   await subById(page, 'k1b').locator('.scb').click()
   state.ring.done -= 1
   state.leaves += 1
-  await proveVisible(rowById(page, k).locator('.pct'), `${state.ring.done}/${state.ring.total}`, 'Reopen one sub-task and the parent reopens')
+  // The segment name is a FRAGMENT OF THE THEN, not a retelling of the When (the method's step 4):
+  // this beat's Then reads "the container reopens — ring 3/4", so that is what the strip says. And
+  // the claim is SOFT like every other on this board, so the beat photographs its fact and reports
+  // at its end rather than cutting the film off at the first red.
+  await proveVisible(rowById(page, k).locator('.pct'), `${state.ring.done}/${state.ring.total}`,
+    'The container reopened — ring ' + state.ring.done + '/' + state.ring.total, { soft: true })
   expect(await rowById(page, k).getAttribute('data-done'),
     'reopening a sub-task reopened the container').toBe('false')
 }
@@ -195,11 +243,26 @@ export async function walkSmartViews (page: Page, state: FlowState): Promise<voi
     // fails here — photographed, on the badge.
     await proveVisible(navBtn(page, v).locator('.ct'), String(rows),
       `${v} — the badge equals the rows on screen`, { soft: true })
-    // …and ONLY THAT VIEW'S TASKS SHOW: the view is the one whose button is on, and the list under
-    // it is that view's own — claimed on the button the click turned on.
-    await proveVisible(navBtn(page, v), v === 'all' ? 'All' : v.charAt(0).toUpperCase() + v.slice(1),
-      `${v} — only this view's tasks are on screen`,
-      { soft: true, match: s => s.toLowerCase().startsWith(v) })
+    // …and ONLY THAT VIEW'S TASKS SHOW — CLAIMED ON THE LIST, NOT ON THE BUTTON (the method's step 4,
+    // the human 2026-09-06). This used to claim the nav BUTTON's own label ("All", "Active", …) and
+    // call the fact covered: a claim that the button says what the button says, while the fact is
+    // about which ROWS the list holds. It is the move the skill forbids by name — claiming a
+    // neighbour's positive fact instead of the fact itself — and it could not fail if every view
+    // showed every task. The claim now rings the row that proves the view's own rule: the ones a
+    // view EXCLUDES must be absent from the list, and All must still carry the done one.
+    if (v === 'all') {
+      await proveVisible(page.locator('.list .task[data-done="true"] .ttl'), state.doneTask,
+        'all — every task shows, the done one included', { soft: true })
+    } else if (v === 'active') {
+      await proveVisible(page.locator('.list .task[data-done="true"]'), MISSING,
+        'active — no done task is on screen', { soft: true })
+    } else if (v === 'today') {
+      await proveVisible(page.locator('.list .task[data-done="true"], .list .task .chip.due'), MISSING,
+        'today — nothing done and nothing due later is on screen', { soft: true })
+    } else {
+      await proveVisible(page.locator('.list .task[data-done="false"]'), MISSING,
+        'completed — nothing still open is on screen', { soft: true })
+    }
     if (HOLD) await page.waitForTimeout(HOLD)
   }
   await navBtn(page, 'all').click()

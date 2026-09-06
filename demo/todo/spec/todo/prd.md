@@ -108,14 +108,24 @@ one drops the count by its open-leaf count, not by one.
 
 - **Given** the seeded tasks, some done, some due today
 - **When** you switch to All, Active, Today or Completed
-- **Then** only that view's tasks show, and its sidebar badge equals the task rows on screen
+- **Then** only that view's tasks show — no done task in Active or Today, nothing still open in Completed — and its sidebar badge equals the task rows on screen
+
+<!-- THEN AMENDED 2026-09-06 (rule 6, the reason attached — the human's method ruling, "say absences
+     out loud"). It read: "only that view's tasks show, and its sidebar badge equals the task rows on
+     screen". The exclusions were left IMPLICIT, so the only thing a test could photograph was the
+     badge — and the beat's second claim rang the nav BUTTON's own label and called "only that
+     view's tasks show" covered. This adds no new meaning: the exclusions are the paragraph below,
+     verbatim, moved into the Then where a claim can reach them. If the wording is wrong, it is the
+     requirement that is wrong and the human rewrites it. -->
 
 All shows every task; Active hides done tasks; Today shows only not-done tasks due on or before
 today; Completed shows only done tasks. Each view's sidebar badge equals the number of task rows that
 view actually shows.
 
 <!-- Proven by walking each view: read its sidebar badge, count the task rows on screen, and assert
-     the two are equal — an on-screen count, never a read from code. -->
+     the two are equal — an on-screen count, never a read from code — and then claim the view's own
+     rule on the LIST: the rows it excludes are absent (a done task in Active or Today, an open one
+     in Completed), and All still carries the done one. -->
 
 ## R7 — A due date derives an overdue or today chip
 
