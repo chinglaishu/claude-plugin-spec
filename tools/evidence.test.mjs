@@ -288,6 +288,26 @@ test('valueMeta refuses a claim that is not one — never a half-claim, never an
   assert.equal(valueMeta({ claim: { expected: 'x'.repeat(400), got: '4', ok: false } }).claim.expected.length, 140,
     'and bounded — what was written by a run is read back into an attribute')
 })
+// AN ABSENCE CARRIES ITS OWN WORDS OUT OF THE RUN (the human, 2026-09-06: "The 'nothing there' is
+// weird"). The board words an absence from the claim's label and the author's short `phrase` — so the
+// phrase has to survive the fold, and a claim that expected NOTHING and read NOTHING has to survive
+// it too. It did not: `claimOf` dropped any claim whose two values were both empty, which is exactly
+// the shape of R1's new fact ("the Add box is empty again"). Only a NAMED emptiness is kept — an
+// author saying, with the phrase, that this emptiness is the fact — so a genuinely blank claim is
+// still no claim.
+test('valueMeta carries an absence\'s own phrase, and keeps a NAMED empty claim', async () => {
+  const { valueMeta } = await import('./evidence.mjs')
+  assert.deepEqual(valueMeta({ claim: { expected: '(missing)', got: '(missing)', ok: true, missing: true, phrase: 'empty' } }).claim,
+    { expected: '(missing)', got: '(missing)', ok: true, missing: true, phrase: 'empty' })
+  assert.deepEqual(valueMeta({ claim: { expected: '', got: '', ok: true, phrase: 'empty' } }).claim,
+    { expected: '', got: '', ok: true, phrase: 'empty' }, 'an emptiness the author named IS a claim')
+  assert.deepEqual(valueMeta({ claim: { expected: '', got: '', ok: true } }), {},
+    'an unnamed blank claim is still no claim — nothing was claimed and nothing can be said')
+  assert.equal(valueMeta({ claim: { expected: '', got: '', ok: true, phrase: '  ' } }).claim, undefined,
+    'a blank phrase names nothing')
+  assert.equal(valueMeta({ claim: { expected: '5', got: '5', ok: true, phrase: 42 } }).claim.phrase, undefined,
+    'only a string is a phrase')
+})
 test('valueMeta refuses a label that is not a usable name — collapsed, bounded, never blank', async () => {
   const { valueMeta } = await import('./evidence.mjs')
   assert.deepEqual(valueMeta({ label: '  To do\n  reads 6  ' }), { label: 'To do reads 6' },

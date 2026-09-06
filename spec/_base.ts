@@ -331,7 +331,12 @@ const HUD = { head: '' }
 // The latest check's got vs expected — surfaced in the callout only on a FAILURE (a passing check's
 // value is already named by the Then it proves). The full text still goes to the board as a `note:`
 // step (emitNote); `ok` is kept so a caller can redden before the assertion throws.
-let CLAIM: { label: string, expected: string, got: string, ok: boolean, missing?: boolean } | null = null
+// …and `phrase` (2026-09-06, the human: "The 'nothing there' is weird"): the author's own short
+// plain-English name for what an EMPTINESS looks like on screen ("empty"), which the board's ACTUAL
+// chip speaks in place of its one generic sentence. It says nothing about pass/fail and is never
+// compared — the claim's two values still decide — it only gives a reader words for a moment whose
+// whole point is that nothing is there.
+let CLAIM: { label: string, expected: string, got: string, ok: boolean, missing?: boolean, phrase?: string } | null = null
 // One freeform line (hudNote), or the aggregate failure summary (multi-line, pre-wrapped).
 let NOTE = ''
 // The ACTIVE requirement as its Given / When → Then behaviour (parsed from the prd by reqBehavior —
@@ -685,12 +690,12 @@ async function emitNote (text: string): Promise<void> {
 // must paint MORE than the bar (its red ring) before the throw, and then asserts the SAME shown vs
 // expected itself. Every other caller uses the default and asserts here, so the bar always names the
 // check that broke (76714c5).
-export async function hudCheck (label: string, expected: unknown, actual: unknown, opts: { assert?: boolean, missing?: boolean } = {}): Promise<void> {
+export async function hudCheck (label: string, expected: unknown, actual: unknown, opts: { assert?: boolean, missing?: boolean, phrase?: string } = {}): Promise<void> {
   const ok = String(expected) === String(actual)
   // `missing` rides the claim (2026-09-02): the check found NOTHING to read — the element the
   // requirement names is not on the page — which the drawn mirror treats differently from a wrong
   // value on an element that is there (tools/viz.mjs intendedLayout).
-  CLAIM = { label: String(label), expected: String(expected), got: String(actual), ok, ...(opts.missing ? { missing: true } : {}) }
+  CLAIM = { label: String(label), expected: String(expected), got: String(actual), ok, ...(opts.missing ? { missing: true } : {}), ...(opts.phrase ? { phrase: String(opts.phrase) } : {}) }
   await emitNote(String(label) + ' — got ' + String(actual) + ' · expected ' + String(expected))
   await paintHud({})
   if (opts.assert !== false) expect(String(actual), String(label)).toBe(String(expected))
@@ -786,23 +791,51 @@ async function shownText (target: Locator): Promise<string> {
 // leave a reader guessing whether the element was empty or absent.
 export const MISSING = '(missing)'
 
+// AN ABSENCE IS ANCHORED AND WORDED (the human, 2026-09-06, on the demo's R1 moment 3/5: "The
+// 'nothing there' is weird, or it should really say: after item added, the add button should back to
+// disable (due to the input box empty now)"). Two options carry that ruling:
+//
+//   `anchor` — THE PLACE THE ABSENT THING WOULD LIVE. `paintFocus` measures the target's box and
+//     RETURNS EARLY when there is none, WITHOUT clearing LAST_BOX/LAST_TARGET — so an absence claim
+//     silently inherited the ring of whatever the beat rang last. On R1 that was the Add button, and
+//     the moment claiming the new row's checkbox photographed a ring around the Add button, with the
+//     new row nowhere near the camera. (The comment below said the overlay was "already left hidden",
+//     which is true only of a beat whose first claim is the absence — the one case the defect could
+//     not show itself in.) The anchor is the container the absent thing belongs to — the new row's
+//     checkbox for R1 — and it is REVEALED and RINGED like any other target, so the walk measures it
+//     first, the camera frames it, and the picture is of the place, not of a neighbour.
+//   `phrase` — the author's short words for the emptiness ("empty"), which the board's ACTUAL chip
+//     speaks in place of its one generic sentence. Never compared, never a verdict.
+//
+// Both are OPTIONAL and the fallback is exactly today's behaviour: no anchor leaves the ring where
+// the beat last painted it (which a FAILED presence claim wants — the ring reddens where the value
+// was last seen, the 2026-09-02 rule below), and no phrase leaves the generic sentence standing.
 export async function proveVisible (
   target: Locator,
   expected: string,
   label: string,
-  opts: { match?: (shown: string) => boolean, soft?: boolean } = {}
+  opts: { match?: (shown: string) => boolean, soft?: boolean, anchor?: Locator, phrase?: string } = {}
 ): Promise<void> {
-  await reveal(target, { hold: 0 })                         // centre it now, ring it in ink; the readable hold comes after we read
+  // count FIRST, so the ring can be aimed at the anchor when there is nothing to ring. `count()` is
+  // a query — a number, never a wait and never a logged action — so this costs nothing and cannot
+  // hang on an element the requirement says should not be there.
   const present = (await target.first().count().catch(() => 0)) > 0
+  await reveal(present || !opts.anchor ? target : opts.anchor, { hold: 0 })  // centre it now, ring it in ink; the readable hold comes after we read
   const shown = present ? await shownText(target) : MISSING
-  await hudCheck(label, expected, shown, { assert: false, missing: !present }) // paint the CLAIM now, but DON'T throw yet — assert LAST, below
+  await hudCheck(label, expected, shown, { assert: false, missing: !present, phrase: opts.phrase }) // paint the CLAIM now, but DON'T throw yet — assert LAST, below
   // AN ABSENCE IS A VALUE A REQUIREMENT CAN NAME (2026-09-04, the controller's fix-round ruling).
   // `MISSING` existed for the other direction — a thing the app should show and does not — and this
   // read `present &&`, so `proveVisible(x, MISSING, …)` could never pass: a Then that says "no chip
   // at all", "there is no control to change it", "no per-cell caption" had no claim it could make.
   // Now expected === MISSING passes exactly when the element is gone and fails, with the app's own
-  // text as `got`, the moment it is back. There is nothing to ring, so the frame is the page — which
-  // is the honest picture of nothing being there (paintFocus already leaves the overlay hidden).
+  // text as `got`, the moment it is back.
+  // CORRECTED 2026-09-06 (rule 6, the human's absence ruling). This said: "There is nothing to ring,
+  // so the frame is the page — which is the honest picture of nothing being there (paintFocus already
+  // leaves the overlay hidden)". That is only true of a beat whose FIRST claim is the absence.
+  // `paintFocus` returns early on an unmeasurable target without clearing LAST_BOX, so any absence
+  // claimed after another claim in the same beat kept that claim's ring — a photograph of the wrong
+  // element under a chip about this one. Pass `anchor` (above) to ring the place the absent thing
+  // would live; with no anchor the old behaviour stands, honestly and visibly.
   // AND A `match` CLAIM'S `expected` MUST BE TEXT THE APP RENDERS (final review I2, 2026-09-04).
   // With `match` the verdict was a predicate while `expected` stayed whatever string the author
   // passed — so `proveVisible(chip, 'passed or failed', …, { match: /^(passed|failed)$/ })` recorded
@@ -1012,6 +1045,7 @@ function raceTimeout<T> (p: Promise<T>, ms: number): Promise<T | null> {
 // it), every failure swallowed. It measures and never touches the page, so it cannot change what
 // the assertion then reads.
 type Claim = { label: string, expected: string, got: string, ok: boolean, missing?: boolean,
+  phrase?: string,      // the author's own words for an emptiness (2026-09-06) — see CLAIM above
   ring?: Box | null }   // the ring box THIS claim was made under (fix round 2) — an anchor's own
   // reference point when a later rebuild has to find where this claim's fix now belongs
 async function snapLayout (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null, data: any = null, dropped = false): Promise<void> {
@@ -1066,7 +1100,15 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
       // …with `missing` when the check found nothing to read (2026-09-02): the drawn mirror finds a
       // removed element by its expected text, never by the ring's box — dropping the flag here drew
       // the demo's Undo over the task title it was meant to sit beside
-      if (expected || got) extra.claim = { expected, got, ok: claim.ok, ...(claim.missing ? { missing: true } : {}) }
+      // …and `phrase`, the author's own words for an emptiness (2026-09-06). A NAMED emptiness is a
+      // claim: this read `if (expected || got)`, and R1's new fact — "the Add box is empty again" —
+      // is a claim whose two values are both the empty string, so the moment reached the board with
+      // nothing at all to say. An UNnamed blank one is still no claim (tools/evidence.mjs claimOf
+      // draws the same line at the fold).
+      const phrase = one(claim.phrase)
+      if (expected || got || phrase) {
+        extra.claim = { expected, got, ok: claim.ok, ...(claim.missing ? { missing: true } : {}), ...(phrase ? { phrase } : {}) }
+      }
     }
     const rec = Object.keys(extra).length ? { ...data, ...extra } : data
     writeFileSync(file, JSON.stringify(rec))

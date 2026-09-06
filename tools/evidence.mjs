@@ -436,10 +436,21 @@ function claimOf (c) {
   if (!c || typeof c !== 'object') return null
   if (typeof c.expected !== 'string' || typeof c.got !== 'string' || typeof c.ok !== 'boolean') return null
   const expected = oneLine(c.expected); const got = oneLine(c.got)
-  if (!expected && !got) return null
+  // …AND THE AUTHOR'S OWN WORDS FOR AN ABSENCE (the human, 2026-09-06: "The 'nothing there' is
+  // weird"). `phrase` is the short plain-English name of what the emptiness looks like ("empty"),
+  // written at the claim (`proveVisible(…, { phrase })`) and spoken by the board's ACTUAL chip; the
+  // EXPECTED chip speaks the moment's label, which already rides beside this. Optional, a string, and
+  // collapsed and bounded exactly like the two values.
+  const phrase = typeof c.phrase === 'string' ? oneLine(c.phrase) : ''
+  // A NAMED EMPTINESS IS A CLAIM (same ruling). This read `if (!expected && !got) return null` — and
+  // R1's new fact, "the Add box is empty again", is a claim whose expected AND got are both the empty
+  // string, so the fold dropped it and the moment reached the reader with nothing to say. The guard
+  // stays for what it was for: a claim with nothing in it at all is still no claim. What lets an
+  // empty one through is the author having NAMED it.
+  if (!expected && !got && !phrase) return null
   // `missing` (2026-09-02): the check found nothing to read — carried through so the drawn mirror
   // can tell a removed element from a wrong value (tools/viz.mjs intendedLayout)
-  return { expected, got, ok: c.ok, ...(c.missing === true ? { missing: true } : {}) }
+  return { expected, got, ok: c.ok, ...(c.missing === true ? { missing: true } : {}), ...(phrase ? { phrase } : {}) }
 }
 export function valueMeta (layout) {
   const out = {}

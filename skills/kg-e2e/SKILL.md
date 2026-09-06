@@ -137,11 +137,34 @@ way. Read it before writing your first one.
 
    1. **The GIVEN — the base.** The whole page exactly as seeded, no ring. Captured once per screen
       state and shared by every beat that starts there (see the base note below).
-   2. **The WHEN, made visible.** The action itself, photographed *while it is still on screen* — the
-      typed value still in the box, the row still there before the click. It is gone by the after
-      photo; without this frame the film skips the act.
+   2. **The WHEN, from its FIRST GESTURE.** *(the human, 2026-09-06, on Tsumiki's R2: "It should
+      start from user click on the title to start edit, instead of the edit is finish at the first
+      step".)* The moment the interaction BEGINS is photographed **first** — the editor the
+      double-click just opened, **still holding the old value**; the control just pressed; the row
+      still there before the delete — and only then the changed value. A beat that opens on the
+      retyped text shows the answer before the question, and the gesture the When names never
+      appears in the film at all. So R2 reads: *old text in the box → new text in the box → the
+      stamp → the row in place.* Two moments, not one: the value is gone from the box the instant it
+      is committed, so **both** are needed and neither substitutes for the other.
    3. **One photograph per FACT of the Then.** Each `proveVisible` is one moment. Tsumiki's R2 spends
       one on the stamp — its own claim, ringed on the smallest element that carries it.
+      **An ABSENCE is a fact like any other, and it is ANCHORED and WORDED**
+      *(the human, 2026-09-06: "The 'nothing there' is weird")*. `proveVisible(locator, MISSING, …)`
+      matches nothing, so there is nothing to measure and the ring **inherits whatever the beat rang
+      last** — on Tsumiki's R1 that put the ring on the Add button under a chip talking about the new
+      row's checkbox. Pass the two options that fix it:
+      `{ anchor: <the place the absent thing would live>, phrase: '<what the emptiness looks like>' }`
+      — `anchor` is revealed, ringed and measured like any target (the container, the cell, the
+      control), and `phrase` is what the board's ACTUAL chip says instead of its generic sentence,
+      while the EXPECTED chip speaks your claim's own **label**. R1:
+      `proveVisible(row.locator('.cb.on'), MISSING, "The new row's checkbox — empty, nothing ticked",
+      { soft: true, anchor: row.locator('.cb'), phrase: 'empty' })` → EXPECTED *the checkbox — empty,
+      nothing ticked* · ACTUAL *✓ empty*. **Never invent an anchor**: with none given the ring stays
+      where the beat last painted it, which is honest and visible, and is exactly the fallback an
+      old harvest keeps. A **state with no readable text** (a disabled button) is claimable the same
+      way — `proveVisible(page.locator('.go:not([disabled])'), MISSING, …, { anchor: page.locator('.go'),
+      phrase: 'disabled' })` fails the moment the button can be pressed — with the hard
+      `expect(…).toBeDisabled()` pinned **after** every soft claim.
    4. **The RESULT, where it happened.** The same row, the same position — "in place" is itself a
       checkable fact, so prove the row is the row (by its id, at its index), not merely that *a* row
       somewhere now reads the new text.
@@ -289,10 +312,20 @@ are read by a person scanning a row, so both are part of the proof, not decorati
   ACTUAL what the app showed, so the `expected` argument is the Then's word or number as written —
   never a paraphrase, never a value you read off the page and echoed back (that is a tautology, and
   the golden number belongs in `state`).
-- **An absence reads in plain language.** `proveVisible(locator, MISSING, 'The parent still has no
-  checkbox of its own', { soft: true })` prints as *"nothing here — this element must be absent"* /
-  *"✓ nothing was there"*. Write the label as the absence the Then names, not as the positive fact of
-  a neighbour.
+- **An absence rings the place the absent thing would live, and reads in ITS OWN words**
+  *(the human, 2026-09-06)*. `proveVisible(locator, MISSING, label, { soft: true, anchor, phrase })`:
+  the **`anchor`** is the container, cell or control where the missing thing belongs — without it
+  there is no box to measure and the ring silently keeps the previous moment's, photographing a
+  neighbour under this moment's chip. The **label** is what the EXPECTED chip says (write it as the
+  absence the Then names, never as the positive fact of a neighbour) and **`phrase`** is what the
+  ACTUAL chip says — one short word for the emptiness. R1: *the checkbox — empty, nothing ticked* /
+  *✓ empty*. With neither, the two generic sentences stand — *"nothing here — this element must be
+  absent"* / *"✓ nothing was there"* — which is the honest fallback, never the goal.
+- **An empty value is an absence too.** An input's `value` of `''` is readable, so claim it directly
+  — `proveVisible(page.locator('#nt'), '', 'The Add box — empty again', { soft: true, phrase: 'empty' })`
+  — and give it a `phrase`, or the chip prints `EXPECTED “”`, which tells a reader nothing. An
+  unnamed empty claim is dropped at the fold on purpose: a claim with nothing in it and no words for
+  it is no claim.
 - **The context stays visible.** The Expected cell stands this moment's patch back in the beat's base
   and fades everything off that path once — still readable, so both cells read as the same page. You
   get that for free; what you can break is ringing an element the base never had, which reads as a

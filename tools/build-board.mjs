@@ -563,7 +563,14 @@ const evAttrs = (s, r) => {
             expected: cl.expected.replace(/\s+/g, ' ').trim().slice(0, 200),
             got: cl.got.replace(/\s+/g, ' ').trim().slice(0, 200),
             ok: cl.ok === true,
-            ...(cl.missing === true ? { missing: true } : {})
+            ...(cl.missing === true ? { missing: true } : {}),
+            // …and the AUTHOR'S OWN WORDS for an absence (the human, 2026-09-06: "The 'nothing
+            // there' is weird"). The ACTUAL chip speaks this instead of the one generic sentence;
+            // the EXPECTED chip speaks the moment's label, which already rides above. Bounded like
+            // the two values — it is about to become an HTML attribute.
+            ...(typeof cl.phrase === 'string' && cl.phrase.trim()
+              ? { phrase: cl.phrase.replace(/\s+/g, ' ').trim().slice(0, 200) }
+              : {})
           }
         }
         return o2

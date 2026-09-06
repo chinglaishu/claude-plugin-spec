@@ -1061,16 +1061,37 @@ const B = window.__BOARD__ || {}
   const MUST_BE_ABSENT = 'nothing here — this element must be absent'
   const WAS_ABSENT = 'nothing was there'
   function quoteVal (s) { return '“' + String(s == null ? '' : s) + '”' }
-  function wantsNothing (c) { return !!c && String(c.expected) === NOTHING }
+  // …AND AN ABSENCE IS SAID IN THE CLAIM'S OWN WORDS (the human, 2026-09-06: "The 'nothing there' is
+  // weird"). One generic sentence stood in for every absence on the board, so the one thing a reader
+  // wants to know — WHAT is not there — was the one thing the chip did not say, while the words for
+  // it were already recorded beside the moment. The EXPECTED side speaks the claim's own LABEL (the
+  // requirement's words for this moment); the ACTUAL side speaks the author's short PHRASE for what
+  // the emptiness looks like (`proveVisible(…, { phrase: 'empty' })`). Both sentences stay as the
+  // FALLBACK — a harvest from before this carries neither, and a generic sentence beats an invented
+  // one. A FAILED absence is unchanged: the app DID show something, and a wrong value is quoted.
+  // An EMPTY VALUE is an absence too (same ruling, R1's new fact "the Add box is empty again"): an
+  // input's emptiness is a real, readable fact, and `EXPECTED “”` is the same jargon in a different
+  // costume.
+  function wantsNothing (c) {
+    if (!c) return false
+    if (String(c.expected) === NOTHING) return true
+    return c.expected === '' && c.got === ''
+  }
   // what the REQUIREMENT says this moment should show
-  function expectedWords (c) { return wantsNothing(c) ? MUST_BE_ABSENT : quoteVal(c && c.expected) }
+  function expectedWords (c) {
+    if (!wantsNothing(c)) return quoteVal(c && c.expected)
+    return (c.label && String(c.label).trim()) ? String(c.label) : MUST_BE_ABSENT
+  }
   // …and what the APP did. An absence is a sentence, never a quoted value, whichever side asked for
   // it: a Then that wanted the thing gone and got its way, and a Then that wanted a value and found
   // nothing to read, are the same news and read the same way. A failed absence is the opposite — the
   // app DID show something — so it is quoted like any other wrong value.
   function actualWords (c) {
     if (!c) return quoteVal('')
-    if (c.ok) return wantsNothing(c) ? WAS_ABSENT : quoteVal(c.expected)
+    if (c.ok) {
+      if (!wantsNothing(c)) return quoteVal(c.expected)
+      return (c.phrase && String(c.phrase).trim()) ? String(c.phrase) : WAS_ABSENT
+    }
     return c.missing ? WAS_ABSENT : quoteVal(c.got)
   }
   // the chip's own words: a value moment says one value, a Then says the beat's CHECKLIST — every
@@ -1868,7 +1889,7 @@ const B = window.__BOARD__ || {}
         // fold files the label on the VALUE rather than inside the claim — so it is attached here,
         // once, instead of every reader of a claim having to know where the other half lives.
         const claim = v.claim
-          ? { expected: v.claim.expected, got: v.claim.got, ok: v.claim.ok, missing: v.claim.missing, label: v.claim.label || name }
+          ? { expected: v.claim.expected, got: v.claim.got, ok: v.claim.ok, missing: v.claim.missing, phrase: v.claim.phrase, label: v.claim.label || name }
           : null
         // ONE HTML PER MOMENT (2026-09-04): the Expected is the only replica a moment has, and the
         // Actual half of it is the photograph this same `shot` carries. A moment with none renders
