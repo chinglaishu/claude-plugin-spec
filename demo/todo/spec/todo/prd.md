@@ -30,11 +30,25 @@ Requirement ids are stable forever — later passes append, never renumber.
 
 - **Given** the list, with the Add box empty and the Add button disabled
 - **When** you type "Water the plants" and press the now-enabled Add button
-- **Then** a new row appears at the bottom — its checkbox empty — carrying that exact text, stamped "added just now"
+- **Then** a new row appears at the bottom — its checkbox empty — carrying that exact text, stamped "added just now" — and the Add box is empty again, its button back to disabled
 
 Typing a task enables the Add button (empty input adds nothing — the button stays disabled until there
 is text); pressing it shows the text as a new row at the bottom of the list, its checkbox empty,
-stamped "added just now".
+stamped "added just now". Adding also **resets the Add box**: it is empty again and its button is
+disabled again, so the same task cannot be added twice by a second press.
+
+<!-- THEN AMENDED 2026-09-06 (rule 6, the reason attached — the human's own ruling, in their words:
+     "The 'nothing there' is weird, or it should really say: after item added, the add button should
+     back to disable (due to the input box empty now)"). It read: "…carrying that exact text, stamped
+     'added just now'". The reset was REAL behaviour the Given already leaned on ("with the Add box
+     empty and the Add button disabled") and that no fact of the Then named — so nothing photographed
+     it, and the beat ended on a row without ever showing the box it came out of returning to rest.
+     This is the human's meaning, added on their instruction; if the wording is wrong, it is the
+     requirement that is wrong and the human rewrites it. -->
+<!-- …and the "empty checkbox" fact is now claimed ON THE CHECKBOX (same ruling, first half): an
+     absence claim rings THE PLACE THE ABSENT THING WOULD LIVE. It used to inherit the previous
+     moment's ring and photograph the Add button while its chip talked about a checkbox. -->
+
 
 <!-- Proven by a WATCHABLE beat (see kg-e2e, "a watchable beat"): the When rings the filled Add box AND
      the Add button it names; the Then rings the new row so its EMPTY checkbox is on screen beside an

@@ -90,8 +90,15 @@ export async function addTask (page: Page, state: FlowState): Promise<void> {
   // fails, with the box's own state, the moment one is. (Until 2026-09-06 this fact rode inside
   // scene 4's label with only the hard `not.toHaveClass` above to catch it — a fact hidden behind
   // another fact's green, which is what the lint's coarse Then-split cannot see.)
+  // …AND IT RINGS THE CHECKBOX (the human, 2026-09-06: "The 'nothing there' is weird"). `.cb.on`
+  // matches nothing, so there was nothing to measure and the ring stayed on scene 2's Add BUTTON:
+  // the moment's chip talked about a checkbox over a photograph of the Add box, with the new row
+  // outside the camera. The `anchor` is the place the absent tick would live — this row's own
+  // checkbox — and `phrase` is what the emptiness looks like, so the Actual chip reads "✓ empty"
+  // instead of the framework's one generic sentence.
   await proveVisible(row.locator('.cb.on'), MISSING,
-    'The new row\'s checkbox — empty, nothing ticked', { soft: true })
+    'The new row\'s checkbox — empty, nothing ticked',
+    { soft: true, anchor: row.locator('.cb'), phrase: 'empty' })
   // SCENE 4 — the Then's SECOND outcome fact, on the SMALLEST ELEMENT THAT CARRIES IT (same ruling):
   // the stamp is `.meta`, not the row. This rang `.trow` and recorded got "Water the plantsadded just
   // now" — the whole row's text for a claim about a stamp: a container ringed over the leaf that
@@ -100,6 +107,25 @@ export async function addTask (page: Page, state: FlowState): Promise<void> {
   await proveVisible(row.locator('.meta'), 'added just now',
     'The new row\'s stamp — added just now',
     { soft: true, match: s => /added just now/.test(s) })
+  // SCENE 5 — THE ADD BOX COMES BACK TO REST (the human, 2026-09-06: "after item added, the add
+  // button should back to disable (due to the input box empty now)"). Their ruling added the fact to
+  // R1's Then, so the beat films it: the box the text was typed into is empty again. An input's
+  // value is readable, so this is an ordinary claim on `#nt` — the same element scene 1 rang, now
+  // showing the opposite state, which is what makes the two photographs different pictures.
+  await proveVisible(page.locator('#nt'), '',
+    'The Add box — empty again, ready for the next task',
+    { soft: true, phrase: 'empty' })
+  // SCENE 6 — …and its button back to disabled, claimed as the absence of an ENABLED one: the app
+  // reflects the property to the attribute, so `.go:not([disabled])` matches exactly while the
+  // button can be pressed — MISSING passes while it cannot and fails, with the button's own word,
+  // the moment it can. Ringed on the button itself (the place the enabled one would be).
+  await proveVisible(page.locator('.go:not([disabled])'), MISSING,
+    'The Add button — back to disabled, nothing left to add',
+    { soft: true, anchor: page.locator('.go'), phrase: 'disabled' })
+  // …and the state the claim above reads, pinned hard, LAST — so a button left enabled still lets
+  // every soft claim photograph its moment first (the same order finishContainerRollsUp uses for the
+  // `done` class behind its struck-through title).
+  await expect(page.locator('.go'), 'the emptied Add box disables the Add button again').toBeDisabled()
   state.task = 'Water the plants'
   state.leaves += 1
 }
@@ -116,15 +142,29 @@ export async function renameInPlace (page: Page, state: FlowState): Promise<void
   expect(at, 'the row we are about to rename is on screen').toBeGreaterThan(-1)
   await rowByTitle(page, state.task).locator('.ttl').dblclick()
   const edit = page.locator('.edit')
+  // SCENE 1 — THE WHEN FROM ITS FIRST GESTURE (the human, 2026-09-06: "It should start from user
+  // click on the title to start edit, instead of the edit is finish at the first step"). The beat
+  // used to open on the retyped text, so the film's first frame was already past the double-click
+  // the When names — a reader saw the answer before the question. The first photographed moment is
+  // now the editor the double-click OPENED, still holding the OLD title: proof the gesture landed,
+  // and the only frame in which "in place" means anything yet.
+  await proveVisible(edit, state.task,
+    'The double-click opened the editor, still on the old text', { soft: true })
   await edit.fill('Water the office plants')
+  // SCENE 2 — the retyped text, still in the box. It is gone from the box the instant Enter lands,
+  // so without this frame the film has no picture of the typing at all.
+  await proveVisible(edit, 'Water the office plants',
+    'The retyped text, still in the box', { soft: true })
   await edit.press('Enter')
   expect((await rowIds(page)).indexOf(id),
     'the SAME row, at the SAME position — the edit happened in place').toBe(at)
   const row = rowById(page, String(id))
-  await proveVisible(row.locator('.ttl'), 'Water the office plants',
-    'The same row reads the new text, in place', { soft: true })
+  // SCENES 3 and 4 — the stamp, then the row it sits on, in the order the human asked the strip to
+  // read: old text in the box → new text in the box → the stamp → the row in place.
   await proveVisible(row.locator('.meta'), 'edited just now',
     'The stamp flipped to edited just now', { soft: true, match: s => /edited just now/.test(s) })
+  await proveVisible(row.locator('.ttl'), 'Water the office plants',
+    'The same row reads the new text, in place', { soft: true })
   state.task = 'Water the office plants'
   state.taskId = id
 }
