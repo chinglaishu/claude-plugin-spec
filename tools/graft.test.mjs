@@ -45,6 +45,24 @@ test('graft replaces the element at the path and fades everything off the path',
   assert.equal(patch.attrs['data-ctx'], undefined)
 })
 
+// ONE FADE PER BRANCH (2026-09-06). The srcdoc sheet fades `data-ctx` with `opacity:.4`, and
+// opacity COMPOUNDS through nesting — so marking every off-path DESCENDANT as well as its branch's
+// top renders a leaf N levels down at .4^N. Measured on demo/todo R2 b1: 135 of 154 elements
+// marked, the worst chain six deep ⇒ opacity .004, an Expected cell that read as blank paper beside
+// an Actual photograph showing the whole task list. A subtree must fade exactly once.
+test('an off-path subtree carries exactly one data-ctx — the fade cannot compound', () => {
+  const leaf = node('span')
+  const aside = node('aside', [node('div', [node('div', [leaf])])])
+  const row = node('div')
+  const body = node('body', [aside, node('main', [row])])
+  const r = globalThis.SBGraft.graft(body, node('div'), '1/0')
+  assert.equal(r.ok, true)
+  const marked = []
+  for (let n = leaf; n && n !== body; n = n.parentElement) if (n.attrs['data-ctx']) marked.push(n)
+  assert.equal(marked.length, 1, 'exactly one data-ctx in a deep off-path leaf’s ancestry')
+  assert.equal(marked[0], aside, 'and it is the TOPMOST off-path element of the branch')
+})
+
 test('an empty path is the whole page: nothing replaced, nothing faded', () => {
   const body = node('body', [node('div')])
   const r = globalThis.SBGraft.graft(body, node('div'), '')

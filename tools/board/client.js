@@ -1788,8 +1788,22 @@ const B = window.__BOARD__ || {}
         const b1 = at(1)
         if (!b1) return { shots: [], why: 'no frame harvested for the opening state yet' }
         // a prose-only requirement has no beat rows at all — its ONE row carries the whole pair
+        // THE GIVEN ROW'S EXPECTED IS THE BASE (2026-09-06). Since phase 8 the fold writes the
+        // screen's opening state ONCE, body-rooted, as `base` — and stops writing
+        // `replicaExpectedBefore`. This row still asked for the retired field alone, so every
+        // phase-8 harvest sent it an empty `rep` and the cell painted "no Expected for this moment"
+        // beside a photograph of the whole page (seen on demo/todo R1). `pair()` below already read
+        // whichever field the fold left; this branch is the one that did not. The base rides on the
+        // shot too, so the cell can NAME what it is showing — and, being body-rooted, it has no path
+        // and is never grafted: at the Given nothing is emphasised yet.
+        const gshot = function (b) {
+          const s = shot(b.before, 'given', b.window ? b.window.from : null, b.aimBefore,
+            b.base || b.replicaExpectedBefore || '', 'expected', null)
+          s.base = b.base || ''
+          return s
+        }
         const out = nbeats
-          ? (b1.before ? [shot(b1.before, 'given', b1.window ? b1.window.from : null, b1.aimBefore, b1.replicaExpectedBefore || '', 'expected', null)] : [])
+          ? (b1.before ? [gshot(b1)] : [])
           : pair(b1, 'before', after1)
         return out.length ? { shots: out } : { shots: [], why: 'no frame harvested for the opening state yet' }
       }
@@ -2080,11 +2094,21 @@ const B = window.__BOARD__ || {}
           // row showed before phase 8: the moment's own replica on paper, with the shell plates the
           // beat's before skeleton measured. Never a blank for want of a base (rule 3).
           const paintLone = function () {
+            // A BODY-ROOTED REPLICA IS THE PAGE, NOT A COMPONENT ON PAPER (2026-09-06). The Given
+            // row's Expected is the BASE — the whole page — and a base carries two things a cropped
+            // patch does not. Its region carries the page's SCROLL (demo/todo R2's base measures
+            // `0 -89 1440 900`), and the capture already bakes a scrolled box's scroll into the
+            // flow, so positioning the wrapper by that y applies the offset twice: the same 89 px
+            // the grafted path already corrects below. And there is no shell to block in — the base
+            // IS the shell — so a plate here would be a washed rectangle painted over the page's own
+            // markup. Both are keyed off the replica's own `data-replica-path`: empty means the
+            // capture rooted at the body, which is exactly when its local frame IS the page frame.
+            const whole = !path
             show(repSrcdoc({
               body: body,
               faces: got[1] || '',
-              plates: repPlates(got[2], region, vp.vw, vp.vh),
-              region: region,
+              plates: whole ? [] : repPlates(got[2], region, vp.vw, vp.vh),
+              region: (whole && region) ? { x: 0, y: 0, w: region.w, h: region.h } : region,
               ring: repRect(got[0], 'data-ring-box'),
               // the ring reddens where THIS moment failed — a value's own claim, or, on the beat's
               // result, any claim in its checklist that the app did not answer

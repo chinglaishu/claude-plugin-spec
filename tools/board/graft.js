@@ -34,11 +34,18 @@
     const keep = new Set()
     for (let n = at; n && n !== base; n = n.parentElement) keep.add(n)
     keep.add(base)
+    // ONE FADE PER BRANCH (2026-09-06). The srcdoc sheet fades `data-ctx` with `opacity:.4`, and
+    // CSS opacity COMPOUNDS through nesting — so marking a branch's descendants as well as its top
+    // renders a leaf N levels down at .4^N. This walk marked every off-path element it could reach,
+    // and on demo/todo R2 b1 that was 135 of 154 elements, the worst chain six deep: opacity .004,
+    // an Expected cell that read as blank paper beside an Actual showing the whole task list. Only
+    // the TOPMOST off-path element of each branch is marked now — its subtree fades with it, once —
+    // so the recursion descends through KEPT nodes only.
     ;(function mark (n) {
       for (const k of ((n && n.children) || [])) {
         if (k === at) continue
-        if (!keep.has(k)) k.setAttribute('data-ctx', '1')
-        mark(k)
+        if (keep.has(k)) mark(k)
+        else k.setAttribute('data-ctx', '1')
       }
     })(base)
     at.replaceWith(patch)

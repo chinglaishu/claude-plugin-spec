@@ -1481,6 +1481,25 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
     expect(gbase, 'the cell names the base blob it drew').toMatch(/^blob\/[0-9a-f]{64}\.html$/)
     expect(/data-ctx="1"/.test(cdoc), 'the base\'s content outside the patch is marked as context').toBe(true)
     expect(/data-replica-path="[0-9/]+"/.test(cdoc), 'and the patch root stands at its recorded path').toBe(true)
+    // …AND THE GIVEN ROW IS THE BASE ITSELF (2026-09-06). The screen's opening state IS the base —
+    // one body-rooted, whole-page blob — so that row's Expected is that page, with nothing grafted
+    // into it and nothing faded: at the Given no component is emphasised yet. It showed "no Expected
+    // for this moment" instead. The fold stopped writing `replicaExpectedBefore` the moment phase 8
+    // landed the base, and this row's shot still asked for the retired field alone, so a base-kind
+    // moment fell straight through the Expected cell's empty state.
+    const grow = ov.locator('.fread .fstory .sbrow.bgiven')
+    await reveal(grow)
+    const gcell = grow.locator('.sbframe')
+    await expect.poll(() => gcell.evaluate(el => String((el as HTMLElement).dataset.repbase || '')),
+      { timeout: 8000, message: 'the Given row names the base blob it is showing' })
+      .toMatch(/^blob\/[0-9a-f]{64}\.html$/)
+    const gdoc = await gcell.locator('iframe.repframe').evaluate(f => String((f as HTMLIFrameElement).srcdoc || ''))
+    await hudCheck('the Given row renders the whole intended page', 'a replica',
+      gdoc.includes('data-replica-side="expected"') ? 'a replica' : 'the empty state')
+    expect(gdoc.includes('data-replica-side="expected"'),
+      'the Given row renders the base as a real replica, never the honest blank').toBe(true)
+    expect(/data-ctx="1"/.test(gdoc),
+      'and nothing in it is faded as context — the base IS the moment, ungrafted').toBe(false)
     // C2 — EVERY FONT URL IN THE SRCDOC IS ABSOLUTE. An `about:srcdoc` document resolves a relative
     // url against the PARENT's base, so a relative face would 404 and the replica would render in a
     // fallback stack: a picture of a different app, silently. (This repo declares no @font-face, so
