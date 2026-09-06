@@ -90,6 +90,13 @@ export const REPLICA_PROPS = [
   'font-family', 'font-size', 'font-weight', 'font-style', 'line-height',
   'letter-spacing', 'text-align', 'text-transform', 'text-decoration', 'text-overflow',
   'white-space', 'overflow', 'box-shadow', 'opacity', 'visibility',
+  // …AND WHAT CLAMPS A WRAPPED BOX (2026-09-06, found by the gate on the board's own harvest the
+  // moment the reader's chip started wrapping). `display:-webkit-box` was already carried, but the
+  // two declarations that make it a clamp were not — so the replica laid the chip's value out in one
+  // horizontal line and the button the live walk measured at 140×31 had no box to match. A clamp
+  // without its orient and its line count is not a clamp. `overflow-wrap` is the other half: a value
+  // with nothing to break on wraps in the app and overflows in the replica.
+  '-webkit-box-orient', '-webkit-line-clamp', 'overflow-wrap',
   'vertical-align', 'box-sizing', 'z-index', 'transform',
   // …AND THE POINT IT IS SCALED ABOUT (phase 4a, 2026-09-03 — found by the gate on the board's own
   // harvest, which since the Expected cell became an iframe scales two cells per row about `0 0`).

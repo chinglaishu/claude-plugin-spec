@@ -1045,26 +1045,51 @@ const B = window.__BOARD__ || {}
     const x = Math.max(m, Math.min(ring.x, Math.max(m, vp.vw - w - m)))
     return { x: x, y: Math.max(m, Math.min(y, Math.max(m, vp.vh - h - m))), w: w, h: h }
   }
+  // ── AN ABSENCE, IN WORDS A READER HAS (the human, 2026-09-06) ────────────────────────────────
+  // "the Expected 'Missing' i don't know what that mean". `(missing)` is the sentinel spec/_base.ts
+  // writes for a thing that is not on the page — and, since 2026-09-04, the value a requirement
+  // NAMES when its Then says a thing must be GONE (`proveVisible(locator, MISSING, …)`). Printed
+  // raw it was jargon on both sides of the row: EXPECTED “(missing)” · ACTUAL ✓ MISSING says
+  // nothing at all to a person who has never seen the codebase, on a moment whose whole point is
+  // that nothing is there.
+  //
+  // ONLY THE RENDERING CHANGES. The harvest still records `(missing)`, the claim still carries its
+  // own `missing` flag, and nothing about pass/fail moves — this is the reader saying the recorded
+  // fact in English, in the one place both chips, the strip's tooltip and the difference marker
+  // read it from, so the three can never word it differently.
+  const NOTHING = '(missing)'                  // spec/_base.ts MISSING — the two must stay one string
+  const MUST_BE_ABSENT = 'nothing here — this element must be absent'
+  const WAS_ABSENT = 'nothing was there'
+  function quoteVal (s) { return '“' + String(s == null ? '' : s) + '”' }
+  function wantsNothing (c) { return !!c && String(c.expected) === NOTHING }
+  // what the REQUIREMENT says this moment should show
+  function expectedWords (c) { return wantsNothing(c) ? MUST_BE_ABSENT : quoteVal(c && c.expected) }
+  // …and what the APP did. An absence is a sentence, never a quoted value, whichever side asked for
+  // it: a Then that wanted the thing gone and got its way, and a Then that wanted a value and found
+  // nothing to read, are the same news and read the same way. A failed absence is the opposite — the
+  // app DID show something — so it is quoted like any other wrong value.
+  function actualWords (c) {
+    if (!c) return quoteVal('')
+    if (c.ok) return wantsNothing(c) ? WAS_ABSENT : quoteVal(c.expected)
+    return c.missing ? WAS_ABSENT : quoteVal(c.got)
+  }
   // the chip's own words: a value moment says one value, a Then says the beat's CHECKLIST — every
   // claim it made, ticked on the Expected side (that is what the requirement says) and ticked or
   // crossed on the Actual (that is what the app did), the crossed ones carrying what was got. Facts
   // are the beat's claims; never a count of them.
   function chipLines (m, side) {
-    const q = function (s) { return '“' + String(s) + '”' }
     if (m.facts && m.facts.length) {
       return m.facts.map(function (c) {
         return side === 'expected'
-          ? { mark: '✓', text: q(c.expected), ok: true }
-          : (c.ok
-              ? { mark: '✓', text: q(c.expected), ok: true }
-              : { mark: '✕', text: c.missing ? 'MISSING' : q(c.got), ok: false })
+          ? { mark: '✓', text: expectedWords(c), ok: true }
+          : { mark: c.ok ? '✓' : '✕', text: actualWords(c), ok: !!c.ok }
       })
     }
     if (!m.claim) return []
     const c = m.claim
     return [side === 'expected'
-      ? { mark: '', text: q(c.expected), ok: true }
-      : { mark: c.ok ? '✓' : '✕', text: (c.missing ? 'MISSING' : q(c.got)), ok: !!c.ok }]
+      ? { mark: '', text: expectedWords(c), ok: true }
+      : { mark: c.ok ? '✓' : '✕', text: actualWords(c), ok: !!c.ok }]
   }
   // ONE CHIP LAYER PER CELL — built once, repainted per moment, positioned off the camera's own view
   // so it always lands over the picture it explains. It is inside the camera box: a chip that
@@ -1074,26 +1099,53 @@ const B = window.__BOARD__ || {}
     layer.className = 'pcchips ' + side
     box.appendChild(layer)
     let cur = null                                   // {spot, chip}
+    // THE CHIP IS SIZED IN THE CELL, NOT IN THE PAGE (the human, 2026-09-06: "the text in explaining
+    // text box easily overflow and become ...."). Its max width used to be the burned card's own
+    // 360 PAGE px MULTIPLIED BY THE CAMERA'S SCALE — a page-space number governing screen-space
+    // type, so a camera at 0.46× gave a 166 px chip in a 397 px cell and ellipsised “Water the
+    // plants” down to “Water th…”. The value is the whole point of the chip, so the scale is gone:
+    // the cap is 90% of the CELL, never wider than the card the burn-in paints (CARDG.width — the
+    // chip is that card's descendant on the board), and the value WRAPS inside it. A typical value
+    // shows whole; only a genuinely long one clamps, with the full text one hover or focus away in
+    // the .mtip. (The strip's segment name is untouched: one ellipsised line, every strip one
+    // height, the human's own 2026-09-02 ruling.)
+    //
+    // IN PIXELS, NOT PER CENT — and that is not a detail. The board photographs ITSELF, and a
+    // replica is the app's own markup re-rendered with its computed styles under a NEW parent: a
+    // `max-width:90%` resolves against that parent instead of the cell, so the chip came back 126 px
+    // where the harvest measured 140 and `npm run proof mirror` refused board R18/R20 with a
+    // missing-box. A computed px value travels; a percentage does not.
     const place = function (view, dur) {
       if (!cur || !cur.spot) { layer.hidden = true; return }
       const v = view || box._view
       layer.hidden = false
       const el = cur.chip
+      let tx, ty
       if (v) {
         el.style.transition = dur > 0 ? ('transform ' + dur + 'ms cubic-bezier(0.4, 0, 0.2, 1)') : 'none'
-        el.style.transform = 'translate(' + ((cur.spot.x - v.x) * v.scale) + 'px,' + ((cur.spot.y - v.y) * v.scale) + 'px)'
-        el.style.maxWidth = (CARDG.width * v.scale) + 'px'
-        // the tooltip flips toward the picture's middle so the box's own edge cannot clip it
-        el.classList.toggle('tipup', (cur.spot.y - v.y) * v.scale > box.clientHeight * 0.55)
-        el.classList.toggle('tipr', (cur.spot.x - v.x) * v.scale > box.clientWidth * 0.5)
+        tx = (cur.spot.x - v.x) * v.scale
+        ty = (cur.spot.y - v.y) * v.scale
       } else {
         // no camera on this moment (the whole page): the chip sits over the ring where the page has
         // it, at the cell's own natural scale
         const r = box.clientWidth / (cur.vp ? cur.vp.vw : 1)
         el.style.transition = 'none'
-        el.style.transform = 'translate(' + (cur.spot.x * r) + 'px,' + (cur.spot.y * r) + 'px)'
-        el.style.maxWidth = (CARDG.width * r) + 'px'
+        tx = cur.spot.x * r
+        ty = cur.spot.y * r
       }
+      // …AND IT IS KEPT INSIDE THE PICTURE IT LABELS. A wrapping chip grows downward, and the spot
+      // was computed from an ESTIMATE of its height (chipHeight, in page units) — so the last line
+      // of a three-line value could run out of the cell's bottom edge. Clamped against the chip's
+      // own laid-out box, which is the only thing that knows how tall it actually became.
+      const bw = box.clientWidth; const bh = box.clientHeight
+      if (bw > 0) el.style.maxWidth = Math.round(Math.min(bw * 0.9, CARDG.width)) + 'px'
+      const cw = el.offsetWidth; const ch = el.offsetHeight
+      if (bw > 0 && cw > 0) tx = Math.max(0, Math.min(tx, bw - cw))
+      if (bh > 0 && ch > 0) ty = Math.max(0, Math.min(ty, bh - ch))
+      el.style.transform = 'translate(' + tx + 'px,' + ty + 'px)'
+      // the tooltip flips toward the picture's middle so the box's own edge cannot clip it
+      el.classList.toggle('tipup', bh > 0 && ty > bh * 0.55)
+      el.classList.toggle('tipr', bw > 0 && tx > bw * 0.5)
     }
     box._views = box._views || []
     box._views.push(place)
@@ -1102,10 +1154,10 @@ const B = window.__BOARD__ || {}
     layer._paint = function (m, vp) {
       const lines = m ? chipLines(m, side) : []
       if (!m || !m.aim || !lines.length) { cur = null; layer.textContent = ''; layer.hidden = true; return }
-      // A BUTTON, not a div (2026-09-04, the review's I1): the value is one ellipsised line, so the
-      // whole of it lives in the tooltip — and a tooltip only a mouse can open is a tooltip half the
-      // readers do not have. It is also what makes the aria-label announced at all. It does nothing
-      // when pressed: the chip is a label you can reach, not an action.
+      // A BUTTON, not a div (2026-09-04, the review's I1): the value wraps but a long one still
+      // clamps, so the whole of it lives in the tooltip — and a tooltip only a mouse can open is a
+      // tooltip half the readers do not have. It is also what makes the aria-label announced at all.
+      // It does nothing when pressed: the chip is a label you can reach, not an action.
       const chip = document.createElement('button')
       chip.type = 'button'
       chip.className = 'pchip ' + side + (lines.some(function (l) { return !l.ok }) ? ' bad' : '')
@@ -1199,18 +1251,20 @@ const B = window.__BOARD__ || {}
       layer.hidden = false
       bad.forEach(function (c) {
         const el = document.createElement('div'); el.className = 'mdiff'
-        const put = function (word, val, no, quoted) {
+        // the words come from the ONE place the chips and the strip's tooltip read them from
+        // (expectedWords / actualWords), because two names for one fact reads as two facts — and an
+        // ABSENCE is a sentence, never a quoted value: "MISSING" said nothing to a reader who has
+        // not read the code (the human, 2026-09-06).
+        const put = function (word, text, no) {
           const k = document.createElement('span'); k.className = 'mdk'; k.textContent = word
           const v = document.createElement('b'); v.className = 'mdv' + (no ? ' no' : '')
-          v.textContent = (quoted === false) ? String(val) : ('“' + String(val) + '”')
+          v.textContent = text
           el.appendChild(k); el.appendChild(v)
         }
-        put('expected', c.expected == null ? '' : c.expected, false)
+        put('expected', expectedWords(c), false)
         const sep = document.createElement('span'); sep.className = 'mdsep'; sep.textContent = '·'
         el.appendChild(sep)
-        // NOTHING WAS THERE is a word, not a quoted value — the same word the chip beside it uses,
-        // because two names for one fact reads as two facts
-        put('actual', c.missing ? 'MISSING' : (c.got == null ? '' : c.got), true, !c.missing)
+        put('actual', actualWords(c), true)
         layer.appendChild(el)
       })
       place()
@@ -1437,7 +1491,10 @@ const B = window.__BOARD__ || {}
       return '<div class="sbplate" style="left:' + num(p.x) + 'px;top:' + num(p.y) + 'px;width:' + num(p.w) + 'px;height:' + num(p.h) + 'px"></div>'
     }).join('')
     const reg = parts.region || { x: 0, y: 0, w: parts.vw, h: parts.vh }
-    const body = '<div style="position:absolute;left:' + reg.x + 'px;top:' + reg.y + 'px;width:' + reg.w + 'px">' + parts.body + '</div>'
+    // NAMED, because the align pass moves it (2026-09-06): where the composed page stands is settled
+    // once the document has been laid out and its ringed element measured, and this is the one node
+    // that gets nudged. See replicaCell's align pass and SBGraft.alignTo.
+    const body = '<div id="sbstand" style="position:absolute;left:' + reg.x + 'px;top:' + reg.y + 'px;width:' + reg.w + 'px">' + parts.body + '</div>'
     // the ring's own 9999px shadow IS the dim, spreading out from it — one element, exactly the
     // geometry the reference row ships. With no ring there is nothing to spot-light, so the page
     // takes the even wash the photograph beside it has.
@@ -1629,14 +1686,14 @@ const B = window.__BOARD__ || {}
         row.appendChild(k); row.appendChild(v); tip.appendChild(row)
         said.push(key + ' ' + text)
       }
-      const q = function (t) { return '“' + String(t == null ? '' : t) + '”' }
-      const got = function (c) { return c.missing ? 'MISSING' : q(c.got) }
+      // the same words the chips over the pictures use — expectedWords / actualWords, so an absence
+      // reads as a sentence here too rather than as the harvest's `(missing)` sentinel
       const cl = (claims && claims[i]) || null
       if (cl && cl.facts && cl.facts.length) {
-        for (const c of cl.facts) line(c.ok ? '✓' : '✕', c.ok ? q(c.expected) : (q(c.expected) + ' · got ' + got(c)), !c.ok)
+        for (const c of cl.facts) line(c.ok ? '✓' : '✕', c.ok ? expectedWords(c) : (expectedWords(c) + ' · got ' + actualWords(c)), !c.ok)
       } else if (cl && cl.claim) {
-        line('expected', q(cl.claim.expected), false)
-        line('actual', got(cl.claim), cl.claim.ok === false)
+        line('expected', expectedWords(cl.claim), false)
+        line('actual', actualWords(cl.claim), cl.claim.ok === false)
       }
       seg.appendChild(lab); seg.appendChild(bar); seg.appendChild(tip)
       seg.setAttribute('aria-label', 'moment ' + (i + 1) + ' of ' + N + ' — ' + names[i] +
@@ -2045,7 +2102,14 @@ const B = window.__BOARD__ || {}
       const scaler = document.createElement('div'); scaler.className = 'repscale'
       scaler.style.width = vp.vw + 'px'; scaler.style.height = vp.vh + 'px'
       const ifr = document.createElement('iframe'); ifr.className = 'repframe'
-      ifr.setAttribute('sandbox', '')                 // no allow-* token at all: no script, no network, no origin
+      // `allow-same-origin` AND NOTHING ELSE (2026-09-06). It was the empty token — no allow-* at
+      // all — and the reader could therefore not READ the document it had just composed. It has to:
+      // where the moment's ringed element actually renders in the grafted page is a LAYOUT question,
+      // and only the laid-out document can answer it (see the align pass in replicaCell). The one
+      // token grants the frame this page's origin; it does NOT grant `allow-scripts`, so nothing in
+      // that document runs — an origin no script can use is an origin nothing can act on, and the
+      // capture's own sanitising (repBody: no script, no handler, no external url) is untouched.
+      ifr.setAttribute('sandbox', 'allow-same-origin')
       ifr.setAttribute('title', 'Expected')
       ifr.setAttribute('aria-label', label)
       scaler.appendChild(ifr); page.appendChild(scaler); box.appendChild(page)
@@ -2089,7 +2153,61 @@ const B = window.__BOARD__ || {}
       // how they hand the document over. (It also PUBLISHED the srcdoc for the loupe under the row
       // until 2026-09-04, when the human removed that row — "the row of loupe · the ringed element
       // is useless" — and the hook went with its one reader.)
-      const show = function (doc) { ifr.srcdoc = doc }
+      // ── THE COMPOSED PAGE STANDS ON ITS OWN RINGED ELEMENT (the human, 2026-09-06) ────────────
+      // "the ring's job is to mark the ELEMENT." A patch is spliced into the BASE's flow — the
+      // beat's opening state — so where it lands is the base's answer, not its own capture's: on a
+      // When that filters, collapses or adds rows the two disagree, and the ring, drawn at the
+      // recorded viewport box, sits on whatever the base happens to have there. Measured on this
+      // repo's own board before the fix: board R9 b1 rang a card 520 px above the one it names,
+      // board R1 b1 one 571 px below it.
+      //
+      // The document is therefore READ once it has been laid out — the element the capture rang
+      // (`data-ring`, scoped to this moment's own replica by its namespace) — and the wrapper is
+      // shifted so that element renders where the moment recorded it. A rigid translation: nothing
+      // inside is re-laid out, the ring, the chips and the CAMERA all keep the moment's own
+      // coordinates, and the two cells stay under ONE camera (board R19, which already asks in words
+      // for "the grafted patch stands at its own page coordinates, so the ring lands on it").
+      // Nothing to measure — no ring recorded, no element found, a document this page may not read —
+      // leaves the page exactly where `stand` put it (rule 3: never invent).
+      const NS_OK = /^[A-Za-z0-9_-]+$/
+      let aim = null                         // what the last show() handed over, for the load below
+      const align = function () {
+        const a = aim
+        if (!a || a.seq !== seq || !a.ring || !a.stood) return
+        let doc = null
+        try { doc = ifr.contentDocument } catch (e) { doc = null }
+        const wrapper = doc && doc.getElementById && doc.getElementById('sbstand')
+        if (!wrapper || !window.SBGraft || !window.SBGraft.ringTarget) return
+        const scope = (a.ns && NS_OK.test(a.ns) && doc.querySelector('[data-replica-ns="' + a.ns + '"]')) || wrapper
+        const el = window.SBGraft.ringTarget(scope)
+        const b = el && el.getBoundingClientRect ? el.getBoundingClientRect() : null
+        if (!b || !(b.width > 0 || b.height > 0)) return
+        const at = window.SBGraft.alignTo(a.stood, { x: b.left, y: b.top }, a.ring)
+        if (!at || at === a.stood) { fr.dataset.repalign = '0 0'; return }
+        wrapper.style.left = at.x + 'px'
+        wrapper.style.top = at.y + 'px'
+        // …AND THE SHIFT IS CHECKED, NEVER ASSUMED (2026-09-06, found on dispatch R1). The rule
+        // above is a rigid translation of the page — true for everything in normal flow, and FALSE
+        // for a `position:fixed` element, which is laid out against the viewport and does not move
+        // with its wrapper at all. dispatch's run panel is exactly that: the wrapper travelled
+        // 892×570 and the ringed span stayed at (85, 15), so the ring still missed it AND the page
+        // around it was now 892 px out. So the document is asked again whether the element actually
+        // arrived; if it did not, the page is put back where `stand` had it and the cell says the
+        // shift was refused. Never a page moved for nothing (rule 3).
+        const after = el.getBoundingClientRect()
+        if (Math.abs(after.left - a.ring.x) > 1.5 || Math.abs(after.top - a.ring.y) > 1.5) {
+          wrapper.style.left = a.stood.x + 'px'
+          wrapper.style.top = a.stood.y + 'px'
+          fr.dataset.repalign = 'refused'
+          return
+        }
+        // said out loud on the cell, like `data-repsrc` beside it: how far the composed page had to
+        // move to put its own element under its own ring is exactly the number a reader (or a test)
+        // wants when a picture looks wrong
+        fr.dataset.repalign = Math.round(at.x - a.stood.x) + ' ' + Math.round(at.y - a.stood.y)
+      }
+      ifr.addEventListener('load', align)
+      const show = function (doc, standOn) { aim = standOn || null; fr.dataset.repalign = ''; ifr.srcdoc = doc }
       const blank = function (why) {
         fr.dataset.repsrc = ''
         fr.dataset.repside = ''
@@ -2135,17 +2253,20 @@ const B = window.__BOARD__ || {}
             // a lone picture IS its own moment, so the scroll it was captured at is the scroll the
             // ring and the camera speak
             const sc = repScroll(got[0])
+            const ring = repRect(got[0], 'data-ring-box')
+            const stood = repStand({ whole: whole, region: region, scroll: sc, moment: sc }) ||
+              { x: 0, y: 0, w: vp.vw, h: vp.vh }
             show(repSrcdoc({
               body: body,
               faces: got[1] || '',
               plates: whole ? [] : repPlates(got[2], region, vp.vw, vp.vh),
-              region: repStand({ whole: whole, region: region, scroll: sc, moment: sc }),
-              ring: repRect(got[0], 'data-ring-box'),
+              region: stood,
+              ring: ring,
               // the ring reddens where THIS moment failed — a value's own claim, or, on the beat's
               // result, any claim in its checklist that the app did not answer
               ok: !failedClaims(sh).length,
               vw: vp.vw, vh: vp.vh
-            }))
+            }), { seq: mine, ns: repAttr(got[0], 'data-replica-ns'), ring: ring, stood: stood })
             // …and it still NAMES the base when the picture it drew IS the base (a beat's opening
             // moment): the cell's readout says what it is showing, always.
             fr.dataset.repbase = (sh.base && sh.base === sh.rep) ? sh.base : ''
@@ -2187,6 +2308,17 @@ const B = window.__BOARD__ || {}
             if (!g.ok) { fr.dataset.repwhy = g.why; paintLone(); return }
             fr.dataset.repwhy = ''
             const styles = Array.prototype.map.call(p.querySelectorAll('style'), function (s) { return s.outerHTML }).join('')
+            const ring = repRect(got[0], 'data-ring-box')
+            // …AND WHERE IT STANDS IS SETTLED AGAINST ITS OWN RINGED ELEMENT once the document has
+            // been laid out (the align pass above, the human 2026-09-06): the scroll conversion below
+            // is right only while the base's flow and this moment's agree, and a When that re-lays
+            // the page out is exactly when they do not.
+            const stood = repStand({
+              whole: !repAttr(baseText, 'data-replica-path'),
+              region: repRect(baseText, 'data-replica-region'),
+              scroll: repScroll(baseText),
+              moment: repScroll(got[0])
+            }) || { x: 0, y: 0, w: vp.vw, h: vp.vh }
             show(repSrcdoc({
               body: styles + baseRoot.outerHTML,
               faces: got[1] || '',
@@ -2201,16 +2333,11 @@ const B = window.__BOARD__ || {}
               // page origin instead — what this did between 2026-09-05 and today — is right only at
               // scroll 0, and standing it at the base's own region.y (before that) only where the
               // two scrolls happened to agree: on demo/todo the ring sat a row above its row.
-              region: repStand({
-                whole: !repAttr(baseText, 'data-replica-path'),
-                region: repRect(baseText, 'data-replica-region'),
-                scroll: repScroll(baseText),
-                moment: repScroll(got[0])
-              }),
-              ring: repRect(got[0], 'data-ring-box'),
+              region: stood,
+              ring: ring,
               ok: !failedClaims(sh).length,
               vw: vp.vw, vh: vp.vh
-            }))
+            }), { seq: mine, ns: repAttr(got[0], 'data-replica-ns'), ring: ring, stood: stood })
             fr.dataset.repbase = sh.base
             fr.dataset.repside = sh.repSide
             fr.dataset.repsrc = sh.rep

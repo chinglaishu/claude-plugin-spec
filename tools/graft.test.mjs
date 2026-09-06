@@ -12,13 +12,14 @@ import { readFileSync } from 'node:fs'
 // eslint-disable-next-line no-new-func
 new Function(readFileSync(new URL('./board/graft.js', import.meta.url), 'utf8'))()
 
-const node = (tag, kids = []) => {
+const node = (tag, kids = [], attrs = {}) => {
   const n = {
     tag,
     children: kids,
-    attrs: {},
+    attrs: { ...attrs },
     parentElement: null,
     setAttribute (k, v) { this.attrs[k] = String(v) },
+    getAttribute (k) { return Object.prototype.hasOwnProperty.call(this.attrs, k) ? this.attrs[k] : null },
     replaceWith (o) {
       const p = this.parentElement
       const i = p.children.indexOf(this)
@@ -160,4 +161,45 @@ test('stand refuses to answer without a region, and the horizontal scroll counts
   assert.deepEqual(
     globalThis.SBGraft.stand({ whole: true, region: { x: 0, y: 0, w: 1440, h: 900 }, scroll: { x: 40, y: 10 }, moment: { x: 40, y: 10 } }),
     { x: -40, y: -10, w: 1440, h: 900 })
+})
+
+// ── THE RING MARKS THE ELEMENT (the human, 2026-09-06) ───────────────────────────────────────────
+// The defect, measured on THIS repo's own board before the fix: the Expected's ring is drawn at the
+// viewport box the harvest recorded, and the patch is spliced into the BASE's flow — the beat's
+// OPENING state. Where the When re-lays the page out (a filter, a collapse, a row added) the two
+// disagree, and the ring lands on whatever the base has at those coordinates: board R9 b1 rang a
+// card 520 px above the one it names, board R1 b1 one 571 px below it. The ring's job is to mark the
+// ELEMENT, so the composed page is stood on it — a rigid translation, nothing re-laid out, one
+// camera still over both cells.
+test('a claimed element moved by the base’s reflow is stood back under its own ring', () => {
+  // board R9 b1: `data-ring-box` says the card is at y 328; grafted into the unfiltered base it
+  // renders at y 848. The page must stand 520 px higher so the ring lands on the card, not 520 px
+  // above it on whatever the base happens to show there.
+  const stood = globalThis.SBGraft.stand({ whole: true, region: { x: 0, y: 0, w: 1440, h: 900 }, scroll: { x: 0, y: 0 }, moment: { x: 0, y: 0 } })
+  const at = globalThis.SBGraft.alignTo(stood, { x: 83, y: 848 }, { x: 83, y: 328, w: 65, h: 26 })
+  assert.deepEqual(at, { x: 0, y: -520, w: 1440, h: 900 })
+  assert.equal(at.y + 848, 328, 'the element now renders exactly where the ring is drawn')
+})
+
+test('an already-aligned moment does not move — the demo’s half-pixel cases stay put', () => {
+  const stood = { x: 271, y: 195, w: 738, h: 70 }
+  assert.equal(globalThis.SBGraft.alignTo(stood, { x: 271.4, y: 195.5 }, { x: 271, y: 195 }), stood,
+    'a shift under half a pixel is no shift at all — the same object back, never a rounding nudge')
+})
+
+test('nothing measured, nothing recorded, or a number that is not one: the page stands where stand put it', () => {
+  const stood = { x: 0, y: -89, w: 1440, h: 900 }
+  assert.equal(globalThis.SBGraft.alignTo(stood, null, { x: 1, y: 2 }), stood)
+  assert.equal(globalThis.SBGraft.alignTo(stood, { x: 1, y: 2 }, null), stood)
+  assert.equal(globalThis.SBGraft.alignTo(stood, { x: 1, y: 2 }, { x: 'x', y: 2 }), stood)
+  assert.equal(globalThis.SBGraft.alignTo(null, { x: 1, y: 2 }, { x: 1, y: 2 }), null)
+})
+
+test('ringTarget finds the element the capture rang — the root itself, or the first one under it', () => {
+  const rung = node('span', [], { 'data-ring': '1' })
+  const root = node('div', [node('div'), node('div', [node('b'), rung])])
+  assert.equal(globalThis.SBGraft.ringTarget(root), rung)
+  assert.equal(globalThis.SBGraft.ringTarget(rung), rung, 'a root that is itself the ringed element')
+  assert.equal(globalThis.SBGraft.ringTarget(node('div', [node('span')])), null, 'and nothing where nothing was rung')
+  assert.equal(globalThis.SBGraft.ringTarget(null), null)
 })

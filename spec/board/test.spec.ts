@@ -27,6 +27,18 @@ const openDetail = async (page) => {
   // (dt-scoped, not pane-scoped — the reopened reader has borrowed one test node back out.)
   await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()
 }
+// WHAT MAKES A FRAME INERT (2026-09-06). Not "no tokens" — no token it could ACT with. The Expected
+// cell's frame carries `allow-same-origin` so the reader can measure the page it composed and stand
+// it on its own ringed element; with no `allow-scripts` nothing inside it ever runs, so that origin
+// is one nothing can use. Every capability below is a thing the document could DO, and any of them
+// fails the assertions that read this.
+const SANDBOX_ACTS = ['allow-scripts', 'allow-forms', 'allow-modals', 'allow-popups',
+  'allow-popups-to-escape-sandbox', 'allow-downloads', 'allow-pointer-lock', 'allow-presentation',
+  'allow-orientation-lock', 'allow-top-navigation', 'allow-top-navigation-by-user-activation',
+  'allow-top-navigation-to-custom-protocols']
+const inertSandbox = (said: string | null) =>
+  said !== null && !String(said).split(/\s+/).some(t => SANDBOX_ACTS.includes(t))
+
 // the first test in the file — R1's only prover, so it is also the node the default Focus page
 // (R1) borrows into its reader, and the title several stubbed-record tests key on
 const R1_TITLE = 'Home lists every screen as a card'
@@ -740,7 +752,15 @@ test('The detail shows no wireframe or design affordance', async ({ page }) => {
     await expect(detail.locator('iframe[src]')).toHaveCount(0)
     const frames = await detail.locator('iframe').evaluateAll(
       els => els.map(e => ({ sandbox: e.getAttribute('sandbox'), src: e.getAttribute('src') || '' })))
-    expect(frames.every(f => f.sandbox === '' && !f.src),
+    // INERT, NOT TOKEN-FREE (corrected 2026-09-06, rule 6, with the reason rather than silently).
+    // This read `sandbox === ''` — every restriction on, the origin included — until the Expected
+    // cell had to MEASURE the page it composes, so it can stand that page on its own ringed element
+    // (the human's ring ruling). Reading a document needs its origin. `allow-same-origin` grants
+    // exactly that and nothing else: with no `allow-scripts` nothing in the frame ever runs, and an
+    // origin no script can use is an origin nothing can act on. What R7 forbids is a frame that can
+    // DO something, so that is what is asserted now — token by token, and it still fails the moment
+    // any capability is granted.
+    expect(frames.every(f => inertSandbox(f.sandbox) && !f.src),
       'every frame in the detail is an inert srcdoc replica: ' + JSON.stringify(frames)).toBe(true)
     // …and the POSITIVE half of the same sentence, CLAIMED (the authored-intent lint, phase 6):
     // "requirements and proof only" — the reader's own row header names the cells the detail deals,
@@ -1399,9 +1419,13 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
     }
     await expect.poll(() => cell.evaluate(el => String((el as HTMLElement).dataset.repside || '')),
       { timeout: 8000, message: 'the beat\'s result shows the EXPECTED half of the pair' }).toBe('expected')
-    // INERT BY CONSTRUCTION: an empty sandbox attribute is every restriction on — no scripts, no
-    // same-origin identity, no navigation — and the document itself carries no script to run either.
-    await expect(frame).toHaveAttribute('sandbox', '')
+    // INERT BY CONSTRUCTION: the sandbox grants NO capability the document could act with — no
+    // scripts, no forms, no navigation, no downloads — and the document itself carries no script to
+    // run either. (`allow-same-origin` alone is here since 2026-09-06 so the reader can measure the
+    // page it composed and stand it on its own ringed element; without `allow-scripts` nothing in
+    // the frame runs, so that origin is one nothing can use. Corrected in place, rule 6.)
+    const said = await frame.getAttribute('sandbox')
+    expect(inertSandbox(said), 'the Expected frame grants nothing it could act with: ' + said).toBe(true)
     const doc = await frame.evaluate(f => String((f as HTMLIFrameElement).srcdoc || ''))
     expect(/<script/i.test(doc), 'the Expected page carries no script at all').toBe(false)
     expect(/\son\w+\s*=\s*["\']/i.test(doc), 'nor an inline handler').toBe(false)
@@ -2517,10 +2541,32 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await proveVisible(aChip.locator('.pcm'), '✕',
       'The mark beside the hue — the state, in a greyscale reader too', { soft: true })
     await expect(aChip, 'and the chip itself reads as the failure it is').toHaveClass(/\bbad\b/)
-    // ONE LINE, ELLIPSISED, with the whole text in a STYLED tooltip — never the native title
+    // WRAPPED INSIDE THE CELL, CLAMPED IF LONG, with the whole text in a STYLED tooltip — never the
+    // native title. (This asserted `white-space: nowrap` + `text-overflow: ellipsis` until
+    // 2026-09-06, when the human ruled the chip must be readable: "the text in explaining text box
+    // easily overflow and become ....". The chip was capped at the burned card's 360 PAGE px times
+    // the camera's scale — a page-space number over screen-space type — so a 0.46× camera cut
+    // “Water the plants” to “Water th…”. R20's Then moved with the ruling; this moved with R20.)
     const val = aChip.locator('.pcv')
-    expect(await val.evaluate(el => getComputedStyle(el).whiteSpace), 'a chip never wraps').toBe('nowrap')
-    expect(await val.evaluate(el => getComputedStyle(el).textOverflow), 'a long value ellipsises').toBe('ellipsis')
+    const wrap = await val.evaluate(el => {
+      const s = getComputedStyle(el)
+      return { ws: s.whiteSpace, clamp: s.webkitLineClamp || (s as any).lineClamp, over: s.overflow }
+    })
+    expect(wrap.ws, 'a chip WRAPS — the value is the point of the chip').toBe('normal')
+    expect(Number(wrap.clamp), 'and clamps rather than growing without end').toBeGreaterThan(0)
+    expect(wrap.over, 'so a clamped value is cut, not spilled').toBe('hidden')
+    // …AND IT STAYS INSIDE THE PICTURE IT LABELS: a chip wider than its own cell is a caption
+    // hanging off the frame, which is what the old page-space cap was there to prevent.
+    const fits = await aChip.evaluate((el: Element) => {
+      const cell = el.closest('.pcbox') as HTMLElement
+      return { chip: Math.round(el.getBoundingClientRect().width), cell: Math.round(cell.getBoundingClientRect().width) }
+    })
+    expect(fits.chip, 'the chip is bounded by the cell it sits in: ' + JSON.stringify(fits))
+      .toBeLessThanOrEqual(fits.cell)
+    // …and the value that made the human ask for this now READS WHOLE rather than ellipsising: what
+    // the chip shows is what the tooltip carries, with nothing cut off in between
+    expect(await val.evaluate(el => el.scrollHeight <= el.clientHeight + 1),
+      'a value that fits the chip is shown whole, never clamped away behind “…”').toBe(true)
     expect(await aChip.getAttribute('title'), 'no native title beside the styled tooltip').toBeNull()
     const tip = aChip.locator('.mtip')
     await expect(tip).toBeHidden()

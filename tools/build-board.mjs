@@ -2263,21 +2263,33 @@ export function build () {
      same paper, same hairline, same width (--board geom CARD.width, applied in client.js) — so a
      reader who has seen a recording recognises it. The MARK carries the state beside the hue, so
      nothing is lost in greyscale.
-     ONE LINE, ALWAYS, with the whole text one hover away, exactly as the strip's names are: a chip
-     that wrapped would cover the very element it is labelling. It lives INSIDE the camera box on
-     purpose — it is a label on THIS picture, and the camera's edge is where the picture stops.
+     THE VALUE IS THE POINT, SO THE VALUE IS READABLE (the human, 2026-09-06: "the text in explaining
+     text box easily overflow and become ...."). Until now the chip was ONE ellipsised line at a max
+     width of the burned card's 360 PAGE px times the camera's scale — a page-space number governing
+     screen-space type, so a camera at 0.46× gave a 166 px chip in a 397 px cell and cut “Water the
+     plants” down to “Water th…”. It is sized in the CELL now — client.js caps it at 90% of the cell
+     and never past the burned card's own width, IN PIXELS (a percentage would not survive the board
+     photographing ITSELF: a replica re-renders the chip under a new parent, and a 90% cap
+     resolved against that one came back 126 px where the harvest measured 140, which the mirror gate
+     rightly refused) — and it WRAPS to at most
+     three lines, so a typical value shows whole; only a genuinely long one clamps, with the full
+     text still one hover or focus away in the .mtip. The strip's segment NAME is untouched — one
+     ellipsised line, every strip one height (the human's own 2026-09-02 ruling) — and client.js
+     clamps the grown chip inside the cell so a third line cannot fall out of the picture.
+     It lives INSIDE the camera box on purpose — it is a label on THIS picture, and the camera's edge
+     is where the picture stops.
      Measured: --ink on --paper 15.9:1, --ink-3 on --paper 6.42:1, --bengara on --bengara-tint
      5.50:1, --koke on --paper 7.02:1. */
   .pcbox .pcchips { position:absolute; left:0; top:0; right:0; bottom:0; z-index:3;
     pointer-events:none; }
   /* THE CHIP IS A REAL CONTROL (2026-09-04, the review's I1). It is a real button element, not a
-     div: the value is ellipsised to one line, so the only way to read the whole of it is the
-     tooltip, and a tooltip a keyboard cannot reach is a tooltip half the readers do not have. A
+     div: a long value still clamps, so the only way to read the whole of it is the tooltip, and a
+     tooltip a keyboard cannot reach is a tooltip half the readers do not have. A
      button also gives the aria-label a role to be announced with — on a bare div most AT ignores it.
      Same pattern the strip's segments already use. Button resets, because the design system's own
      chrome must not inherit the UA's. */
   .pcbox .pchip { position:absolute; left:0; top:0; transform-origin:0 0; pointer-events:auto;
-    display:flex; align-items:baseline; gap:var(--s2); min-width:0;
+    display:flex; align-items:baseline; gap:var(--s2); min-width:0; max-width:360px;
     padding:var(--s2) var(--s3); background:var(--paper); border:1px solid var(--line2);
     border-radius:var(--r); box-shadow:var(--sh-md);
     font:inherit; text-align:left; cursor:default; -webkit-appearance:none; appearance:none; }
@@ -2287,7 +2299,11 @@ export function build () {
   .pcbox .pchip .pcb { min-width:0; display:flex; flex-direction:column; gap:2px; }
   .pcbox .pchip .pcvr { display:flex; align-items:baseline; gap:6px; min-width:0;
     font:600 var(--t-md)/1.3 var(--mono); color:var(--ink); }
-  .pcbox .pchip .pcv { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* wraps, then clamps at three lines with the ellipsis -webkit-line-clamp puts there; a value with
+     no spaces in it (a hash, a url) breaks rather than pushing the chip past its max width */
+  .pcbox .pchip .pcv { min-width:0; white-space:normal; overflow-wrap:anywhere;
+    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3;
+    overflow:hidden; }
   .pcbox .pchip .pcm { flex:none; font-weight:700; color:var(--koke); }
   .pcbox .pchip .pcvr.no, .pcbox .pchip .pcvr.no .pcm { color:var(--bengara); }
   .pcbox .pchip.bad { background:var(--bengara-tint); border-color:var(--bengara-line); }

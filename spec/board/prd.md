@@ -488,7 +488,7 @@ sides carry that beat and no other — is unchanged.*
 - **When** its row renders
 - **Then** the Actual cell frames the thing being proven and nothing around it — no media toolbar, no dots, no `n / N` counter — with the whole screenshot one click away in the proof lightbox; the beat's position is read and walked on ONE stepper strip spanning both pictures, one segment per moment the beat proved, each named by the assertion the run recorded
 - **When** the moment on show claimed a value
-- **Then** each picture carries ONE chip and it says only what that side holds — `EXPECTED "…"` over the replica, `ACTUAL ✓ "…"` or `ACTUAL ✕ "…"` over the photograph, the mark carrying the state beside the hue — on a single line with the whole text in a hover tooltip, and on the beat's result the two chips are CHECKLISTS of the claims it made; a moment that claimed nothing carries no chip at all
+- **Then** each picture carries ONE chip and it says only what that side holds — `EXPECTED "…"` over the replica, `ACTUAL ✓ "…"` or `ACTUAL ✕ "…"` over the photograph, the mark carrying the state beside the hue — wrapped to read WHOLE inside the cell with the whole text in a hover tooltip, and on the beat's result the two chips are CHECKLISTS of the claims it made; a moment that claimed nothing carries no chip at all
 - **When** the reader opens
 - **Then** it opens in **step** — each beat held on its first scene — with the reader-wide controls (the **auto ↔ step** pair and the speed) on the requirement's title row, left of its ⋯ menu
 - **When** you walk a beat — its strip's `‹ ›`, a click on one of its named segments, or the ← → keys while its row is the **selected** one (visibly marked) — with ↑ ↓ selecting which When/Then and PgUp / PgDn paging the requirement
@@ -590,7 +590,7 @@ moment that claimed nothing shows no chip, because a label with nothing to say i
      names a key, and #howview's Keyboard section lists every key the reader answers to. A third leg
      (added 2026-09-04) walks the row to a CLAIMED moment and reads the two chips off the real
      harvest — one per cell, EXPECTED against the claim's own expected and ACTUAL against its got,
-     one un-wrapped ellipsised line each with a styled tooltip and no native title — then walks on to
+     each wrapped inside its cell so a typical value reads whole (a long one clamped), with a styled tooltip and no native title (the human, 2026-09-06 — "the text in explaining text box easily overflow and become ....") — then walks on to
      the beat's result and asserts the checklist carries one item per claim the beat made. -->
 
 ## R23 — A failed moment names its difference

@@ -90,5 +90,47 @@
     var x = Number(s.x); var y = Number(s.y)
     return (isFinite(x) && isFinite(y)) ? { x: x, y: y } : null
   }
-  root.SBGraft = { graft: graft, walk: walk, stand: stand }
+  // ── THE RING MARKS THE ELEMENT (the human, 2026-09-06) ──────────────────────────────────────────
+  // `stand` puts the composed page in the moment's frame by SCROLL alone, which is right exactly
+  // while the base's flow and the moment's flow agree. They do not always: the base is the beat's
+  // OPENING state, so a When that filters, collapses or adds rows re-lays the page out under the
+  // graft point, and the patch — which is spliced into the base's own flow — lands wherever that
+  // flow puts it rather than at the coordinates its own capture recorded. The ring, the camera and
+  // the chips all speak the moment's viewport, so the ring then sits on whatever the base happens to
+  // have at those coordinates. Measured on this repo's own board before the fix: board R9 b1 rang a
+  // card 520 px above the one it names, board R1 b1 one 571 px below it.
+  //
+  // The rule: the composed page is STOOD so the moment's own ringed element renders where the moment
+  // recorded it. It is a rigid translation of the whole page, so nothing inside it is re-laid out —
+  // and it is what board R19 already asks for in words ("the grafted patch stands at its own page
+  // coordinates, so the ring lands on it"), enforced now instead of hoped for. The ring itself does
+  // not move: after the shift the recorded box IS the element's box, which keeps ONE camera over the
+  // two cells (R19's other half) rather than aiming the Expected somewhere the Actual is not.
+  //
+  // ringTarget(root) — the element this replica rang, `data-ring="1"` (spec/_replica.mjs), found at
+  // the root itself or the first one under it. DOM-shaped, so it is exercised on a stub in node.
+  function ringTarget (root) {
+    if (!root) return null
+    if (root.getAttribute && root.getAttribute('data-ring')) return root
+    for (var i = 0, kids = (root.children || []); i < kids.length; i++) {
+      var found = ringTarget(kids[i])
+      if (found) return found
+    }
+    return null
+  }
+  // alignTo(at, measured, recorded) → where the wrapper stands so `measured` lands on `recorded`.
+  // NEVER INVENTS (rule 3): with nothing measured, nothing recorded, or a number that is not one, the
+  // page keeps exactly the place `stand` gave it — the answer this had before the fix. A shift under
+  // A shift of half a pixel or less is no shift at all, so every already-aligned moment (the demo's
+  // worst measured drift IS 0.5 px) is returned untouched rather than nudged by rounding.
+  function alignTo (at, measured, recorded) {
+    if (!at) return null
+    if (!measured || !recorded) return at
+    var dx = Number(recorded.x) - Number(measured.x)
+    var dy = Number(recorded.y) - Number(measured.y)
+    if (!isFinite(dx) || !isFinite(dy)) return at
+    if (Math.abs(dx) <= 0.5 && Math.abs(dy) <= 0.5) return at
+    return { x: at.x + dx, y: at.y + dy, w: at.w, h: at.h }
+  }
+  root.SBGraft = { graft: graft, walk: walk, stand: stand, ringTarget: ringTarget, alignTo: alignTo }
 })(typeof globalThis !== 'undefined' ? globalThis : this)
