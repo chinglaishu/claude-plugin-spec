@@ -131,6 +131,25 @@ way. Read it before writing your first one.
    you SEE every number the test claims? If not, it is not done** — this is the single most common way a
    green test still fails its one job (a recording a human can trust).
 
+   **Plan the film before you write it — the moment plan** *(the human's 2026-09-06 method ruling,
+   `docs/testcase-method-2026-09-06.html`, step 3; kg-deep carries steps 1–2, the sentence itself)*.
+   A beat is **one ordered list of moments**, and you author it in this order, every time:
+
+   1. **The GIVEN — the base.** The whole page exactly as seeded, no ring. Captured once per screen
+      state and shared by every beat that starts there (see the base note below).
+   2. **The WHEN, made visible.** The action itself, photographed *while it is still on screen* — the
+      typed value still in the box, the row still there before the click. It is gone by the after
+      photo; without this frame the film skips the act.
+   3. **One photograph per FACT of the Then.** Each `proveVisible` is one moment. Tsumiki's R2 spends
+      one on the stamp — its own claim, ringed on the smallest element that carries it.
+   4. **The RESULT, where it happened.** The same row, the same position — "in place" is itself a
+      checkable fact, so prove the row is the row (by its id, at its index), not merely that *a* row
+      somewhere now reads the new text.
+
+   Camera rules for the whole beat: **ONE camera**, framing the union of all its rings — never
+   re-cropped per moment. **Every control the When names must be inside that frame.** And **no two
+   photographs alike** — if two moments look the same, one of them is not proving anything.
+
    **Prove the WHEN, not only the Then** *(2026-08-29 — the human, on the Tsumiki demo's R1)*. A beat's
    proof on the board plays `before → each value you proved → after`, and **`proveVisible` is what takes
    those middle frames**: every value it rings is photographed and measured where it stands, and the
@@ -248,6 +267,41 @@ way. Read it before writing your first one.
    before overflow). Same for fixtures: one built to overflow at today's sizes silently stops
    exercising its contract when the chrome tightens — derive the fixture's bulk from the contract
    ("tall enough to overflow"), not from the pixels of the day.
+
+## Aim the camera — what gets ringed, and what the words say
+
+*(The human's 2026-09-06 method ruling, `docs/testcase-method-2026-09-06.html`, step 4. The moment
+plan above says WHICH moments exist; this says what each one points at and what it is called. Both
+are read by a person scanning a row, so both are part of the proof, not decoration.)*
+
+- **The focus element is the SMALLEST thing that carries the value.** Ring the stamp, not the row;
+  the ring, not the card; the badge, not the sidebar. A container never gets the ring when a leaf
+  holds the number — `proveVisible(row.locator('.meta'), 'edited just now', …)`, never
+  `proveVisible(row, …)`. Two things go wrong when a container is ringed: the callout names a value
+  the ringed box only *contains*, and the beat's union camera opens far wider than the beat needs.
+- **The segment name is a FRAGMENT OF THE THEN, in the requirement's own words.** The strip under the
+  two pictures names each moment from its label, one ellipsised line, full text on hover — so
+  `'The stamp flipped to edited'` (the Then's own clause), not `'check meta'` and not
+  `'Double-click and retype'` (that is the When; the When has its own moment). A label that is a
+  sentence from somewhere else makes the strip read as a different requirement from the words beside
+  it.
+- **The chip carries the promised words verbatim.** EXPECTED prints the requirement's own value,
+  ACTUAL what the app showed, so the `expected` argument is the Then's word or number as written —
+  never a paraphrase, never a value you read off the page and echoed back (that is a tautology, and
+  the golden number belongs in `state`).
+- **An absence reads in plain language.** `proveVisible(locator, MISSING, 'The parent still has no
+  checkbox of its own', { soft: true })` prints as *"nothing here — this element must be absent"* /
+  *"✓ nothing was there"*. Write the label as the absence the Then names, not as the positive fact of
+  a neighbour.
+- **The context stays visible.** The Expected cell stands this moment's patch back in the beat's base
+  and fades everything off that path once — still readable, so both cells read as the same page. You
+  get that for free; what you can break is ringing an element the base never had, which reads as a
+  picture of two different pages.
+
+The rest of the card is already the rules above: write it **red-first** and watch it fail (rule 1),
+let every claim be **soft** so the beat reaches every fact and fails once at its end with the whole
+list (rule 6), and **show the action on its subject** — the thing ringed before, the place it changed
+after, the counter last (rule 5's last bullet, the R9 lesson).
 
 Never weaken, skip, or delete an assertion to go green (CLAUDE.md rule 3) — neither a unit nor a
 flow test can buy a false green: every requirement still needs a real assertion that would fail

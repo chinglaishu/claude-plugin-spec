@@ -66,6 +66,36 @@ A deep test asserts **exact values**, and exact values need deterministic data.
 
 ## Phase 3 — Draft the PRD (canon on write, the human steers)
 
+> **A test case is a short film of one promise** — one page state → one user action → facts a camera
+> can check. If you cannot film it, you cannot prove it: rewrite the promise until you can. *(The
+> human's 2026-09-06 method ruling — `docs/testcase-method-2026-09-06.html`, worked end to end on the
+> todolist demo's real R1–R9. Steps 1–2 of that method are this phase; steps 3–4 are kg-e2e.)*
+
+### 3a — Which requirements exist: walk five buckets, in this order
+
+Do not brainstorm. Walk the screen's main noun through five buckets and write **one requirement per
+promise**; the todolist demo's own nine fall out of them exactly:
+
+| # | bucket | what to look for | the todolist's |
+|---|---|---|---|
+| ① | **The main thing's life** | create it, change it, finish it, remove it — the lifecycle of the screen's main noun (there: a task) | R1 add · R2 edit + stamp · R9 delete, reversibly |
+| ② | **Every derived number** | anything the app *computes* — counts, rings, roll-ups — proven with exact numbers on the seeded data | R3 ring 1/3→1/4 · R4 roll-up both ways · R5 "To do" counts leaves |
+| ③ | **Every view & chip** | each filter/view shows the right rows and its badge agrees; time-derived chips under the frozen clock | R6 views + badges · R7 overdue/today chips |
+| ④ | **Survival** | the state that must outlive a reload (or sign-out, or navigation) comes back byte-for-byte | R8 reload |
+| ⑤ | **The mistake path** | the user's slip is safe: undo, confirm, nothing lost. Often the best film on the board | R9 undo window |
+
+Bucket ② is where a board earns its keep — five of the todolist's nine read a value the app DERIVES,
+the kind that drifts silently when the code changes. A save/delete-only screen teaches nothing.
+
+**The include / exclude test**, applied to every candidate before it gets a card:
+
+- **A requirement earns its card only if deleting the feature would make its test fail.** Styling with
+  no behaviour gets no card.
+- **One requirement = one promise a user could say aloud.**
+- **If two requirements would be proven by the same assertion, they are one requirement.**
+
+### 3b — Write the Given / When → Then
+
 Write `spec/<screen>/prd.md`: one `## R<n>` per requirement, each grounded in what phase 1/2 found,
 each annotated with the selector/testid its test will use. **Lead a requirement with a Given / When /
 Then behaviour triple when it describes a testable state→action→outcome** — the board renders that
@@ -80,6 +110,43 @@ name:
 
 <the authored prose follows, one click away in the reader>
 ```
+
+How it usually gets written — and why every line of it is unprovable:
+
+```markdown
+- **Given** a task            ← which one? not reproducible
+- **When** you edit it        ← no hand could film that. What is pressed?
+- **Then** it updates correctly   ← not a fact. A camera cannot check "correctly"
+```
+
+Nothing there can fail *specifically*, so nothing is proven. The todolist's real R2 is the shape to
+copy: **Given** a task row stamped "added" · **When** you double-click its title, retype it and press
+Enter · **Then** the same row reads the new text in place and its stamp flips to "edited just now".
+Six rules make the difference:
+
+1. **Exact words, exact numbers.** "its stamp flips to *edited just now*", "the ring reads *1/4*" —
+   never "updates", never "correctly", never "as expected". The Then's words are what the board's
+   EXPECTED chip carries verbatim, so a vague Then has nothing to print.
+2. **Every noun in a Then must be visible on screen.** If a Then names something no screen shows,
+   either surface it in the UI or let the test declare the gap (`intentGap`) — a **visible debt,
+   never a quiet pass**. A Then no camera can reach is a requirement you cannot prove.
+3. **Say absences out loud.** R3's Then ends "…**and the parent still has no checkbox**"; R4's says
+   "**nobody ticked the parent**". An absence is a claim like any other and the board films it in
+   plain words — but only if someone wrote it. **Reject a Then that leaves its absences implicit**
+   ("only that view's tasks show" hides "no done task appears in Active").
+4. **One When = one action.** Two actions are two beats: R4 carries two When→Then beats (tick, then
+   untick) and each is its own film. A When that lists four clicks is four requirements wearing one
+   card, or one requirement whose film no reader can follow.
+5. **The Given comes from the golden seed, under the frozen clock** (phase 2). R5's "seven open
+   leaves" and R7's "due two days ago" only mean anything because the seed never moves — name the
+   exact state, never "some tasks, some done".
+6. **Count the trap, not just the happy number.** R5's best line is "To do reads 4 — **down by two,
+   not three**: the container is never a unit of work". Name the wrong answer the design forbids,
+   where naming it teaches.
+
+**Where this bites, and it is on purpose.** Exact numbers are brittle: change the seed and half the
+Thens go red. That is the design — the seed is golden and frozen — but it makes **a seed change a
+requirement change**, to be treated with the same care (and the same stop-and-ask) as editing a Then.
 
 **Families (board R17).** Once a screen carries more than a handful of requirements, group them
 under `### <n> · <family> — <gloss>` lines placed *between* `## R<n>` sections: a heading opens a
