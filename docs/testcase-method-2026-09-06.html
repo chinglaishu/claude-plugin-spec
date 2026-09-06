@@ -1,0 +1,245 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>How to write a test case — the specboard method, worked on the todolist</title>
+<style>
+:root{--paper:#f6f2ea;--card:#fdfcf9;--ink:#2b2a27;--mute:#6f6a60;--line:#d9d2c3;--indigo:#3f4f7a;--indigo-tint:#e6eaee;--koke:#5b6b3c;--koke-tint:#eaece1;--bengara:#8a4a3c;--bengara-tint:#f2e8e4;--yamabuki:#8a6412;--yamabuki-tint:#f6eeda;--tint:#ecebe3}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 -apple-system,Helvetica,Arial,sans-serif;padding:36px 44px;max-width:1120px}
+h1{font-size:26px;margin:0 0 6px}
+h2{font-size:20px;margin:56px 0 6px;border-bottom:2px solid var(--ink);padding-bottom:8px}
+h2 .step{display:inline-block;background:var(--ink);color:var(--paper);border-radius:6px;padding:2px 12px;font-size:15px;margin-right:10px;vertical-align:2px}
+.sub{color:--mute;color:var(--mute);margin:0 0 18px;font-size:15px}
+p{margin:8px 0;max-width:860px}
+.k{font:13px ui-monospace,Menlo,monospace;background:var(--tint);padding:1px 6px;border-radius:4px;white-space:nowrap}
+
+/* the big idea */
+.hero{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:26px 30px;margin:20px 0;font-size:22px;line-height:1.5;max-width:none}
+.hero b{color:var(--indigo)}
+.pipe{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr 28px 1fr;align-items:stretch;gap:0;margin:18px 0}
+.pipe .st{background:var(--card);border:2px solid var(--ink);border-radius:10px;padding:14px 16px;text-align:center}
+.pipe .st .n{display:block;font-size:13px;color:var(--mute);font-weight:600;letter-spacing:.05em}
+.pipe .st .t{display:block;font-size:17px;font-weight:700;margin:4px 0}
+.pipe .st .d{display:block;font-size:13px;color:var(--mute)}
+.pipe .ar{align-self:center;text-align:center;font-size:22px;color:var(--mute)}
+
+/* bucket grid */
+.buckets{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0}
+.bk{border:1px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden}
+.bk header{padding:10px 14px;font-weight:700;font-size:15px}
+.bk .bd{padding:10px 14px 12px;font-size:13.5px;color:var(--mute)}
+.bk .bd b{color:var(--ink)}
+.bk .reqs{padding:0 14px 12px}
+.rq{display:inline-block;border:1.5px solid var(--ink);border-radius:99px;padding:2px 10px;font:600 13px ui-monospace,Menlo,monospace;margin:2px 4px 2px 0;background:#fff}
+.bk.b1 header{background:var(--koke-tint);color:var(--koke)}
+.bk.b2 header{background:var(--indigo-tint);color:var(--indigo)}
+.bk.b3 header{background:var(--yamabuki-tint);color:var(--yamabuki)}
+.bk.b4 header{background:var(--tint)}
+.bk.b5 header{background:var(--bengara-tint);color:var(--bengara)}
+
+/* bad vs good */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.case{border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--card)}
+.case header{padding:10px 16px;font-weight:700;font-size:16px}
+.case.bad header{background:var(--bengara-tint);color:var(--bengara)}
+.case.good header{background:var(--koke-tint);color:var(--koke)}
+.case .bd{padding:14px 18px;font-size:16px}
+.case .bd .kw{font-weight:700}
+.case .bd .kw.g{color:var(--koke)}.case .bd .kw.w{color:var(--indigo)}.case .bd .kw.t{color:var(--bengara)}
+.case .why{padding:0 18px 14px;font-size:13.5px;color:var(--mute)}
+.case .why li{margin:4px 0}
+.case .why .no{color:var(--bengara);font-weight:700}
+.case .why .yes{color:var(--koke);font-weight:700}
+mark.f{background:var(--indigo-tint);color:var(--indigo);padding:0 3px;border-radius:3px;font-weight:600}
+
+/* sentence rules */
+.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+.rl{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--indigo);border-radius:8px;padding:10px 14px;font-size:14px}
+.rl b{display:block;margin-bottom:2px}
+.rl small{color:var(--mute)}
+
+/* filmstrip */
+.film{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.frame{border:2px solid var(--ink);border-radius:10px;background:#fff;overflow:hidden}
+.frame header{background:var(--tint);padding:6px 12px;font:700 12.5px ui-monospace,Menlo,monospace;letter-spacing:.04em}
+.frame.giv header{background:var(--tint)}
+.frame.whn header{background:var(--indigo-tint);color:var(--indigo)}
+.frame.thn header{background:var(--koke-tint);color:var(--koke)}
+.scene{position:relative;padding:14px 12px 16px;min-height:150px;font-size:12.5px}
+.row{border:1px solid var(--line);border-radius:6px;padding:5px 8px;margin:5px 0;background:var(--card);display:flex;gap:8px;align-items:center}
+.row .cb{width:13px;height:13px;border:1.5px solid var(--mute);border-radius:3px;flex:none}
+.row .cb.done{background:var(--koke);border-color:var(--koke)}
+.row .stamp{margin-left:auto;font-size:10.5px;color:var(--mute);white-space:nowrap}
+.row.dim,.dim{opacity:.45}
+.ring{outline:3px solid var(--bengara);outline-offset:3px;border-radius:6px;position:relative}
+.ring::after{content:attr(data-c);position:absolute;left:0;top:calc(100% + 7px);background:var(--ink);color:var(--paper);font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;border-radius:4px;white-space:nowrap;z-index:2}
+.inputrow{border:1.5px solid var(--indigo);border-radius:6px;padding:5px 8px;margin:5px 0;background:#fff;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.frame .cap{padding:8px 12px 12px;font-size:12.5px;color:var(--mute);border-top:1px solid var(--line)}
+.frame .cap b{color:var(--ink)}
+
+/* moment anatomy */
+.anat{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;align-items:start;margin:16px 0}
+.anat .pic{border:2px solid var(--ink);border-radius:10px;background:#fff;padding:22px 18px 60px;position:relative}
+.anat .labels{font-size:14px}
+.anat .labels .lb{border-left:4px solid var(--indigo);background:var(--card);border-radius:0 8px 8px 0;padding:8px 12px;margin:10px 0}
+.anat .labels .lb b{display:block}
+.anat .labels .lb small{color:var(--mute)}
+.chipbox{position:absolute;left:24px;bottom:10px;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:5px 10px;font:12px ui-monospace,Menlo,monospace;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.chipbox .lab{color:var(--mute);letter-spacing:.06em;font-size:10.5px}
+
+img.shot{width:100%;border:1px solid var(--line);border-radius:8px;display:block;margin:10px 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* rule card */
+.rulecard{background:var(--card);border:2px solid var(--ink);border-radius:12px;padding:18px 24px;margin:16px 0;column-count:2;column-gap:34px;font-size:14.5px}
+.rulecard ol{margin:0;padding-left:20px}
+.rulecard li{margin:7px 0;break-inside:avoid}
+.rulecard b{color:var(--indigo)}
+.dec{background:var(--card);border-left:3px solid var(--indigo);padding:10px 14px;margin:14px 0;font-size:14.5px;max-width:880px}
+.dec b{color:var(--indigo)}
+.warn{border-left-color:var(--bengara)}.warn b{color:var(--bengara)}
+.note{font-size:13px;color:var(--mute)}
+</style>
+
+<h1>How to write a test case — the specboard method</h1>
+<p class="sub">2026-09-06 · a proposal for the ONE recipe every screen follows, worked end-to-end on the todolist demo (Tsumiki, its real R1–R9). On your yes this bakes into the <span class="k">kg-deep</span> and <span class="k">kg-e2e</span> skills, so every future authoring pass follows it.</p>
+
+<div class="hero">A test case is a <b>short film of one promise</b>.<br>
+One page state → one user action → facts a camera can check.<br>
+If you cannot film it, you cannot prove it — rewrite the promise until you can.</div>
+
+<div class="pipe">
+  <div class="st"><span class="n">STEP 1</span><span class="t">Pick the promises</span><span class="d">which test cases exist</span></div>
+  <div class="ar">→</div>
+  <div class="st"><span class="n">STEP 2</span><span class="t">Write the sentences</span><span class="d">Given · When → Then</span></div>
+  <div class="ar">→</div>
+  <div class="st"><span class="n">STEP 3</span><span class="t">Plan the film</span><span class="d">which moments get photographed</span></div>
+  <div class="ar">→</div>
+  <div class="st"><span class="n">STEP 4</span><span class="t">Aim the camera</span><span class="d">focus element + explaining words</span></div>
+</div>
+
+<h2><span class="step">STEP 1</span>Which test cases should exist?</h2>
+<p>Walk <b>five buckets</b>, in this order, and write one requirement per promise. The todolist's own nine fall out of them exactly:</p>
+<div class="buckets">
+  <div class="bk b1"><header>① The main thing's life</header>
+    <div class="bd">Create it, change it, finish it, remove it — the <b>lifecycle of the screen's main noun</b> (here: a task).</div>
+    <div class="reqs"><span class="rq">R1 add</span><span class="rq">R2 edit + stamp</span><span class="rq">R9 delete, reversibly</span></div></div>
+  <div class="bk b2"><header>② Every derived number</header>
+    <div class="bd">Anything the app <b>computes</b> — counts, rings, roll-ups — proven with <b>exact numbers</b> on the seeded data.</div>
+    <div class="reqs"><span class="rq">R3 ring 1/3→1/4</span><span class="rq">R4 roll-up both ways</span><span class="rq">R5 "To do" counts leaves</span></div></div>
+  <div class="bk b3"><header>③ Every view &amp; chip</header>
+    <div class="bd">Each filter/view shows the right rows <b>and its badge agrees</b>; time-derived chips under a <b>frozen clock</b>.</div>
+    <div class="reqs"><span class="rq">R6 views + badges</span><span class="rq">R7 overdue/today chips</span></div></div>
+  <div class="bk b4"><header>④ Survival</header>
+    <div class="bd">The state that must outlive a <b>reload</b> (or sign-out, or navigation) comes back byte-for-byte.</div>
+    <div class="reqs"><span class="rq">R8 reload</span></div></div>
+  <div class="bk b5"><header>⑤ The mistake path</header>
+    <div class="bd">The user's slip is <b>safe</b>: undo, confirm, nothing lost. Often the best film on the board.</div>
+    <div class="reqs"><span class="rq">R9 undo window</span></div></div>
+</div>
+<div class="dec"><b>Include / exclude test:</b> a requirement earns its card only if <b>deleting the feature would make its test fail</b>. One requirement = one promise a user could say aloud. If two requirements would be proven by the same assertion, they are one requirement. Styling-with-no-behavior gets no card.</div>
+
+<h2><span class="step">STEP 2</span>Write the Given / When → Then</h2>
+<div class="vs">
+  <div class="case bad"><header>✕ How it usually gets written</header>
+    <div class="bd"><span class="kw g">Given</span> a task<br><span class="kw w">When</span> you edit it<br><span class="kw t">Then</span> it updates correctly</div>
+    <ul class="why">
+      <li><span class="no">"a task"</span> — which one? Not reproducible.</li>
+      <li><span class="no">"edit it"</span> — no hand could film that. What is pressed?</li>
+      <li><span class="no">"correctly"</span> — not a fact. A camera cannot check "correctly".</li>
+      <li><span class="no">Nothing can fail specifically</span> — so nothing is proven.</li>
+    </ul></div>
+  <div class="case good"><header>✓ The todolist's real R2</header>
+    <div class="bd"><span class="kw g">Given</span> a task row stamped "added"<br>
+    <span class="kw w">When</span> you <mark class="f">double-click its title</mark>, <mark class="f">retype it</mark> and <mark class="f">press Enter</mark><br>
+    <span class="kw t">Then</span> <mark class="f">the same row</mark> reads <mark class="f">the new text</mark> in place and its stamp flips to <mark class="f">"edited just now"</mark></div>
+    <ul class="why">
+      <li><span class="yes">Given</span> = one exact state from the frozen seed.</li>
+      <li><span class="yes">When</span> = physical verbs a hand performs on screen.</li>
+      <li><span class="yes">Then</span> = separate highlighted facts — each becomes its own photographed claim.</li>
+    </ul></div>
+</div>
+<div class="rules">
+  <div class="rl"><b>Exact words, exact numbers</b><small>"stamp flips to <i>edited just now</i>", "ring reads <i>1/4</i>" — never "updates", never "correctly".</small></div>
+  <div class="rl"><b>Every noun must be visible</b><small>If a Then names something no screen shows, either surface it in the UI or declare the gap (<span class="k">intentGap</span>) — visible debt, never a quiet pass.</small></div>
+  <div class="rl"><b>Say absences out loud</b><small>R3: "…and the parent <i>still has no checkbox</i>". An absence is a claim like any other, and the board shows it in plain words.</small></div>
+  <div class="rl"><b>One When = one action</b><small>Two actions = two beats (R4 has two When→Then beats: tick, then untick). Each beat is its own film.</small></div>
+  <div class="rl"><b>Given comes from the golden seed</b><small>One deterministic seed + a frozen clock (<span class="k">?now=</span>). R5's "seven open leaves" and R7's "due two days ago" only mean something because the seed never moves.</small></div>
+  <div class="rl"><b>Count the trap, not just the happy number</b><small>R5's best line: "down by two, <i>not three</i> — the container is never a unit of work". Name the wrong answer the design forbids.</small></div>
+</div>
+
+<h2><span class="step">STEP 3</span>Plan the film — which moments get photographed</h2>
+<p>A beat is one ordered list of <b>moments</b>: the Given, then <b>one photograph per highlighted fact</b>, then the result. R2's beat, as the recipe produces it:</p>
+<div class="film">
+  <div class="frame giv"><header>1 · GIVEN — the base</header>
+    <div class="scene">
+      <div class="row dim"><span class="cb"></span> Pay the electricity bill <span class="stamp">today</span></div>
+      <div class="row dim"><span class="cb done"></span> Buy a birthday gift <span class="stamp">done</span></div>
+      <div class="row"><span class="cb"></span> Water the plants <span class="stamp">added 1d ago</span></div>
+    </div>
+    <div class="cap"><b>The whole page</b>, exactly as seeded. Captured once per screen state and shared by every beat that starts here.</div></div>
+  <div class="frame whn"><header>2 · THE WHEN, VISIBLE</header>
+    <div class="scene">
+      <div class="row dim"><span class="cb"></span> Pay the electricity bill</div>
+      <div class="row dim"><span class="cb done"></span> Buy a birthday gift</div>
+      <div class="inputrow ring" data-c="the retyped text, still in the box">Water the office plants▌</div>
+    </div>
+    <div class="cap"><b>The action itself must be seen</b> — the typed value photographed while it is still in the box. (It's gone by the after-photo; without this frame the film skips the act.)</div></div>
+  <div class="frame thn"><header>3 · FACT — the stamp</header>
+    <div class="scene">
+      <div class="row dim"><span class="cb"></span> Pay the electricity bill</div>
+      <div class="row dim"><span class="cb done"></span> Buy a birthday gift</div>
+      <div class="row"><span class="cb"></span> Water the office plants <span class="stamp ring" data-c="edited just now">edited just now</span></div>
+    </div>
+    <div class="cap"><b>One photo per fact.</b> The stamp is its own claim, ringed on the smallest element that carries it.</div></div>
+  <div class="frame thn"><header>4 · THEN — the row</header>
+    <div class="scene">
+      <div class="row dim"><span class="cb"></span> Pay the electricity bill</div>
+      <div class="row dim"><span class="cb done"></span> Buy a birthday gift</div>
+      <div class="row ring" data-c="the same row, new text, in place"><span class="cb"></span> Water the office plants <span class="stamp">edited just now</span></div>
+    </div>
+    <div class="cap"><b>The result, where it happened.</b> Same row, same position — "in place" is itself a checkable fact.</div></div>
+</div>
+<div class="dec"><b>The show-it rule (the R9 lesson):</b> a When that acts on a thing rings <b>that thing before</b> the action and <b>the place it changed after</b> — and only then the number. R9's film must show the row being deleted, the Undo appearing, <i>and then</i> "To do" still reading 5. A film whose only frames ring a counter claims the action happened without ever showing it.</div>
+<div class="dec"><b>Camera rules:</b> ONE camera per beat, framing the union of all its rings — never re-cropping per moment. No two photographs identical (if two moments look the same, one of them isn't proving anything). Every control the When names must be inside the frame.</div>
+
+<h2><span class="step">STEP 4</span>Aim the camera — the focus element and the explaining words</h2>
+<div class="anat">
+  <div class="pic">
+    <div class="row dim"><span class="cb"></span> Renew passport <span class="stamp">overdue</span></div>
+    <div class="row"><span class="cb"></span> Water the office plants
+      <span class="stamp ring" data-c="">edited just now</span></div>
+    <div class="row dim"><span class="cb done"></span> Buy a birthday gift <span class="stamp">done</span></div>
+    <div class="chipbox"><span class="lab">EXPECTED</span> "edited just now"</div>
+  </div>
+  <div class="labels">
+    <div class="lb"><b>The focus element = the smallest thing that carries the value</b><small>The stamp — not the row, not the list, not the page. A container never gets the ring when a leaf holds the number.</small></div>
+    <div class="lb"><b>The segment name = a fragment of the Then</b><small>"The stamp flipped to edited" — the strip under the pictures names each moment in the requirement's own words, one line, full text on hover.</small></div>
+    <div class="lb"><b>The chip = the exact promised words</b><small>EXPECTED carries the requirement's words; ACTUAL what the app showed. An absence reads in plain language: "nothing here — this element must be absent" / "✓ nothing was there".</small></div>
+    <div class="lb"><b>The context stays visible</b><small>Everything the moment is not about is faded once — still readable, so both cells read as the same page.</small></div>
+  </div>
+</div>
+<p>What this looks like on the real board today — R2's edit and R3's absence claim, live on :4175:</p>
+<img class="shot" src="superpowers/mockups/2026-09-06-chips-absence-fix.png" alt="R2 chips showing whole values and R3's absence claim in plain words, on the live demo board">
+
+<h2>The rule card — what gets baked into the skills</h2>
+<div class="rulecard"><ol>
+  <li><b>Five buckets</b>, in order: lifecycle · derived numbers · views &amp; chips · survival · the mistake path.</li>
+  <li>A requirement exists only if <b>deleting the feature fails its test</b>; one promise per card; same assertion ⇒ same card.</li>
+  <li><b>Given</b>: one exact state from the golden seed, under the frozen clock.</li>
+  <li><b>When</b>: physical verbs; one action per beat.</li>
+  <li><b>Then</b>: exact words and numbers; every fact separately claimable; absences said out loud; name the forbidden wrong answer where it teaches.</li>
+  <li>Every noun in a Then must be <b>visible on screen</b>, or the gap is declared as visible debt.</li>
+  <li><b>Moments</b> = Given + the When made visible + one photo per fact + the result where it happened.</li>
+  <li><b>Show it</b>: ring the acted-on thing before, the changed place after, the counter last.</li>
+  <li><b>One camera</b> per beat; every named control in frame; no two photos alike.</li>
+  <li><b>Focus</b> = the smallest element carrying the value; never a container over a leaf.</li>
+  <li><b>Words</b>: segment names are fragments of the Then; chips carry the promised words verbatim; absence in plain language.</li>
+  <li>Write the test <b>red-first</b>, watch it fail, and let each claim be soft — the beat reaches every fact and fails once at the end with the whole list.</li>
+</ol></div>
+
+<h2>Where this method bites — said before you agree</h2>
+<div class="dec warn"><b>Exact numbers are brittle on purpose.</b> Change the seed and half the Thens go red — that is the design (the seed is golden and frozen), but it means seed changes are requirement changes and get treated with the same care.</div>
+<div class="dec warn"><b>Absences must be written to be shown.</b> The board can only film an absence someone claimed. The method forces the sentence ("still has no checkbox") — reviewers must reject a Then that leaves its absences implicit.</div>
+<div class="dec warn"><b>Some facts have no screen surface.</b> An API-only fact or a geometry gets a declared gap, not a photo. The debt list is part of the product — it must stay short and be read.</div>
+
+<p class="note" style="margin-top:30px">Sources: the todolist demo's real <span class="k">spec/todo/prd.md</span> (R1–R9 quoted verbatim), CLAUDE.md's rules 1–3 and 8, the watchable-beat and asserted-values-visible rulings, and the 2026-09-02 one-stepper/named-moments decisions. On your yes: the rule card lands in <span class="k">skills/kg-deep</span> (steps 1–2) and <span class="k">skills/kg-e2e</span> (steps 3–4), each rule with its todolist example.</p>
+</body>
