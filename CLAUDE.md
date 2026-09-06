@@ -559,6 +559,16 @@ change.
   app put something.** A refusal the reader made honestly (`data-repalign="refused"`) is a listed
   DEBT, not a red row — as is a ring the capture marked no element for, and a beat too old to
   compose. Same rule as above: when a real harvest turns it red, fix the READER, never the tolerance.
+  **OPEN, AND SAID OUT LOUD: board R10 is a standing RED row on this repo's own mirror gate**
+  (2026-09-06/07). R10 photographs the run panel while a NESTED run STREAMS into it, so its scene is
+  a live, growing, scrolling log whose per-case duration numbers tick — `moved-text 16, extra-box 8`
+  on every fresh harvest. It was a marginal flake a standalone re-harvest used to clear; since live
+  action made every run record, a nested run takes longer, the streamed log grows with it, and a
+  standalone re-harvest no longer clears it (measured: three consecutive scoped `spec/board` runs,
+  all 36 tests green, each leaving the same gap). Nothing has been weakened — the guard still fails
+  `npm run proof mirror` here, and demo/todo is green on both gates. The fix belongs in the CAPTURE
+  (a scene whose content changes while it is being measured) and is NOT made here; this is the debt
+  written down, not a dismissal.
   **The capture spends its budget on the ring
   first, never in document order (2026-09-03, the human, on dojostack's House View: "the schematic is
   useless — off focus, the versioning component not shown").** The walk had one global 360-slot cap
