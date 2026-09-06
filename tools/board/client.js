@@ -699,14 +699,17 @@ const B = window.__BOARD__ || {}
     s.addEventListener('change', function () { setSpd(parseFloat(s.value) || 1) })
     // wrapped so the CSS can draw the caret (M-6) — a <select> takes no pseudo-element
     const w = document.createElement('span'); w.className = 'pspdwrap'; w.appendChild(s)
-    // SPEED IS AUTO-ONLY (the human, 2026-09-02: "play speed only enable when it's auto mode"). A
-    // stepped beat sets its pace by hand — there is nothing for a speed to rate — so the control is
-    // disabled (and dimmed via .pspdwrap[data-off]) in step, and wakes when auto is chosen.
+    // SPEED RATES WHAT PLAYS (the human, 2026-09-02: "play speed only enable when it's auto mode").
+    // A STEPPED beat sets its pace by hand — there is nothing for a speed to rate — so the control is
+    // disabled (and dimmed via .pspdwrap[data-off]) in step alone. It wakes in auto AND in semi-auto
+    // (the human's 2026-09-07 three-mode ruling): semi-auto plays the moment's slice on a loop, which
+    // is playback with a pace like any other. The original rule is unchanged — only STEP has nothing
+    // to rate — the set of modes under it grew.
     const sync = function () {
-      const off = PLAY_MODE !== 'auto'
+      const off = PLAY_MODE === 'step'
       s.disabled = off
       if (off) w.setAttribute('data-off', '1'); else w.removeAttribute('data-off')
-      w.title = off ? 'play speed — available in auto' : 'play speed'
+      w.title = off ? 'play speed — available while something is playing' : 'play speed'
     }
     sync()
     onMode(w, sync)
@@ -792,46 +795,67 @@ const B = window.__BOARD__ || {}
   // class — is GONE with its toggle, the human 2026-08-30: "just always be behaviour first". The
   // storyline deals one order now and there is nothing left to hold for the session.)
   //
-  // PLAY MODE (the human, 2026-08-30: "add a display mode for the small steps"). 'step' is now the
-  // DEFAULT (the human, 2026-09-02: "default as step") — every beat opens HELD on its first scene,
-  // walked by its moment strip or the ← → keys on the selected row, so reading a beat a moment at
-  // a time is the resting state (board R20). 'auto' is the opt-in hands-free loop: every beat's
-  // scenes loop the moment the row exists. Reader-wide and session-scoped, exactly like the speed
-  // beside it and for the same reason: a reader is rebuilt on every fold, so the choice must survive
-  // the rebuild, but one that persisted across visits would silently freeze tomorrow's board with no
-  // cue why.
-  let PLAY_MODE = 'step'
+  // PLAY MODE (the human, 2026-08-30: "add a display mode for the small steps"). THREE stops since
+  // 2026-09-07, the human's own words: "actually need 3 modes: (it will equally apply on expected and
+  // actual column) 1. Auto (all small steps auto run, small step 1 played -> small step 2) 2.
+  // Semi-auto (step auto run and loop, like now in small step 1, it will loop play on small step 1,
+  // user control to go to next step) 3. Step (totally still and user control to go to next step)".
+  //
+  //   auto  — the moment plays its slice once and the row ADVANCES to the next, through the beat and
+  //           round again (the beat loops; the ↺ at the strip's end is for walking it by hand).
+  //   semi  — the moment on show LOOPS its own slice; only a person advances. This is what the board
+  //           did before the ruling, so it is the DEFAULT ("like now").
+  //   step  — nothing moves: the moment's own photograph, held, until a person walks it. The still is
+  //           the gate's subject (tools/reader-compose-check.mjs composes it), so it is what a held
+  //           moment shows — never a video parked on a frame that no picture on disk answers for.
+  //
+  // All three drive the row's ONE stepper, so the Expected and the Actual are always on the same
+  // moment (the one-stepper-per-row rule). The Expected column has no recording of its own; its
+  // "playing" IS the stepping, which is why the pair moves together in every mode.
+  //
+  // Reader-wide and session-scoped, exactly like the speed beside it and for the same reason: a
+  // reader is rebuilt on every fold, so the choice must survive the rebuild, but one that persisted
+  // across visits would silently freeze tomorrow's board with no cue why.
+  //
+  // (This was a two-stop auto ↔ step pair, step the default, until the ruling above — 2026-09-02's
+  // "default as step" is superseded by it, rule 6.)
+  const MODES = ['auto', 'semi', 'step']
+  function normMode (v) { return MODES.indexOf(v) >= 0 ? v : 'semi' }
+  let PLAY_MODE = 'semi'
   const MODE_W = []
   function onMode (node, fn) { MODE_W.push({ node: node, fn: fn }) }
   function pruneMode () {
     for (let i = MODE_W.length - 1; i >= 0; i--) if (!MODE_W[i].node.isConnected) MODE_W.splice(i, 1)
   }
   function setMode (v) {
-    PLAY_MODE = (v === 'step') ? 'step' : 'auto'
+    PLAY_MODE = normMode(v)
     pruneMode()
     for (const w of MODE_W) w.fn(PLAY_MODE)
   }
-  // the control: two stops, so a segmented pair rather than a dropdown — the same .medbar chrome the
-  // retired column-order pair wore (tokens only; the live stop is carried by wash + weight, never by
-  // hue). It is a PLAY mode, never a media mode: no .pcmodes and no per-cell toolbar comes back with
-  // it (board R20's standing absence).
+  // the control: three stops now, so a segmented set rather than a dropdown — the SAME .medbar chrome
+  // the pair wore (tokens only; the live stop is carried by wash + weight, never by hue, and nothing
+  // new was drawn for the third stop). It is a PLAY mode, never a media mode: no .pcmodes and no
+  // per-cell toolbar comes back with it (board R20's standing absence).
+  const MODE_LABEL = { auto: 'auto', semi: 'semi-auto', step: 'step' }
+  const MODE_TITLE = {
+    auto: 'play each moment’s action once, then move on to the next — the whole beat, hands-free',
+    semi: 'loop the moment on show — you walk to the next with ‹ › or the ← → keys',
+    step: 'totally still — the moment’s own picture, held, until you walk it'
+  }
   function modePicker () {
     const box = document.createElement('span'); box.className = 'medbar pmode'
-    const mk = function (val, label, title) {
-      const b = document.createElement('button'); b.type = 'button'; b.textContent = label
-      b.dataset.mode = val; b.title = title
+    const btns = MODES.map(function (val) {
+      const b = document.createElement('button'); b.type = 'button'
+      b.textContent = MODE_LABEL[val]; b.dataset.mode = val; b.title = MODE_TITLE[val]
       b.addEventListener('click', function () { setMode(val) })
+      box.appendChild(b)
       return b
-    }
-    const a = mk('auto', 'auto', 'play every beat’s scenes on a loop')
-    const b = mk('step', 'step', 'hold each scene — walk it with ‹ › or the ← → keys')
+    })
     const paint = function () {
-      a.classList.toggle('on', PLAY_MODE === 'auto')
-      b.classList.toggle('on', PLAY_MODE === 'step')
+      btns.forEach(function (b) { b.classList.toggle('on', PLAY_MODE === b.dataset.mode) })
     }
     paint()
     onMode(box, paint)
-    box.appendChild(a); box.appendChild(b)
     return box
   }
   // THE WALK IS PER BEAT ROW (the human, 2026-08-30: "the go to next small step can NOT be on top as
@@ -866,14 +890,16 @@ const B = window.__BOARD__ || {}
     const rows = [].slice.call((wrap || document).querySelectorAll('.sbrow[data-rowstep]'))
     if (rows.length && !rows.some(function (r) { return r.classList.contains('sel') })) rows[0].classList.add('sel')
   }
-  // ← → : walk the SELECTED beat's scenes (selecting the first if none is yet), holding the loop —
-  // walking is a step action, so it flips a still-auto reader into step, exactly as the ‹ › chevrons do
+  // ← → : walk the SELECTED beat's scenes (selecting the first if none is yet). It walks in EVERY
+  // mode (the human's 2026-09-07 three-mode ruling: "user control to go to next step" is what semi-
+  // auto and step BOTH are, and auto is not exempt either) — in auto the walk simply RE-ANCHORS the
+  // playback at the moment you chose and it carries on from there. It used to force the reader into
+  // step; that was the two-mode world's way of saying "hold this", and holding is now its own stop.
   function readerStep (root, dir) {
     const rows = beatRows(root)
     if (!rows.length) return false
     const row = selectedRow(root) || selectRow(root, rows[0], false)
     if (!row) return false
-    if (PLAY_MODE !== 'step') setMode('step')
     row._rowStep(dir)
     return true
   }
@@ -1672,6 +1698,35 @@ const B = window.__BOARD__ || {}
     if (!isFinite(from) || !isFinite(to) || from < 0 || !(to > from)) return null
     return { from: from / 1000, to: to / 1000 }
   }
+  // …the same span in MILLISECONDS, or 0 where the moment has no honest slice — what the row's one
+  // clock needs to know how long AUTO must let a moment run before it moves on (SBStepper.modeHold).
+  // Same rules as sliceOf, so a span one of them trusts is a span the other trusts.
+  function sliceMsOf (shot) {
+    const s = shot && shot.slice
+    if (!s) return 0
+    const from = Number(s.from)
+    const to = Number(s.to)
+    if (!isFinite(from) || !isFinite(to) || from < 0 || !(to > from)) return 0
+    return to - from
+  }
+  // WHAT THE MOVING PICTURE DOES IN EACH MODE (the human, 2026-09-07: "now it's buggy that the actual
+  // column always playing"). The live layer never read the play mode at all — `show()` called
+  // `play()` and armed a watcher that re-started the film on every stall — so a reader HELD in step
+  // showed a still Expected beside an Actual that kept looping under its ring. The two halves of a
+  // row are supposed to be one moment; one of them running its own clock is the very drift the row
+  // exists to refuse. This is the rule, pure and lifted by tools/play-modes.test.mjs:
+  //
+  //   step — nothing shows and nothing plays: the moment's own PHOTOGRAPH stands (it is stacked
+  //          under this layer, and it is what the compose gate answers for), totally still.
+  //   semi — the moment's slice plays and LOOPS inside itself; only a person moves on.
+  //   auto — the slice plays ONCE and holds its last frame; the ADVANCE belongs to the row's stepper
+  //          (SBStepper.modeHold), so a row still has exactly one clock.
+  //
+  // A moment with no slice never shows the layer in any mode — nothing is invented (rule 3).
+  function livePlan (mode, hasSlice) {
+    if (!hasSlice || mode === 'step') return { show: false, play: false, loop: false }
+    return { show: true, play: true, loop: mode !== 'auto' }
+  }
   // The layer itself: one muted, inert <video> stacked in the same grid cell as the stills, framed by
   // the very same camera transform (it wears .camsub, so aimCamera/aimFrame move it with everything
   // else). `pointer-events:none` — a click on the proof still opens the lightbox on the FRAME, which
@@ -1689,6 +1744,8 @@ const B = window.__BOARD__ || {}
     stage.appendChild(vid)
     let cur = null
     let raf = 0
+    // what this layer is allowed to do at this moment, in this mode — livePlan above is the rule
+    let plan = { show: false, play: false, loop: false }
     const play = function () {
       const p = vid.play()
       if (p && p.catch) p.catch(function () { /* autoplay refused, or no decoder — the still stands */ })
@@ -1709,10 +1766,21 @@ const B = window.__BOARD__ || {}
     let starts = 0
     const watch = function () {
       raf = 0
-      if (!cur) return
+      if (!cur || !plan.play) return       // held (step), or this moment has no slice — nothing to watch
       if (vid.isConnected) {
         waited = 0
-        if (vid.currentTime >= cur.to || vid.currentTime < cur.from - 0.25) rewind()
+        if (vid.currentTime < cur.from - 0.25) rewind()
+        else if (vid.currentTime >= cur.to) {
+          if (plan.loop) rewind()
+          else {
+            // AUTO: the action has played once. It HOLDS its last frame here and the watcher stands
+            // down — moving on is the row's stepper's job (SBStepper.modeHold gives it the longer of
+            // the still's hold and this slice), so the row still has exactly ONE clock and the two
+            // columns cannot advance at different instants.
+            try { vid.pause() } catch (e) { /* nothing playing */ }
+            return
+          }
+        }
         // `play()` clears `paused` synchronously, so this is one call per genuine stall, not per
         // frame — and it is capped, so a browser that will simply not play (no decoder left, an
         // autoplay policy this page cannot satisfy) is asked a bounded number of times and then left
@@ -1724,29 +1792,41 @@ const B = window.__BOARD__ || {}
     const arm = function () { if (!raf && window.requestAnimationFrame) raf = requestAnimationFrame(watch) }
     const disarm = function () { if (raf && window.cancelAnimationFrame) cancelAnimationFrame(raf); raf = 0 }
     vid.addEventListener('timeupdate', function () {
-      if (cur && (vid.currentTime >= cur.to || vid.currentTime < cur.from - 0.25)) rewind()
+      if (!cur || !plan.play) return
+      if (vid.currentTime < cur.from - 0.25) rewind()
+      else if (vid.currentTime >= cur.to && plan.loop) rewind()
     })
-    vid.addEventListener('ended', function () { if (cur) { rewind(); play() } })
+    vid.addEventListener('ended', function () { if (cur && plan.loop) { rewind(); play() } })
     // A RECORDING THAT WILL NOT LOAD IS NOT A PICTURE. The still is stacked underneath and an empty
     // <video> paints nothing, so the row already reads correctly — this just stops the layer trying
     // again on every moment of every beat once the source has failed.
     let dead = false
     vid.addEventListener('error', function () { dead = true; cur = null; disarm(); vid.classList.remove('on') })
-    const show = function (i) {
+    // …AND THE MODE DECIDES, every time (the human's 2026-09-07 bug report). One place recomputes the
+    // plan from the reader's mode and the moment's slice, and it is called both when the moment
+    // changes and when the mode does — so switching to step stops the film wherever it is, and
+    // switching back re-starts it from this moment's own beginning, never mid-action.
+    const apply = function () {
       if (dead) return
-      cur = sliceOf(shots[i], src)
-      vid.classList.toggle('on', !!cur)
-      if (!cur) { disarm(); try { vid.pause() } catch (e) { /* nothing playing */ } return }
+      plan = livePlan(PLAY_MODE, !!cur)
+      vid.classList.toggle('on', plan.show)
+      if (!plan.play) { disarm(); try { vid.pause() } catch (e) { /* nothing playing */ } return }
       rewind()
       vid.playbackRate = (PLAY_SPD > 0 ? PLAY_SPD : 1)
       starts = 0                 // a new moment gets the full budget of attempts to start
       play()
       arm()
     }
+    const show = function (i) {
+      if (dead) return
+      cur = sliceOf(shots[i], src)
+      apply()
+    }
     // a seek asked for before the metadata arrived is silently dropped by the element, so re-aim once
     // it is ready — otherwise the first moment plays from 0 and the row opens on the wrong action
-    vid.addEventListener('loadeddata', function () { if (cur) { rewind(); play(); arm() } })
+    vid.addEventListener('loadeddata', function () { if (cur && plan.play) { rewind(); play(); arm() } })
     onSpd(vid, function (sp) { vid.playbackRate = (sp > 0 ? sp : 1) })
+    onMode(vid, apply)
     // …AND ONLY THE ROWS A READER CAN SEE ARE DECODING. A requirement's reader builds EVERY beat row
     // at once, so a ten-beat requirement would otherwise keep ten 1440×900 decoders running for rows
     // scrolled well off the screen. Off-screen pauses and holds its place; back on screen it resumes
@@ -1755,7 +1835,7 @@ const B = window.__BOARD__ || {}
     if (window.IntersectionObserver) {
       new IntersectionObserver(function (es) {
         for (const e of es) {
-          if (!cur) continue
+          if (!cur || !plan.play) continue
           if (e.isIntersecting) { rewind(); play(); arm() } else { disarm(); try { vid.pause() } catch (x) { /* nothing playing */ } }
         }
       }, { rootMargin: '200px' }).observe(vid)
@@ -1815,18 +1895,25 @@ const B = window.__BOARD__ || {}
       // (the human, 2026-09-02), tracking the loop in auto and the walk in step alike.
       if (el._onStep) el._onStep(cur)
     }
-    // In STEP mode (the default) nothing is scheduled: the scene holds until a person walks it with
-    // the strip's ‹ › or the ← → keys. In auto the loop advances on its own hold.
+    // ONE CLOCK PER ROW, and only AUTO winds it (the human's 2026-09-07 three-mode ruling). In STEP
+    // and SEMI-AUTO nothing is scheduled: the moment holds until a person walks it with the strip's
+    // ‹ › or the ← → keys — in semi-auto the moment's own slice loops inside itself meanwhile, which
+    // is the live layer's business, not this timer's. In AUTO the row advances when the moment is
+    // DONE: the longer of the still's hold and this moment's slice of the recording, at the reader's
+    // speed (SBStepper.modeHold). Wrapping at the end LOOPS THE BEAT rather than parking on its last
+    // moment — auto is the hands-free stop, and a beat that stopped dead would need the very click
+    // auto exists to spare; walking to an end and stopping there is what step and semi-auto are for.
     const schedule = function () {
       stop()
       if (reduced || imgs.length < 2) return             // pauses like the schematic's loop
-      if (PLAY_MODE === 'step') return                   // held: the reader is walking it by hand
+      const ms = window.SBStepper.modeHold(PLAY_MODE, holds[cur], sliceMsOf(frames[cur]), PLAY_SPD)
+      if (ms == null) return                             // held: the reader is walking it by hand
       timer = setTimeout(function () {
         timer = null
         if (!el.isConnected || el.hidden) return         // torn down, or the cell shows its stills
         show((cur + 1) % imgs.length)
         schedule()
-      }, window.SBStepper.scaleHold(holds[cur], PLAY_SPD))
+      }, ms)
     }
     el.appendChild(stage)
     show(0)
@@ -1959,10 +2046,10 @@ const B = window.__BOARD__ || {}
       seg.appendChild(lab); seg.appendChild(bar); seg.appendChild(tip)
       seg.setAttribute('aria-label', 'moment ' + (i + 1) + ' of ' + N + ' — ' + names[i] +
         (said.length ? ' — ' + said.join(' · ') : ''))
-      seg.addEventListener('click', function () {
-        if (PLAY_MODE !== 'step') setMode('step')   // jumping holds the loop, else it snaps on
-        driver.goto(i)
-      })
+      // a jump moves the row to that moment in EVERY mode (the human's 2026-09-07 ruling): in step and
+      // semi-auto it is where the row now holds; in auto the playback RE-ANCHORS there and carries on.
+      // It no longer forces the reader into step — holding is a stop of its own now.
+      seg.addEventListener('click', function () { driver.goto(i) })
       track.appendChild(seg); segs.push(seg)
     }
     const next = document.createElement('button'); next.type = 'button'; next.className = 'mnav mnext'
@@ -1971,15 +2058,14 @@ const B = window.__BOARD__ || {}
     const pos = document.createElement('span'); pos.className = 'mpos'
     const chip = document.createElement('span'); chip.className = 'chip mkind'
     read.appendChild(pos); read.appendChild(chip)
-    // prev WALKS BACK one moment, holding the loop; it is inert (and dimmed) at the first
+    // prev WALKS BACK one moment; it is inert (and dimmed) at the first. Like every other walk it
+    // works in all three modes — re-anchoring auto rather than stopping it (2026-09-07).
     prev.addEventListener('click', function () {
       if (driver.current() <= 0) return
-      if (PLAY_MODE !== 'step') setMode('step')
       driver.step(-1)
     })
     // next WALKS FORWARD one moment; at the last it is a RESTART that wraps to the first
     next.addEventListener('click', function () {
-      if (PLAY_MODE !== 'step') setMode('step')
       if (driver.current() >= N - 1) driver.goto(0)   // ↺ wraps to the start
       else driver.step(1)
     })

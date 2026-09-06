@@ -48,6 +48,38 @@
     return Math.max(40, Math.round(ms / s))
   }
 
+  // THE THREE PLAY MODES, AS ONE CLOCK (the human, 2026-09-07: "actually need 3 modes: (it will
+  // equally apply on expected and actual column) 1. Auto (all small steps auto run, small step 1
+  // played -> small step 2) 2. Semi-auto (step auto run and loop, like now in small step 1, it will
+  // loop play on small step 1, user control to go to next step) 3. Step (totally still and user
+  // control to go to next step)").
+  //
+  // Only AUTO advances on a timer, and it advances when the moment is DONE — which is the LONGER of
+  // the still's own hold (stepperHolds above) and the moment's own slice of the recording, both
+  // scaled by the reader's speed, plus a short tail so the last frame of the action is seen before
+  // the cut. Taking the max is the whole point: the slice IS the gesture, so an advance on the
+  // still's hold alone would cut a live moment off mid-action, and an advance on the slice alone
+  // would rush a moment that has no recording at all.
+  //
+  // SEMI-AUTO and STEP return null — nothing is scheduled. In semi-auto the moment's own slice loops
+  // inside itself (the video's business, client.js liveLayer); in step nothing moves at all. Both
+  // wait for the person, which is exactly what "user control to go to next step" means.
+  //
+  // `sliceMs` is 0/absent for a moment with no recorded slice — an old harvest, or the Expected
+  // column, which has no recording and whose "playing" IS the stepping. Nothing is invented there:
+  // the hold stands alone.
+  function modeHold (mode, hold, sliceMs, speed, opts) {
+    if (mode !== 'auto') return null
+    var o = opts || {}
+    var tail = o.tail != null ? o.tail : 200
+    var cap = o.max != null ? o.max : 15000
+    var h = scaleHold(hold, speed)
+    var s = (typeof sliceMs === 'number' && isFinite(sliceMs) && sliceMs > 0)
+      ? scaleHold(sliceMs, speed) + scaleHold(tail, speed)
+      : 0
+    return Math.min(cap, Math.max(h, s))
+  }
+
   // THE CAMERA'S GLIDE (the human, 2026-08-31: "make the transition to the next small step in the
   // schematic more smooth"). A scene change eases the camera's pan + zoom over this many ms rather
   // than snapping. It rides the reader's speed like every hold — 4× shortens the glide, 0.25×
@@ -240,6 +272,7 @@
   globalThis.SBStepper = {
     stepperHolds: stepperHolds,
     scaleHold: scaleHold,
+    modeHold: modeHold,
     cameraDur: cameraDur,
     cameraView: cameraView,
     cameraCss: cameraCss,

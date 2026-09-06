@@ -331,10 +331,22 @@ change.
   `https://` url); `replicaExpectedBefore` is no longer set on a new entry and is carried only for a
   legacy one. Measured on a real harvest: spec/board's 35 beats with a base name 13 distinct blobs. Since the per-beat storyline redesign
   (33049fb/3fbbaec, 2026-08-28) the Focus reader is per-beat ROWS: each beat's proof is a
-  `proofCell` (`client.js`) that ALWAYS loops before → each asserted-value frame → after — no
+  `proofCell` (`client.js`) stepping before → each asserted-value frame → after — no
   stills·gif·video toolbar exists any more (board R20 asserts `.pcmodes` is absent), only a
   per-cell zoom toggle (`.pczoom`) — paced by `tools/board/stepper.js` off the window + the record
-  frames' `t` (equal holds when an old harvest has no usable timing). The **asserted-value frames
+  frames' `t` (equal holds when an old harvest has no usable timing). **How much of that runs on its
+  own is the reader's PLAY MODE, and there are THREE of them** (the human, 2026-09-07: "actually need
+  3 modes … 1. Auto … 2. Semi-auto (step auto run and loop, like now …, user control to go to next
+  step) 3. Step (totally still and user control to go to next step)"; plus the bug that came with it,
+  "now it's buggy that the actual column always playing"): **auto** plays each moment's own slice of
+  the recording once and then ADVANCES the row, looping the beat; **semi-auto** — the DEFAULT, and
+  what 2026-09-02's "default as step" was superseded by — loops the moment on show and waits for you;
+  **step** is totally still, the moment's photograph held. All three drive the row's ONE stepper, so
+  the Expected and the Actual are always on the same moment, and the mode reaches the moving picture
+  too (`livePlan`, `tools/play-modes.test.mjs`) — it did not, which is why a held reader used to show
+  a still Expected beside a looping Actual. Only auto is on a timer, and it advances when the moment
+  is DONE: `SBStepper.modeHold` — the longer of the still's hold and the moment's slice, at the
+  reader's speed. *(This paragraph said the cell "ALWAYS loops"; corrected in place, rule 6.)* The **asserted-value frames
   are real since 2026-08-29** (the human: the When must be visible in the proof, not only the Then —
   a box carrying what was typed is empty in the before frame and cleared again by the after one):
   every `proveVisible` inside a `checkReq` photographs the page with its ring on, files the frame
@@ -394,7 +406,9 @@ change.
   the whole-REQUIREMENT proof band (failed-run filmstrip · the committed video · the Changed
   watermark). The speed control is ONE reader-wide 0.25×–4× dropdown (`.pspd`), broadcast to every
   pane via `onSpd`/`PLAY_SPD` (loops scale their holds; video maps it to playbackRate; the
-  schematic to --spd) — the old per-pane dropdowns are gone with the toolbar. *(This paragraph
+  schematic to --spd) — the old per-pane dropdowns are gone with the toolbar; it is live wherever
+  something plays and dark **only in step** (widened from "only in auto" by the 2026-09-07 three-mode
+  ruling — the rule never changed, the set of playing modes grew). *(This paragraph
   previously described the pre-storyline pane — stills·gif·video toggle + per-pane dropdowns —
   corrected 2026-08-29, rule 6.)* The webp clip and Task 11's 1.5×/2× variants are RETIRED
   (2026-08-24) — once the stepper played the frames nothing rendered them; a legacy entry's clip

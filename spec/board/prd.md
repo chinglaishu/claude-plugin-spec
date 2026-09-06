@@ -138,8 +138,9 @@ reads in Grid rows and the Focus reader, which the tests assert.*
 
 The detail header carries a toggle — **Focus / List / Flow**. **Focus** (the default) reads one
 requirement at a time, as **one card read top to bottom**: the id · state · **title** lead one
-header row, which also carries the reader's **one play speed** and its **play mode** (auto ↔
-step, R20) *(a slim bar of their own until 2026-09-02, when the human moved them onto the title row)*,
+header row, which also carries the reader's **one play speed** and its **play mode** (auto ·
+semi-auto · step, R20) *(a slim bar of their own until 2026-09-02, when the human moved them onto the
+title row; a two-stop auto ↔ step pair until the human's 2026-09-07 three-mode ruling)*,
 then the requirement's **storyline — a row per beat** under
 a **behavior · expected · actual** header row *(the column-order toggle this bar carried was removed
 2026-08-30 with R21's rewrite — behaviour always leads; RENAMED 2026-09-03 from "behavior · schematic
@@ -276,8 +277,10 @@ its **proof frames** are surfaced too — **one still per checked value**, taken
 the instant that check fired (indexed by the run's own beat log), each carrying the same
 self-narrating callout it burned in (the requirement, its When→Then, red on a failure) and the
 ring on the exact value asserted. They show **where they belong**: each beat's own before/after pair
-on that beat's **row** of the reader — **walked a scene at a time in step (the default), or looped in
-auto**, its position read on the row's ONE stepper strip over the two pictures and the whole frame one
+on that beat's **row** of the reader — **held dead still in step, looping the scene on show in
+semi-auto (the default), or played through scene by scene in auto** *(the human's 2026-09-07
+three-mode ruling; it read "walked a scene at a time in step (the default), or looped in auto" while
+the control had two stops)*, its position read on the row's ONE stepper strip over the two pictures and the whole frame one
 click away in the lightbox *(the human, 2026-09-02: the per-cell dots and counter are gone, and later
 the same day the gutter's `‹ n / N ›` went with them — "schematic and proof should share same stepper
 (as their steps must be same???)", so one strip across both pictures is the single readout)* — and a **run's own cut frames on that test's evidence**, one still per checked
@@ -490,11 +493,11 @@ sides carry that beat and no other — is unchanged.*
 - **When** the moment on show claimed a value
 - **Then** each picture carries ONE chip, LED BY THE MOMENT'S OWN WORDS — the label the run recorded, the same on both cells — and under it only what that side holds: `EXPECTED "…"` over the replica, `ACTUAL ✓ "…"` or `ACTUAL ✕ "…"` over the photograph, the mark carrying the state beside the hue — wrapped to read WHOLE inside the cell with the whole text in a hover tooltip; a moment that claimed nothing carries no chip at all
 - **When** the reader opens
-- **Then** it opens in **step** — each beat held on its first scene — with the reader-wide controls (the **auto ↔ step** pair and the speed) on the requirement's title row, left of its ⋯ menu
+- **Then** it opens in **semi-auto** — each beat held on its first scene — with the reader-wide controls (the **auto · semi-auto · step** trio and the speed) on the requirement's title row, left of its ⋯ menu
 - **When** you walk a beat — its strip's `‹ ›`, a click on one of its named segments, or the ← → keys while its row is the **selected** one (visibly marked) — with ↑ ↓ selecting which When/Then and PgUp / PgDn paging the requirement
 - **Then** both pictures of that row move together to that one moment, the strip painting the segment they are on, the next chevron becoming a restart `↺` at the last moment that wraps to the first — and no other beat row moves
 - **When** you switch the play control to auto
-- **Then** every cell plays itself on a loop at the reader's speed; the speed control is live **only in auto** — a stepped beat sets its pace by hand
+- **Then** every cell plays its moments through by itself at the reader's speed; the speed control is live **only where something plays** — a stepped beat sets its pace by hand
 - **When** the row is the Given
 - **Then** its one frame stays a plain, uncaptioned still — a state, not an action
 
@@ -527,11 +530,23 @@ inventing one, and a **drawing that splits the beat into a different number of m
 harvest holds is parked, not stepped**, with the storyline's stale banner saying so: two clocks on one
 row is the defect this replaced.
 
-The reader opens in **step** (the human, 2026-09-02 — "default as step"): the loop was the default
-before, but watching it run on its own is now the opt-in, and reading a beat one scene at a time is
-the resting state. The reader-wide controls ride the requirement's **title row**, left of the ⋯ menu
-(the human, 2026-09-02 — "put all these on the same row of the test title row"): the **auto ↔ step**
-pair and the **speed**, which is live **only in auto**, because a stepped beat sets its own pace. The
+The play control has **three stops** (the human, 2026-09-07 — "actually need 3 modes: (it will
+equally apply on expected and actual column) 1. Auto (all small steps auto run, small step 1 played
+-> small step 2) 2. Semi-auto (step auto run and loop, like now in small step 1, it will loop play on
+small step 1, user control to go to next step) 3. Step (totally still and user control to go to next
+step)"), and they apply to **both columns at once** because a row has one stepper:
+
+- **auto** — the moment's own action plays once and the row **advances** to the next, through the
+  beat and round again;
+- **semi-auto** — the moment on show **loops** its own action; only you move on. This is the
+  **default**, the behaviour the human named "like now";
+- **step** — **totally still**: the moment's own photograph, held, until you walk it.
+
+*(This paragraph read "The reader opens in **step** (the human, 2026-09-02 — 'default as step')" until
+the ruling above, which supersedes that choice — rule 6.)* The reader-wide controls ride the
+requirement's **title row**, left of the ⋯ menu (the human, 2026-09-02 — "put all these on the same
+row of the test title row"): the **auto · semi-auto · step** trio and the **speed**, which is dark
+**only in step**, because a stepped beat sets its own pace and there is nothing there to rate. The
 **advance is per beat row**, never one reader-wide "next" (a requirement has several When/Then, so a
 single "next" was ambiguous — and a rail of cryptic `when 1 · when 2` beads was tried and rejected,
 the human 2026-08-30). Each row's **stepper strip** walks that beat; the **← → keys** walk the **selected**

@@ -981,11 +981,13 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(ov.locator('.fread select.pspd')).toHaveCount(1)       // …and none anywhere else in it
     await expect(spdS).toHaveValue('1')
     await expect(spdS.locator('option')).toHaveText(['0.25×', '0.5×', '1×', '1.5×', '2×', '4×'])
-    // the reader's play-MODE pair (board R20): auto ↔ step, STEP the default now (the human, 2026-09-02:
-    // "default as step"). The column-order pair that once stood here is gone (board R21); the walk is
-    // per beat row (the gutter ‹ n/N ›), never a reader-wide control — so the bar has ONE .medbar.
-    await expect(fbar.locator('.medbar.pmode button')).toHaveText(['auto', 'step'])
-    await expect(fbar.locator('.medbar.pmode button.on')).toHaveText('step')
+    // the reader's play-MODE trio (board R20): auto · semi-auto · step, SEMI-AUTO the default (the
+    // human, 2026-09-07: "actually need 3 modes … 2. Semi-auto (step auto run and loop, like now …)"
+    // — which supersedes 2026-09-02's "default as step"; correctly broken by that ruling, rule 4).
+    // The column-order pair that once stood here is gone (board R21); the walk is per beat row (the
+    // row's own moment strip), never a reader-wide control — so the bar still has ONE .medbar.
+    await expect(fbar.locator('.medbar.pmode button')).toHaveText(['auto', 'semi-auto', 'step'])
+    await expect(fbar.locator('.medbar.pmode button.on')).toHaveText('semi-auto')
     await expect(fbar.locator('.medbar')).toHaveCount(1)
     await expect(fbar.locator('.medbar.pstep')).toHaveCount(0)      // no advance control in the bar
     await expect(fbar).not.toContainText('‹')
@@ -1134,7 +1136,7 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     const stepAt = await gpos.textContent()
     await expect.poll(() => gpos.textContent(), { timeout: 15000 }).not.toBe(stepAt)
     await spdS.selectOption('1')
-    await fbar.locator('.medbar.pmode button[data-mode="step"]').click()   // back to the default
+    await fbar.locator('.medbar.pmode button[data-mode="semi"]').click()   // back to the default
     // THE SHARED CAMERA (the human, 2026-08-28; no toggle since 2026-09-02): where the harvest recorded
     // a focus box, the row's proof and the drawing beside it are framed on the SAME region — both cells
     // zoomed to the component together, never one alone. The whole frame is the LIGHTBOX, not a toggle.
@@ -2206,7 +2208,7 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
 // Board R20 — THE PROOF PLAYS ITSELF. One mode, no toolbar, already running, zoomed onto the focus
 // with the whole frame one toggle away; and the Given row, which has one frame and nothing to loop,
 // stays the captioned still it is.
-test('The proof plays itself — step is the default, no dots/counter/toggle, the whole frame in the lightbox', async ({ page }) => {
+test('The proof plays itself — semi-auto is the default, no dots/counter/toggle, the whole frame in the lightbox', async ({ page }) => {
   await coverReqs('R20')
   await openDetail(page)
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
@@ -2281,14 +2283,35 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
     await row.locator('.sbtext').hover()                                   // away — the tooltip goes
     await expect(tip0).toBeHidden()
 
-    // STEP IS THE DEFAULT, and the controls ride the TITLE ROW (left of the ⋯ menu), not a bar of
-    // their own. The speed is AUTO-ONLY — disabled while stepping.
+    // SEMI-AUTO IS THE DEFAULT (the human's 2026-09-07 three-mode ruling — "like now"), and the
+    // controls ride the TITLE ROW (left of the ⋯ menu), not a bar of their own. Three stops, and the
+    // speed is live wherever something plays — dark ONLY in step, which is the one stop with nothing
+    // to rate. (This read "STEP IS THE DEFAULT … disabled while stepping"; correctly broken by the
+    // ruling, rule 4 — the speed rule itself is unchanged, the set of playing modes grew.)
     const tools = ov.locator('.fread .frmeta .frtools')
     await expect(tools).toHaveCount(1)
     await expect(ov.locator('.fread > .fbar')).toHaveCount(0)                 // the old separate bar is gone
-    await expect(tools.locator('.medbar.pmode button.on')).toHaveText('step')
+    await expect(tools.locator('.medbar.pmode button')).toHaveText(['auto', 'semi-auto', 'step'])
+    await expect(tools.locator('.medbar.pmode button.on')).toHaveText('semi-auto')
     const spd = tools.locator('select.pspd')
+    await expect(spd, 'semi-auto plays the moment on show, so its pace is rateable').toBeEnabled()
+    // …and STEP is totally still, so there is nothing for a speed to rate
+    await tools.locator('.medbar.pmode button[data-mode="step"]').click()
     await expect(spd).toBeDisabled()
+    // THE BUG THE RULING CAME WITH (the human, 2026-09-07: "now it's buggy that the actual column
+    // always playing"). The live layer read no mode at all, so a reader held in step showed a still
+    // Expected beside an Actual that kept looping. In step the moving picture is off AND paused: what
+    // the Actual column shows is the moment's own photograph, which is what the compose gate answers
+    // for. GUARDED, not skipped: this board's own CLI harvest carries no recording (only a run the
+    // board started records one), so the layer is not always built here — where it is, this fails the
+    // moment the mode stops reaching it. The rule itself is pinned on the shipped bytes in
+    // tools/play-modes.test.mjs (livePlan), which needs no harvest to be true.
+    if (await row.locator('video.pclive').count()) {
+      await expect(row.locator('video.pclive.on')).toHaveCount(0)
+      expect(await row.locator('video.pclive').evaluateAll(
+        (vs: HTMLVideoElement[]) => vs.every(v => v.paused)),
+      'in step nothing in the Actual column is playing').toBe(true)
+    }
 
     // WALKED BY HAND in step: the › advances the SELECTED row's two cells by exactly one moment,
     // and the strip PAINTS the moment on show — the current segment is the one the frames are at
@@ -2468,9 +2491,14 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await expect(ov.locator('.fread .srbead')).toHaveCount(0)
     await expect(ov.locator('.fread .srnext')).toHaveCount(0)
     // …and the POSITIVE half beside the four absences (rule 2, and the standing "assert a positive
-    // outcome" rule): what stands where the rejected rail would have is the reader's own mode pair,
-    // and it reads step. Four toHaveCount(0)s alone would pass on a reader that rendered nothing.
-    await expect(ov.locator('.fread .frmeta .frtools .medbar.pmode button.on')).toHaveText('step')
+    // outcome" rule): what stands where the rejected rail would have is the reader's own mode trio —
+    // three named stops with exactly one live. Four toHaveCount(0)s alone would pass on a reader that
+    // rendered nothing. (It read the live stop's name until the human's 2026-09-07 three-mode ruling;
+    // the mode is reader-wide and session-held, so which stop is live here is a leftover of whatever
+    // ran before, not a fact about this beat — the trio's own shape is. Rule 4.)
+    await expect(ov.locator('.fread .frmeta .frtools .medbar.pmode button'))
+      .toHaveText(['auto', 'semi-auto', 'step'])
+    await expect(ov.locator('.fread .frmeta .frtools .medbar.pmode button.on')).toHaveCount(1)
     await hudCheck('the rejected bead rail is gone', '0 .scenerail', (await ov.locator('.fread .scenerail').count()) + ' .scenerail')
 
     await page.goto('/#/board/' + spec.rid)
@@ -2707,9 +2735,15 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await armClaim(dt, cs!.rid, null)
   })
 
-  // THE CONTROLS RIDE THE TITLE ROW (the human, 2026-09-02), and have NO advance — only the auto/step
-  // toggle and the speed <select>. The walk is on the rows. And STEP is the default now.
+  // THE CONTROLS RIDE THE TITLE ROW (the human, 2026-09-02), and have NO advance — only the play-mode
+  // trio and the speed <select>. The walk is on the rows. And SEMI-AUTO is the default now.
   await checkReq('R20', async () => {
+    // A REAL RELOAD, because the mode is session-held: the legs above left the reader in step, and a
+    // hash hop does not reload (CLAUDE.md), so asserting "the reader OPENS in …" off a hop would be
+    // asserting the leftover. This is the only leg that asks what the reader opens in, so it is the
+    // one that pays for a fresh page.
+    await page.reload()
+    await openDetail(page)
     await armFocus(dt, spec.rid)
     await page.goto('/#/board/' + (spec.rid === 'R2' ? 'R3' : 'R2'))   // hop, so the reader rebuilds
     await page.goto('/#/board/' + spec.rid)
@@ -2717,13 +2751,16 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     const bar = ov.locator('.fread .frmeta .frtools')
     await reveal(bar)
     await expect(ov.locator('.fread > .fbar')).toHaveCount(0)                 // no separate bar beneath the title
-    await expect(bar.locator('.medbar.pmode button')).toHaveText(['auto', 'step'])
-    await expect(bar.locator('.medbar.pmode button.on')).toHaveText('step')   // STEP is the default now
+    // THREE stops in the human's own order (2026-09-07), and the middle one is where a reader opens.
+    // (This pinned a two-stop ['auto','step'] pair reading 'step'; correctly broken by the ruling — a
+    // pin of the RETIRED toggle, rule 4.)
+    await expect(bar.locator('.medbar.pmode button')).toHaveText(['auto', 'semi-auto', 'step'])
+    await expect(bar.locator('.medbar.pmode button.on')).toHaveText('semi-auto')
     // the fact, CLAIMED (the authored-intent lint, phase 6; moved here with the blocks' reorder,
-    // 2026-09-04): the reader OPENS in step, each beat held on its first scene, and the pair that
-    // says so rides the requirement's own title row
-    await proveVisible(bar.locator('.medbar.pmode button.on'), 'step',
-      'The reader, opened in step', { soft: true })
+    // 2026-09-04): the reader OPENS in semi-auto, each beat held on its first scene with that scene's
+    // own action looping, and the trio that says so rides the requirement's own title row
+    await proveVisible(bar.locator('.medbar.pmode button.on'), 'semi-auto',
+      'The reader, opened in semi-auto', { soft: true })
     // …EACH BEAT HELD ON ITS FIRST SCENE: the row's strip opens at moment 1, not mid-loop…
     const heldRow = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
     await proveVisible(heldRow.locator('.mstrip .mpos'), '1 / ' + (await heldRow.locator('.mseg').count()),
@@ -2736,7 +2773,12 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await expect(bar.locator('.medbar')).toHaveCount(1)                       // mode only; speed is a <select>
     await expect(bar.locator('.mstrip')).toHaveCount(0)                       // the stepper is per-ROW, never on the bar
     await expect(ov.locator('.fread .tourstep')).toHaveCount(0)               // and the retired gutter tour is gone
-    await expect(bar.locator('select.pspd')).toBeDisabled()                   // speed is auto-only
+    // the speed is live wherever something PLAYS — semi-auto included since the three-mode ruling —
+    // and dark only in step, the one stop with nothing to rate. (This asserted `toBeDisabled()` on the
+    // default reader, which was step; the rule is unchanged, the default moved. Rule 4.)
+    await expect(bar.locator('select.pspd')).toBeEnabled()
+    await bar.locator('.medbar.pmode button[data-mode="step"]').click()
+    await expect(bar.locator('select.pspd')).toBeDisabled()                   // step alone sets its pace by hand
   })
 
   // THE ROW'S ONE STEPPER steps BOTH pictures of ITS row in lock-step, names each moment, tracks the
@@ -2804,9 +2846,11 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     const phOf = () => row.locator('.sbframe').evaluate(f => String((f as HTMLElement).dataset.repsrc || ''))
     const posN = async () => Number(((await pos.textContent()) || '0 / 0').split('/')[0].trim())
 
-    // STEP IS THE DEFAULT: the reader opens held on scene 1, so prev is already disabled — a known
-    // deterministic start with no click into step needed.
-    await expect(mode.locator('button.on'), 'step is the default').toHaveText('step')
+    // HELD IN STEP: the leg above left the reader there, so this walk starts on scene 1 with prev
+    // already disabled — a known deterministic start. (It read "STEP IS THE DEFAULT" while step was;
+    // since the human's 2026-09-07 ruling the default is semi-auto, which the leg above pins with a
+    // real reload — this leg is about the WALK, and asks only that the row be held. Rule 4.)
+    await expect(mode.locator('button.on'), 'the reader is held in step').toHaveText('step')
     await expect(pos).toHaveText('1 / ' + N)
     await expect(prev, 'prev dims/disables at the start').toBeDisabled()
     const before = await posN()
@@ -2963,10 +3007,13 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await expect(page.locator('#lb')).toBeHidden()
   })
 
-  // READER-WIDE AND SESSION-HELD: the STEP default holds across paging, is never stored, and AUTO
+  // READER-WIDE AND SESSION-HELD: the chosen mode holds across paging, is never stored, and AUTO
   // re-arms the loop.
   await checkReq('R20', async () => {
-    // page to another requirement: it opens in step too, and nothing about the mode is written down
+    // page to another requirement: the mode the legs above CHOSE (step) comes with it — the choice is
+    // reader-wide, not per requirement — and nothing about it is written down. (This read "it opens in
+    // step too" while step was also the default; since the human's 2026-09-07 ruling the default is
+    // semi-auto and this leg pins the HOLD, which is the fact it was always about. Rule 4.)
     await page.goto('/#/board/R4')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R4')
     await expect(ov.locator('.fread .frmeta .frtools .medbar.pmode button.on')).toHaveText('step')
@@ -2979,7 +3026,9 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     const backPos = backRow.locator('.mstrip .mpos')
     await reveal(backRow.locator('.sbproof'))
     const tools = ov.locator('.fread .frmeta .frtools')
-    await tools.locator('.medbar.pmode button', { hasText: 'auto' }).click()
+    // by data-mode, never by text: `hasText: 'auto'` is a SUBSTRING match and 'semi-auto' contains it,
+    // so the third stop made that locator ambiguous the moment it existed (2026-09-07)
+    await tools.locator('.medbar.pmode button[data-mode="auto"]').click()
     await tools.locator('select.pspd').selectOption('4')
     const at2 = await backPos.textContent()
     await expect.poll(() => backPos.textContent(), { timeout: 12000 }).not.toBe(at2)
