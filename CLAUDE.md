@@ -539,7 +539,22 @@ change.
   at the beat's opening and this moment was not, and two instants at equal weight would be a picture
   claiming to be one. Both cells are page-sized by construction, so ONE camera frames them. A moment
   with no base, a body-rooted patch (which IS the whole page already) or a refused graft paints alone —
-  exactly what the row showed before, never a blank. **A Then with several facts uses SOFT claims**
+  exactly what the row showed before, never a blank. **AND THE CELL'S OWN SHEET MAY OUT-SPECIFY THE
+  REPLICA FOR WHAT IT PAINTS, NEVER FOR WHERE THE APP PUT SOMETHING** (2026-09-06). `repSrcdoc`
+  (tools/board/client.js) has to reach into the replica to draw the claim tint, and the replica's own
+  sheet declares `.rep .rN` (two classes) LATER in the document — so those rules repeat the attribute
+  (`[data-claim][data-claim][data-claim]`) to win the tie. `position:relative`, the containing block
+  the ✓ glyph hangs off, was written the same way, and `position` is layout: on demo/todo R3 and R4
+  the ringed sub-task counter is a `<span>` the app positions `absolute; inset:0` over its 26×26
+  button, and forced to `relative` it fell back into the button's flow under the ring's own `<svg>` —
+  the ring sat **29 px above the number it marks** in every moment of both requirements, on files
+  `npm run proof mirror` reads GREEN (the in-page gate walks the replica with no board sheet over it,
+  so this class of drift exists only where a reader looks at it). It is emitted at plain
+  `[data-claim]` now: the capture writes `position` only where it differs from the tag default, so
+  `position:static` is never in a replica's sheet, a declared position wins on source order and is
+  already a containing block for the glyph, and an element with none takes `relative` and gets one.
+  Pinned in a REAL browser by `tools/claim-mark.test.mjs` (the srcdoc's own bytes, lifted out of
+  client.js by `tools/lift-client.mjs`) — a string test could not have caught it. **A Then with several facts uses SOFT claims**
   (`proveVisible(…, { soft: true })`): the beat reaches and photographs every fact and the `proves` step
   fails once at its end with the whole list — never a green, never a beat cut off at its first red.
 - **The state guard snapshots per process** (`_state-snapshot.<pid>.json`) and also records the set

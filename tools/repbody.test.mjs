@@ -16,22 +16,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+// the brace-matching lift lives in tools/lift-client.mjs since 2026-09-06 — a plain module, so a
+// second test file can share it without importing a TEST file and re-running its cases
+import { lift } from './lift-client.mjs'
 
 const SRC = readFileSync(new URL('./board/client.js', import.meta.url), 'utf8')
-
-// the named function's own source, from `function <name> (` to its matching close brace
-export function lift (src, name) {
-  const at = src.indexOf('function ' + name + ' (')
-  if (at < 0) throw new Error('no function ' + name + ' in client.js — it was renamed or removed')
-  const open = src.indexOf('{', at)
-  let depth = 0
-  for (let i = open; i < src.length; i++) {
-    const c = src[i]
-    if (c === '{') depth++
-    else if (c === '}') { depth--; if (!depth) return src.slice(at, i + 1) }
-  }
-  throw new Error('unbalanced braces lifting ' + name)
-}
 
 // eslint-disable-next-line no-new-func
 const repBody = new Function(lift(SRC, 'repBody') + '; return repBody')()

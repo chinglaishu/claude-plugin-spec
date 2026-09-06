@@ -1379,7 +1379,6 @@ const B = window.__BOARD__ || {}
     // every element as `.rep .rN` (two classes) and sits LATER in the document, so a single
     // attribute selector would lose the tie and the tint would never paint.
     const A = '[data-claim]'
-    const A3 = A + A + A
     const mark = function (v, glyph, col) {
       return '[data-claim="' + v + '"]' + A + A + '{outline:2px ' + (v === 'ok' ? 'solid' : 'dashed') + ' ' + col +
         ';outline-offset:2px}\n[data-claim="' + v + '"]::after{content:"' + glyph + '";color:' + col + '}'
@@ -1387,7 +1386,20 @@ const B = window.__BOARD__ || {}
     const css = [
       'html,body{margin:0;padding:0;background:' + PAPER.paper + ';overflow:hidden}',
       parts.faces || '',
-      A3 + '{position:relative}',
+      // PAINT MAY OUT-SPECIFY THE REPLICA; LAYOUT MAY NOT (2026-09-06). This was written `[data-claim]`
+      // three times over, like the tints below it, so it would beat the replica's own `.rep .rN` —
+      // and `position` is not paint. On demo/todo R3 and R4 the ringed sub-task counter is a `<span>`
+      // the app positions `absolute; inset:0` over its 26×26 button; forced to `relative` it fell back
+      // into the button's flow under the ring's `<svg>`, and the ring the cell drew at the harvest's
+      // own `data-ring-box` sat 29 px above the number it marks — in every moment of both
+      // requirements, on a file `npm run proof mirror` reads green (the in-page gate walks the replica
+      // with no board sheet over it, so this drift exists only where a reader looks at it).
+      // One `[data-claim]` is exactly right: the replica emits `position` only where it differs from
+      // the tag default, so `position:static` is never in one of its sheets (spec/_replica.mjs) — a
+      // declared position wins here on source order and is ALREADY a containing block for the glyph,
+      // and an element that declares none takes `relative` and gets one. Pinned in a real browser by
+      // tools/claim-mark.test.mjs.
+      A + '{position:relative}',
       A + '::after{position:absolute;top:-8px;right:-8px;font:700 9px ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1;pointer-events:none}',
       mark('ok', '✓', PAPER.tintOk),
       mark('fixed', '✎', PAPER.tintFixed),
