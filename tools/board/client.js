@@ -1699,10 +1699,26 @@ const B = window.__BOARD__ || {}
     // another, which is the whole class of drift the row exists to refuse. `timeupdate` fires about
     // four times a second, which is coarser than the shortest slice (a beat's opening hold is 400 ms),
     // so the wrap is watched on the animation frame and `timeupdate` is only the safety net.
+    // …AND IT STARTS THE PLAY, because show() cannot. The reader is built DETACHED and appended a
+    // moment later (aimCamera has its own bounded rAF retry for exactly this), so the `play()` in
+    // show() runs on an element that is not in the document yet and does not take — measured on the
+    // demo's R2: `readyState 4`, `currentTime 4.585` (the slice's own start, so the SEEK worked) and
+    // `paused true`. An earlier cut of this watcher returned on `!isConnected` and therefore gave up
+    // for good. It waits instead, bounded, and starts the film the frame the cell lands.
+    let waited = 0
+    let starts = 0
     const watch = function () {
       raf = 0
-      if (!cur || !vid.isConnected) return
-      if (vid.currentTime >= cur.to || vid.currentTime < cur.from - 0.25) rewind()
+      if (!cur) return
+      if (vid.isConnected) {
+        waited = 0
+        if (vid.currentTime >= cur.to || vid.currentTime < cur.from - 0.25) rewind()
+        // `play()` clears `paused` synchronously, so this is one call per genuine stall, not per
+        // frame — and it is capped, so a browser that will simply not play (no decoder left, an
+        // autoplay policy this page cannot satisfy) is asked a bounded number of times and then left
+        // alone with the still showing through.
+        if (vid.paused && starts++ < 240) play()
+      } else if (++waited > 600) return    // ~10 s of frames: this cell was discarded before it landed
       raf = window.requestAnimationFrame ? requestAnimationFrame(watch) : 0
     }
     const arm = function () { if (!raf && window.requestAnimationFrame) raf = requestAnimationFrame(watch) }
@@ -1723,6 +1739,7 @@ const B = window.__BOARD__ || {}
       if (!cur) { disarm(); try { vid.pause() } catch (e) { /* nothing playing */ } return }
       rewind()
       vid.playbackRate = (PLAY_SPD > 0 ? PLAY_SPD : 1)
+      starts = 0                 // a new moment gets the full budget of attempts to start
       play()
       arm()
     }
