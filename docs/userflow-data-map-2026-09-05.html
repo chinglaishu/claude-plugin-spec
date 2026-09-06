@@ -186,7 +186,8 @@ ol.run li.git{border-left:4px solid var(--koke)}
 <div class="file"><div class="name">test.spec.ts · steps.ts · narration.json</div><div><span class="chip git">committed</span></div>
   <div class="what">The authored test: which requirements it tags (<span class="k">checkReq</span>), the soft claims for every fact the Then names, the composable beats. Runs identically on your machine and in CI's clone.</div></div>
 <div class="file"><div class="name">test-results/ · screen.png</div><div><span class="chip ign">ignored</span></div>
-  <div class="what">Playwright's scratch: the run's raw attachments, read once by the reporter and then worthless; plus the screen's fallback cover photo.</div></div>
+  <div class="what">Playwright's scratch: the run's raw attachments, read once by the reporter and then worthless; plus the screen's fallback cover photo.
+  <small><b>Why this is files and not the db:</b> Playwright itself writes this directory while the suite runs — it is the test runner's counter, not our storage. The reporter reads it once at the fold, keeps everything durable as db rows + blobs, and the next run overwrites the rest. Storing it in the db would keep every byte twice.</small></div></div>
 <div class="file"><div class="name">board.db<span class="tag">T5</span></div><div><span class="chip home">data home</span></div>
   <div class="what">The <b>fold</b>, in the board's database (SQLite): every requirement's verdicts, coverage, claims, the source fingerprints, and the name of every blob a beat uses.
   <small>Each screen's run folds its rows in; it never replaces the other screens'. THE authority on state (<span class="k">spec-store.mjs</span> reads only this).</small></div></div>
@@ -217,7 +218,8 @@ ol.run li.git{border-left:4px solid var(--koke)}
 <div class="file"><div class="name">.github/workflows/…yml<span class="tag">T15</span></div><div><span class="chip git">committed</span></div>
   <div class="what">Optional, from the template: CI clones the repo, runs the suite from the committed tests, and the verdict is the green/red check on the commit.</div></div>
 <div class="file"><div class="name">specboard-harvest.zip<span class="tag">T15</span></div><div><span class="chip ci">CI artifact</span></div>
-  <div class="what">The runner's own data home, zipped and kept 14 days. A reviewer downloads it and runs <span class="k">SPECBOARD_HOME=&lt;dir&gt; npm run board</span> to see exactly what CI saw.</div></div>
+  <div class="what">The runner's own data home, zipped and kept 14 days. A reviewer downloads it and runs <span class="k">SPECBOARD_HOME=&lt;dir&gt; npm run board</span> to see exactly what CI saw.
+  <small><b>Why it exists at all when everyone has the plugin:</b> the plugin is the same <i>code</i> for everyone, but results are per-run — a reviewer wants the photographs of the exact run that graded the commit, not a 25-minute local re-run of their own machine. The zip is the interim shared record while both switches are local; once the team sets the remote db url + bucket, CI writes into the shared store directly and this zip is redundant.</small></div></div>
 <div class="file"><div class="name">bucket + database + hosted board</div><div><span class="chip ci">team store</span></div>
   <div class="what">Later, when a team asks: the same blobs to a private bucket, the same fold into Postgres, a read-only hosted board. One switch on the same pipeline — deliberately not in this plan.</div></div>
 <div class="file"><div class="name">run shots on a git branch</div><div><span class="chip none">removed</span></div>
