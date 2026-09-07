@@ -80,3 +80,19 @@ test('the step cap never drops a proves step — it keeps its offset past the ca
   assert.ok(out.length <= 82, 'the cap still bounds the record')   // 80 + proves + the trim marker
   assert.ok(out.some(s => s.cat === 'note' && /trimmed/.test(s.label)))
 })
+
+// THE RECORDING CANNOT START BEFORE THE PAGE EXISTS (2026-09-07 evening, the human: "then can you
+// just fix it?"). The epoch was the `Create page` step's START — but Playwright's screencast, and
+// therefore the recording's t=0, begins only once that step has CREATED the page, which under a
+// per-test context with video takes a few hundred ms. Every offset was that much too large, so
+// every seek landed that much LATER in the recording than the instant it named: measured on
+// demo/todo R1, a moment's lead frame already five keystrokes into the typing. The epoch is the
+// step's END now — its start plus its duration.
+test('the video epoch is the END of Create page — the page exists, so the recording can begin', () => {
+  const out = flattenSteps([
+    step('Create page', 'pw:api', { at: 500, d: 300 }),
+    step('proves R1', 'test.step', { at: 1500, d: 1000 })
+  ])
+  const proves = out.find(s => s.label.startsWith('proves R1'))
+  assert.equal(proves.t, 700, 'measured from 800, not 500')
+})

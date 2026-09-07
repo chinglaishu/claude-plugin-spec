@@ -1,5 +1,5 @@
 {
-  "version": "0.49.2",
+  "version": "0.49.3",
   "files": {
     "tools/spec-store.mjs": "7dffd7b061a3e5eb3e8e99376fc25cf6eba6c891ff7b17c1da7ee9bc562169e5",
     "tools/coverage.mjs": "2f97051ed7035c0d75255a957d9c8ffd56192f920b3e6ad4fc7888dcbb902397",
@@ -49,7 +49,7 @@
     "spec/_moment.mjs": "9f9e7329e19d09ddcd5b762882c5c7bfc6ca91f6139935539d7ca24a48f7ecbd",
     "spec/_state-guard.ts": "311221e9437e327c9add94df81d344ee9ad783fe861fa683d5d7e560a64f8f03",
     "spec/_state-guard-teardown.ts": "6381c1f72089205dd8d88fbd15e1a4e770f198e83fba5c5c0078c45ce3e8b631",
-    "spec/_results-reporter.mjs": "24d5e8a2499f2d648267a31e3c22d9e097387fdf6868c8f7b3514e9e5daa43d5",
+    "spec/_results-reporter.mjs": "5846bdd8e05dd4a21a93032b330cddf6dc6f39f008af37239181535f0eea649f",
     "spec/_auth.setup.ts": "288113187b28dc0d51fac936149c7b0e9d9d6577b4f6a265fba467a48fc1d9ee",
     "spec/_seed.ts": "0d769678a64a44f986909d158d17e12f6d216fe6a7eb83666a93c32fd5b7db8e",
     "spec/_escapes.md": "8f6b115b794be1c19a3e830d98b9f3dd81acc4fe1b2341a9a2fbb73c2d60a0ed",

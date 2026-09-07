@@ -86,8 +86,8 @@ function humanize (cat, title) {
 
 // Exported for tools/reporter-steps.test.mjs. Each kept step carries `t` — its offset in ms from
 // the moment the RECORDING starts — so the board's player can name the step under the playhead
-// (board R10). Playwright records video per PAGE, so the `Create page` step (dropped as noise, but
-// still in the tree) is the recording's t=0; without one, the first kept step reads as t=0.
+// (board R10). Playwright records video per PAGE, so the END of the `Create page` step (dropped as
+// noise, but still in the tree) is the recording's t=0; without one, the first kept step reads as t=0.
 export function flattenSteps (steps) {
   const findEpoch = list => {
     for (const s of list || []) {
@@ -98,7 +98,12 @@ export function flattenSteps (steps) {
     return null
   }
   const e = findEpoch(steps)
-  let epoch = e && e.startTime ? +new Date(e.startTime) : null
+  // THE END of that step, not its start (2026-09-07 evening): the screencast — the recording's
+  // t=0 — begins once the page has been CREATED, and creating it under a context that records
+  // takes a few hundred ms. Measured from the start, every offset was that much too large and
+  // every seek landed later than the instant it named (demo/todo R1's lead frame was five
+  // keystrokes into the typing). Pinned in tools/reporter-steps.test.mjs.
+  let epoch = e && e.startTime ? +new Date(e.startTime) + Math.round(e.duration || 0) : null
   const out = []
   let dropped = 0
   const walk = (list, depth) => {

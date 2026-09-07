@@ -397,9 +397,16 @@ change.
   state the two columns can be compared in, so it is the longest beat. The graft's context fade is
   faint (`[data-ctx]` opacity .82) — at .4 the Expected's still looked like a different page from the
   photograph at zoom full. The chip's tooltip opens only on a chip whose value CLAMPED (`.clamped`,
-  measured at place time) — everywhere else it repeated every word already on the picture. Still
-  open and said: the recording's clock trails the harness by ~300 ms, so a moment's lead frame is a
-  few keystrokes in.
+  measured at place time) — everywhere else it repeated every word already on the picture. **And the
+  recording's clock is the fold's, not the harness's, to get right** (0.49.3): the step epoch was
+  the START of Playwright's `Create page` step, but the screencast — the recording's t=0 — begins
+  only once that step has created the page (276–341 ms under a recording context), so every offset
+  was that much too large and every seek landed that much late. `flattenSteps` measures from the
+  step's END now; measured with a colour clock (a page painted red/green/blue at known wall times,
+  `tools/reporter-steps.test.mjs` pins the rule) the residual is 25–33 ms, one frame. The "lead
+  frame five keystrokes in" this note used to report was an ARTEFACT: an element screenshot of the
+  row takes ~300 ms and lands in the film — read the reader's frame with `drawImage` to a canvas
+  and `toDataURL`, never a row screenshot, when the question is which frame is presented.
   And a slice OPENS WHERE THE ACTION BEGINS: the harness
   marks the end of every wait it owns (`markIdle` — each capture, `reveal`'s hold, the post-check
   hold) and stamps each value with `open`; `beatSlices` opens the moment there instead of at the
