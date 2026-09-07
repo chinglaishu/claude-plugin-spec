@@ -360,17 +360,41 @@ change.
   the one the compose gate answers for and the lightbox opens — stands, for a readable `REST`
   (900 ms at 1×, rated by the reader's speed like every hold). Semi-auto rests there and replays the
   approach; auto rests there and lets the ROW advance (`modeHold` spends the same REST, where a
-  200 ms `tail` used to make the still a blink) — one clock, still. And **the chip steps aside for
-  exactly as long as the film runs** (`.pcbox.filming`, the paint only — the words stay readable
-  because other legs assert them): the RECORDING carries the app's own burned callout (board R10's
-  canon; every STILL hides it, `snapEvidence`, but a film cannot), and R20's chip is a claim "over
-  the photograph" — so two boxes stood on one picture saying different things about different
-  instants. The burned card explains the approach, the chip explains the moment; the chip leaves in
-  60 ms and comes back in 180, so the only overlap left is that fade — measured on demo/todo R1, one
-  reading in 120 at a 120 ms sample, against a permanent duplicate before. *(Both rules are
-  reader-side: no re-harvest, and neither requirement's text changed — the
-  R10 × R20 collision is resolved by reading R20's chip as belonging to the photograph it captions.
-  If the human wants that written into R20's prose, that is theirs to write.)* The **asserted-value frames
+  200 ms `tail` used to make the still a blink) — one clock, still.
+  **AND ONE MOMENT IS THREE BEATS — LEAD · APPROACH · REST — ON BOTH COLUMNS** (the human, 2026-09-07,
+  on 0.48.5: "Now the expected column never moved"; "semi-auto is not smooth … a small step should
+  only contain the action of click the Add button (instead of continue from last small step
+  entirely)"; "the explaining text box in semi-auto should same as the one in step"; "be aware of the
+  pause between each action to make user able to observe"). A playing moment opens on its START
+  state — the film's first frame, held for a `LEAD` (700 ms at 1×, `SBStepper.filmLead`) — then the
+  approach plays, then the moment's own still stands for the REST; `modeHold` spends all three. The
+  live layer REPORTS the phase (`approach` | `rest`, each once per moment) to the row, and the row
+  drives the Expected cell with it (`fr._phase`): through the lead and the approach it paints the
+  state the approach LEAVES — the previous moment's own Expected, or the beat's BASE on the first —
+  and at rest the moment's own; so the two columns change together, twice a moment
+  (`data-repphase`, `data-reppic`; `data-repsrc` still names the painted file). The chip is the SAME
+  box in every mode and phase — 0.48.5's `.pcbox.filming` fade is GONE: it read as a different box
+  per mode, and on the FIRST loop it never engaged at all, because the class was set through
+  `stage.closest('.pcbox')` on a reader that is built detached (measured at 100 ms on demo/todo R1:
+  chip at opacity 1 over the burned card for the whole first loop). The phase now lives on the stage
+  the layer owns (`.fsteps.approach`) and the chip is VERBATIM in every phase (offered a value line
+  that waits for the picture, the human chose "verbatim"; `.pcchips.approach` is a readout only).
+  And a slice OPENS WHERE THE ACTION BEGINS: the harness
+  marks the end of every wait it owns (`markIdle` — each capture, `reveal`'s hold, the post-check
+  hold) and stamps each value with `open`; `beatSlices` opens the moment there instead of at the
+  previous anchor, which used to film a second of frozen page (the previous moment's screenshot +
+  walk + replica) and, on the first moment, `reveal`'s 1.6 s narration hold — the human's "continue
+  from last small step entirely". `SLICE_SETTLE_MS` is 0: the rest is the reader's, and a tail past
+  the anchor filmed `snapEvidence` hiding the card for the photograph. A legacy harvest (no `open`)
+  keeps the old opening (rule 3). Pinned in a real browser by tools/live-layer.test.mjs on a stage
+  appended AFTER show() — the detached order the reader builds in — which also caught the
+  IntersectionObserver restarting every row's first moment the frame it landed. *(Reader-side plus a
+  harness STAMP. And the R10 × R20 collision is CLOSED by the human's ruling of 2026-09-07, option A:
+  **the recording carries NO burned card any more — only the ring and the dim** (`renderOverlay`
+  creates neither `.sb-call` nor `.sb-ptr`; `snapEvidence` has nothing to hide). The reader's chip
+  (R20) is the one explanation on every surface, film or still; R10's Then says so now, with the
+  ruling attached. What the whole-requirement video band and the test's evidence video lose is the
+  card's narration — the ring still says where to look.)* The **asserted-value frames
   are real since 2026-08-29** (the human: the When must be visible in the proof, not only the Then —
   a box carrying what was typed is empty in the before frame and cleared again by the after one):
   every `proveVisible` inside a `checkReq` photographs the page with its ring on, files the frame

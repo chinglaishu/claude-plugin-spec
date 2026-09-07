@@ -453,14 +453,12 @@ coordinates, so one camera frames both because there is only ever one page to fr
 And the two cells
 step **together**: the row's one stepper walks the beat's moments, so frame *n* of the photograph and
 the replica the Expected cell is showing are the same moment — same region, same clock. The **words** are
-the same beat too — and the same **sentence**: the callout burned into the RECORDING says one
-line per scene (`tools/callout-text.mjs`), so mid-beat it cannot claim a Then that has not happened,
-and the row's text cell reads the full beat off the prd — one language across the row *(amended
-2026-08-30 with the one-sentence card, R10; the still frames stopped carrying that card on
-2026-09-03, design C's "every text once" — the board's own chips beside the two cells say the
-claim now, and the video keeps the burned card because a recording has no chips)*. The
-**Given row is the context row**: it is about *where* the component sits, not what it says, so both
-its cells stay whole-page and carry no beat and no callout.
+the same beat too — and the same **sentence**: the reader's chip over each picture carries the
+moment's own words (R20) *(until 2026-09-07 this paragraph leaned on the card burned into the
+RECORDING saying one line per scene; that card is gone by the human's ruling — see R10 — and the
+chip is the one sentence a moment shows, corrected in place, rule 6)*. The **Given row is the
+context row**: it is about *where* the component sits, not what it says, so both
+its cells stay whole-page and carry no beat and no chip.
 
 *Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
 reviewed in this session — canon as written, and theirs to reword or remove like any other.
@@ -890,7 +888,7 @@ menu to ask from. Opening it from a requirement pre-picks that requirement in th
 - **When** you open the test
 - **Then** its numbered story steps show from its definition — before any run — each wearing the run's passed / failed / not-reached mark
 - **When** a step asserts a value while the run records
-- **Then** a callout burned into the recording rings the asserted element and carries the requirement's id chip beside the ONE line that scene is proving — the When while the beat is in motion, the Then once it comes to rest — reddened and naming the got value on a failure, the asserted value scrolled into view
+- **Then** a ring burned into the recording marks the asserted element under a light dim, the asserted value scrolled into view, reddened on a failure — and no card beside it: the reader's own chip (R20) is the one explanation on every picture
 - **When** you pick Logs from the ⋯ menu
 - **Then** the whole run log opens in a floating window, not a full-screen scrim
 
@@ -920,21 +918,18 @@ headless CLI run, or the recording was pruned). The recording stays the primary 
 itself — and where it exists, its key moments are also surfaced as scannable **proof frames (R14)**.
 Those frames are frames *of* the recording, never an independent capture, so there is still no second,
 disagreeing screenshot source — only the one recording, read two ways: played, or scanned. The
-recording **narrates itself from inside the
-video**: while a run executes, the harness paints a **product-tour callout into the page under
-test** — burned into the recording and its cover, not overlaid by the board. The app dims lightly,
-a **ring lands on the exact element the check reveals**, and a card **attached to that ring** carries
-the requirement's **id chip and the ONE sentence the scene in front of you is proving** — the When
-while the action is on screen, the Then once the beat comes to rest, in the requirement's own words,
-the same words the board's storyline shows. Never the requirement title, never both lines stacked:
-the card floats over the app it is pointing at, and a paragraph there hides the very thing being
-proven *(amended 2026-08-30, the human: "as less text as possible", one shared rule feeding the
-drawn and burned cards alike — tools/callout-text.mjs)*.
-On a failing check the ring, the card and the **got value** all redden,
-so the video alone explains what was being tested and which part failed; the got value shows **only
-on a failure** (every check's full got-vs-expected is recorded as the test's step evidence instead).
-The card is placed **below the ring first, then above, then beside it**, and **never covers the
-element it points at** — the surrounding state that produces the proven value must stay readable.
+recording **points from inside the
+video**: while a run executes, the harness paints a **ring and a light dim into the page under
+test** — burned into the recording and its cover, not overlaid by the board — so a **ring lands on
+the exact element the check reveals** and reddens on a failing check. **It carries no card**
+*(the human's ruling, 2026-09-07, option A: "drop the card from the recording, keep the ring")*.
+Until then a product-tour card sat beside the ring with the requirement's id chip and the one
+sentence the scene was proving *(2026-08-30: "as less text as possible")*. When the reader began
+playing each moment's own slice of this recording under its own chip (R20), that card was a second
+box on the same picture saying a different thing about a different instant — and pixels cannot be
+unburned, so the card went rather than the chip. What narrates a moment is the reader's chip, film
+or still; what the recording itself says is only WHERE to look. Every check's full got-vs-expected is
+recorded as the test's step evidence.
 The recording is captured at
 the **app's real size** (not a shrunken thumbnail), and a step that asserts on a value **scrolls
 that value into view and holds** before asserting, so the frame actually shows what is being proven

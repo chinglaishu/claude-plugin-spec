@@ -11,10 +11,10 @@ import { parseBehavior } from '../tools/behavior.mjs'
 // and drifted: an audit of the demo's R1 beat cells found the drawn ring ~12 page px out from the
 // element box where this one is ~5. This file is the REFERENCE — the module states its rules, it
 // never invents new ones, and nothing about what the burn-in paints changes.
-import { RING, CARD, WASH, ringBox, calloutSpot } from '../tools/overlay-geometry.mjs'
+import { RING, WASH, ringBox } from '../tools/overlay-geometry.mjs'
 // …and the callout's WORDS from the module that owns them (2026-08-30), so the burned card and the
 // drawn one say the same sentence for the same scene of the same beat.
-import { calloutText, CALLOUT_TYPE, calloutLines, calloutLabelWidth } from '../tools/callout-text.mjs'
+import { calloutText } from '../tools/callout-text.mjs'
 // the layout skeleton's walk — ONE self-contained function Playwright serialises into the page
 // (2026-09-03: moved out of snapLayout's inline closure so tools/layout-walk.test.mjs can pin what
 // it must always capture — see the module's header)
@@ -430,9 +430,11 @@ async function paintHud (s: { head?: string, failed?: boolean }): Promise<void> 
   await renderOverlay(LAST_BOX, !!s.failed)
 }
 
-// THE OVERLAY (board R10 — the recording is the proof a human checks). A light dim over the app, a
-// ring on the element the check reveals, and a CALLOUT beside it carrying the CURRENT beat's When →
-// Then in the requirement's own words (the same words the storyboard shows). Injected INTO the page
+// THE OVERLAY (board R10 — the recording is the proof a human checks). A light dim over the app and a
+// ring on the element the check reveals — and NOTHING ELSE since 2026-09-07 (the human's option A:
+// "drop the card from the recording, keep the ring"): the product-tour card that used to sit beside
+// the ring said the beat's sentence under the reader's own chip, two boxes on one picture while a
+// moment's film played. The reader's chip is the one explanation now. Injected INTO the page
 // so it burns into the video and the live watch; gated on a board recording so a plain `npm run e2e`
 // paints nothing and stays fast. pointer-events:none so it never swallows a click. Best-effort: a
 // failed evaluate (page torn down mid-nav) is swallowed, leaving the previous frame's overlay standing.
@@ -459,7 +461,7 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
   // words — and hand back the viewport and the card's height; then place the card and its notch.
   // A page torn down between the two leaves the card's POSITION one frame behind (it transitions in
   // .16s regardless) and nothing claiming a wrong beat; both calls stay best-effort.
-  const paint = await page.evaluate(({ beat, lines, labW, claim, failed, box, ring0, ringCss, cardW, type }) => {
+  const paint = await page.evaluate(({ beat, failed, box, ring0, ringCss }) => {
     const AI = '#2f4a63', BENG = '#8d4a38', KOKE = '#4d5c37', INK = '#1c1b18', INK3 = '#5f5d56', PAPER = '#fdfcf9', HAIR = '#cdc7b8'
     const FAIL = failed || (beat && beat.state === 'fail')
     let el = document.getElementById('__specboard-focus')
@@ -477,20 +479,10 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
       const ring = document.createElement('div')
       ring.className = 'sb-ring'
       ring.style.cssText = 'position:fixed;border-radius:' + ringCss.radius + 'px;transition:all .16s ease;display:none'
-      const ptr = document.createElement('div')
-      ptr.className = 'sb-ptr'
-      ptr.style.cssText = 'position:fixed;width:' + ringCss.notch + 'px;height:' + ringCss.notch + 'px;background:' + PAPER + ';display:none'
-      const call = document.createElement('div')
-      call.className = 'sb-call'
-      call.style.cssText = 'position:fixed;width:' + cardW + 'px;box-sizing:border-box;background:' + PAPER + ';border:1px solid ' + HAIR +
-        ';border-radius:' + ringCss.cardRadius + 'px;box-shadow:0 10px 30px rgba(28,27,24,.24);padding:' +
-        ringCss.padY + 'px ' + ringCss.padX + 'px;transition:all .16s ease;display:none'
-      el.append(veil, ring, ptr, call)
+      el.append(veil, ring)
     }
     el.style.display = ''
     const ring = el.querySelector('.sb-ring') as HTMLElement
-    const call = el.querySelector('.sb-call') as HTMLElement
-    const ptr = el.querySelector('.sb-ptr') as HTMLElement
     // the ring on the proven element — its rect comes from the shared geometry (ringBox), so the
     // drawn mirror can stroke the very same rect instead of a private copy of these numbers
     if (box) {
@@ -503,131 +495,27 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
       ring.style.boxShadow = '0 0 0 ' + ringCss.halo + 'px ' + ringCss.haloInk + ',0 0 ' + ringCss.glow + 'px ' +
         (FAIL ? 'rgba(141,74,56,.35)' : 'rgba(47,74,99,.30)')
     } else ring.style.display = 'none'
-    // THE CALLOUT — the current small step, and nothing else (the human, 2026-08-30). A tiny id chip,
-    // then ONE sentence: the line this scene is proving, chosen by tools/callout-text.mjs, the same
-    // rule tools/viz.mjs draws by. The requirement TITLE and the second stacked line are gone — a
-    // paragraph floating over the app hides the very thing the ring is pointing at.
-    if (!beat) { call.style.display = 'none'; ptr.style.display = 'none'; return null }
-    call.style.display = ''
-    call.style.borderColor = FAIL ? BENG : HAIR
-    call.innerHTML = ''
-    const mk = (t: string, txt: string, css: string) => { const s = document.createElement(t); if (txt) s.textContent = txt; s.style.cssText = css; return s }
-    const MONO = 'font:600 ' + type.lab + 'px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;'
-    // the tag row is the id chip alone
-    const tagRow = mk('div', '', 'display:flex;align-items:baseline;color:' + INK3 + ';margin-bottom:' + type.tagGap + 'px')
-    tagRow.append(
-      mk('span', beat.id, 'font:600 ' + type.id + 'px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em;border:1px solid ' +
-        (FAIL ? 'rgba(141,74,56,.4)' : HAIR) + ';border-radius:4px;padding:1px 5px;color:' + (FAIL ? BENG : INK3))
-    )
-    call.append(tagRow)
-    // …and the ONE line, labelled with the half it actually is. The label's hue names which half
-    // (indigo for the Then, quiet ink for the When) but never carries it alone — the word says it.
-    // A requirement written as PROSE has no beat to say: the chip stands alone rather than the card
-    // inventing a sentence, and the verdict still rides it.
-    //
-    // PRE-WRAPPED by the SHARED rule (tools/callout-text.mjs calloutLines, passed in as `lines`), so
-    // the burned card breaks at the EXACT same points as the drawn one — same column width, same line
-    // count, same words (the human, 2026-08-30/31: both cells show the same text, never truncated).
-    // Rendered as explicit line divs so the browser cannot re-wrap them differently: a label gutter
-    // holds WHEN/THEN and every line sits in the text column beside it (the hanging indent the drawing
-    // draws too). The card grows to as many lines as the sentence needs; calloutSpot then keeps the
-    // whole card on the page (flipping above a bottom-edge ring), so no line is ever burned off frame.
-    const isThen = beat.label === 'Then'
-    const t = mk('div', '', 'display:flex;align-items:baseline;font-size:' + type.line + 'px;font-weight:600;line-height:' + type.lh + ';color:' + INK)
-    // the label's own text stays mixed-case; MONO's text-transform:uppercase draws it WHEN/THEN
-    const labCell = mk('span', beat.text ? beat.label : '', MONO + 'flex:0 0 ' + labW + 'px;color:' + (isThen ? AI : INK3))
-    const col = mk('div', '', 'flex:1 1 auto;min-width:0')
-    const rows = (lines && lines.length ? lines : ['']) as string[]
-    rows.forEach((ln, i) => {
-      const row = mk('div', ln, '')
-      // the got value is BURN-ONLY (the drawing measures none): the sentence is identical on both
-      // sides, and a failure adds what the page actually read, in bengara, after the last line
-      if (i === rows.length - 1) {
-        if (FAIL) {
-          if (claim) row.append(mk('span', ' — got ' + claim.got, 'color:' + BENG + ';font-weight:700'))
-          row.append(mk('span', ' ✕', 'color:' + BENG + ';font-weight:700'))
-        } else if (beat.state === 'pass') {
-          row.append(mk('span', ' ✓', 'color:' + KOKE + ';font-weight:700'))
-        }
-      }
-      col.append(row)
-    })
-    t.append(labCell, col)
-    call.append(t)
-    // …and the ONE thing the placement rule cannot know without a browser: how tall the words made
-    // the card. It goes back to Node, where calloutSpot decides where the card belongs.
-    return { vw: window.innerWidth, vh: window.innerHeight, ch: Math.ceil(call.getBoundingClientRect().height) }
+    // NO CARD (the human, 2026-09-07, option A: "drop the card from the recording, keep the ring").
+    // The overlay used to carry a product-tour card beside the ring — the requirement's id chip and
+    // the one line the scene was proving. The reader's own chip (board R20) is the one explanation
+    // on every picture now, film or still, and a card burned into the pixels under it was a second
+    // box saying a different thing about a different instant. The ring and the dim stay: they are
+    // what every still keeps too, and they say WHERE to look without saying anything twice.
+    void beat; void PAPER; void HAIR; void INK; void INK3; void KOKE
+    return null
   }, {
     beat: curBeat(),
-    // the SHARED wrap (tools/callout-text.mjs) — the same lines the drawn card breaks at, computed in
-    // Node so the browser renders exactly them, and the label gutter both cards reserve
-    lines: (b => b ? calloutLines(b.text) : [])(curBeat()),
-    labW: calloutLabelWidth(),
-    claim: CLAIM ? { ...CLAIM } : null,
     failed,
     box,
     ring0: ringBox(box),
     ringCss: {
       stroke: RING.stroke, halo: RING.halo, glow: RING.glow, radius: RING.radius,
-      notch: CARD.notch, cardRadius: CARD.radius, padX: CARD.padX, padY: CARD.padY,
       // …and the two washes, from the same module (the review's I3): the board's replica page paints
       // the identical ring and dim, so a change here must move both pictures of a row at once
       veil: WASH.veil, haloInk: WASH.halo
-    },
-    cardW: CARD.width,
-    // the ONE line's type, from the module the drawing converts it out of too
-    type: { id: CALLOUT_TYPE.id, lab: CALLOUT_TYPE.lab, line: CALLOUT_TYPE.line, lh: CALLOUT_TYPE.lh, tagGap: CALLOUT_TYPE.tagGap }
+    }
   }).catch(() => null)
-  // no card to place (no beat yet, or the page went away mid-paint) — the ring is already painted
-  if (!paint) return
-  // POSITION — the shared rule (tools/overlay-geometry.mjs calloutSpot), so the drawn mirror places
-  // its card by the very same candidate order: BELOW the target first, then ABOVE, then beside it,
-  // each clamped to the viewport and each refused if it would cover the target at all.
-  const spot = calloutSpot({ box, vw: paint.vw, vh: paint.vh, cw: CARD.width, ch: paint.ch })
-  await page.evaluate(({ spot, box, cw, ch, fail, half, inset }) => {
-    const BENG = '#8d4a38', HAIR = '#cdc7b8'
-    const el = document.getElementById('__specboard-focus')
-    if (!el) return
-    const call = el.querySelector('.sb-call') as HTMLElement
-    const ptr = el.querySelector('.sb-ptr') as HTMLElement
-    if (!call || !ptr) return
-    const left = spot.left, top = spot.top, side = spot.side
-    call.style.left = left + 'px'
-    call.style.top = top + 'px'
-    // the notch, pointing back at the ring. A square rotated 45° shows the corner whose two edges
-    // carry a border: top+left → the TOP corner (points up), bottom+right → down, left+bottom →
-    // left, right+top → right. Every border is set explicitly so a re-render never keeps the
-    // previous placement's arrow. side 'none' means nothing fit cleanly — an honest float beats a
-    // notch aimed at a box the card is sitting on.
-    if (side !== 'none') {
-      ptr.style.display = ''
-      const bc = fail ? BENG : HAIR
-      const on = '1px solid ' + bc
-      ptr.style.transform = 'rotate(45deg)'
-      ptr.style.borderTop = 'none'; ptr.style.borderRight = 'none'
-      ptr.style.borderBottom = 'none'; ptr.style.borderLeft = 'none'
-      if (side === 'below' || side === 'above') {
-        // sit the notch under the target's centre, but never off the card's own edge
-        const px = Math.max(left + inset, Math.min(box.x + box.width / 2, left + cw - inset))
-        ptr.style.left = (px - half) + 'px'
-        if (side === 'below') { ptr.style.top = (top - half) + 'px'; ptr.style.borderTop = on; ptr.style.borderLeft = on }
-        else { ptr.style.top = (top + ch - half) + 'px'; ptr.style.borderBottom = on; ptr.style.borderRight = on }
-      } else {
-        const py = Math.max(top + inset, Math.min(box.y + box.height / 2, top + ch - inset))
-        ptr.style.top = (py - half) + 'px'
-        if (side === 'right') { ptr.style.left = (left - half) + 'px'; ptr.style.borderLeft = on; ptr.style.borderBottom = on }
-        else { ptr.style.left = (left + cw - half) + 'px'; ptr.style.borderRight = on; ptr.style.borderTop = on }
-      }
-    } else ptr.style.display = 'none'
-  }, {
-    spot,
-    box,
-    cw: CARD.width,
-    ch: paint.ch,
-    fail: failed || (curBeat() || { state: '' }).state === 'fail',
-    half: CARD.notch / 2,
-    inset: CARD.notchInset
-  }).catch(() => {})
+  void paint
 }
 
 // Ring an element and anchor the callout to it (board R10 — the recording is the proof a human
@@ -740,7 +628,7 @@ export async function reveal (target: Locator, opts: { hold?: number } = {}): Pr
   // position. Ink here; proveVisible reddens it if the value it then reads is wrong.
   await paintFocus(target)
   const hold = opts.hold ?? (recordHold(1600) || 200)
-  if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(hold).catch(() => {})
+  if (CURRENT_PAGE && hold > 0) { await CURRENT_PAGE.waitForTimeout(hold).catch(() => {}); markIdle() }
 }
 
 // ── THE WHEN IS PERFORMED AT A WATCHABLE SPEED (the human, 2026-09-06) ────────────────────────────
@@ -915,7 +803,7 @@ export async function proveVisible (
   // the bar — pass or fail — so the beat's proof plays every value it proved, in the order it proved
   // them, instead of only the two ends of the assertion body.
   await snapValue()
-  if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(recordHold()).catch(() => {})
+  if (CURRENT_PAGE && recordHold() > 0) { await CURRENT_PAGE.waitForTimeout(recordHold()).catch(() => {}); markIdle() }
   // A SOFT CLAIM (2026-09-02, the human on the demo's R9: "the schematic should be correct, only the
   // proof should be wrong"). A Then with several facts — the row still listed, an Undo on it, the
   // count unchanged — must photograph EVERY one of them even when the first is wrong, or the beat's
@@ -1026,24 +914,12 @@ async function snapEvidence (id: string, beat: number, seq: number, phase: Phase
     // claim's words beside the two cells now, and a card burned into the photograph said the same
     // sentence a third time, right over the component it points at. The VIDEO keeps the card (it is
     // the only surface a recording has), so this hides it for the screenshot alone and puts it back.
-    await page.evaluate(() => {
-      const c = document.querySelector('#__specboard-focus .sb-call') as HTMLElement | null
-      const p = document.querySelector('#__specboard-focus .sb-ptr') as HTMLElement | null
-      if (c) { c.dataset.sbwas = c.style.display; c.style.display = 'none' }
-      if (p) { p.dataset.sbwas = p.style.display; p.style.display = 'none' }
-    }).catch(() => {})
+    // (This used to hide the burned card for the photograph and put it back for the video. Since
+    // the human's 2026-09-07 ruling the overlay paints no card at all — the ring and the dim are
+    // the whole of it, on the still and on the film alike — so there is nothing to hide.)
     const t0 = Date.now()
-    try {
-      await page.screenshot({ path: file, timeout: SHOT_MS, animations: 'disabled', caret: 'hide' })
-      took = Date.now() - t0
-    } finally {
-      await page.evaluate(() => {
-        for (const sel of ['.sb-call', '.sb-ptr']) {
-          const e = document.querySelector('#__specboard-focus ' + sel) as HTMLElement | null
-          if (e && e.dataset.sbwas !== undefined) { e.style.display = e.dataset.sbwas; delete e.dataset.sbwas }
-        }
-      }).catch(() => {})
-    }
+    await page.screenshot({ path: file, timeout: SHOT_MS, animations: 'disabled', caret: 'hide' })
+    took = Date.now() - t0
     info.attachments.push({ name: `evidence ${id}#${beat} ${phase}`, path: file, contentType: 'image/png' })
     // …and what it cost, when a run asks (BOARD_SHOT_TIMING=1): the measurement that says whether
     // this bound is the right one, on a real harvest rather than on a hunch.
@@ -1091,7 +967,7 @@ type Claim = { label: string, expected: string, got: string, ok: boolean, missin
   phrase?: string,      // the author's own words for an emptiness (2026-09-06) — see CLAIM above
   ring?: Box | null }   // the ring box THIS claim was made under (fix round 2) — an anchor's own
   // reference point when a later rebuild has to find where this claim's fix now belongs
-async function snapLayout (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null, data: any = null, dropped = false): Promise<void> {
+async function snapLayout (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null, data: any = null, dropped = false, open: number | null = null): Promise<void> {
   const page = CURRENT_PAGE
   // a moment whose walk does not land leaves NO reading behind: the replica taken next is then
   // written ungated, and the gate says so, rather than being checked against another moment's page
@@ -1129,6 +1005,9 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
     // than this file inventing a claim for a frame that asserted nothing.
     const extra: Record<string, unknown> = {}
     if (at != null) extra.at = at
+    // …and where its action may be taken to begin (markIdle above) — read by the fold's beatSlices,
+    // normalised out of the layout pin exactly as `at` is (tools/viz.mjs layoutHash)
+    if (open != null) extra.open = open
     // …and whether the PHOTOGRAPH of this moment landed (task 3b, item 5): a bounded by-product may
     // go missing, but it may not go missing quietly — the fold reads this back (tools/evidence.mjs
     // valueMeta) and keeps the moment, marked, instead of dropping it and pruning its replica.
@@ -1506,8 +1385,9 @@ async function captureMoment (claim: Claim | null, key: string = ''): Promise<{ 
   } catch { return { skel: null, rep: null, repSkel: null } }
 }
 
-async function snapPhase (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null): Promise<void> {
-  // LET THE CARD LAND FIRST, on the AFTER frame (2026-08-31). The beat's resting scene turns the card
+async function snapPhase (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null, open: number | null = null): Promise<void> {
+  // LET THE RING LAND FIRST, on the AFTER frame (2026-08-31; the card this settle was written for is
+  // gone since 2026-09-07 — the ring still transitions over the same .16s). The beat's resting scene turned the card
   // over to its Then, which can WRAP TO MORE LINES than the When and therefore FLIP SIDES — a bottom-
   // edge ring's When card sits below, its taller Then card is placed above (calloutSpot). The card
   // slides there over the overlay's .16s CSS transition, so a frame taken the instant the verdict
@@ -1523,8 +1403,9 @@ async function snapPhase (id: string, beat: number, seq: number, phase: Phase, a
   // are now taken together, so nothing can settle between them. The writes stay in this order —
   // the skeleton first, then the replica the gate checks against it.
   const m = await captureMoment(claim, momentKey(id, beat, phase))
-  await snapLayout(id, beat, seq, phase, at, label, claim, m.skel, !shot)
+  await snapLayout(id, beat, seq, phase, at, label, claim, m.skel, !shot, open)
   await snapReplica(id, beat, seq, phase, claim, m.rep, m.repSkel)
+  markIdle()                     // the capture is the dead time the NEXT moment's slice must not open on
 }
 
 // ONE ASSERTED VALUE, PHOTOGRAPHED (2026-08-29, the human: the When has to be visible in the proof,
@@ -1577,10 +1458,23 @@ async function snapValue (): Promise<void> {
   const claimWithRing = CLAIM ? { ...CLAIM, ring: LAST_BOX ? { ...LAST_BOX } : null } : null
   if (claimWithRing) c.claims.push(claimWithRing)
   await snapPhase(c.id, c.beat, c.seq, 'v' + c.k, Math.max(0, Date.now() - c.t0),
-    CLAIM ? CLAIM.label : null, claimWithRing)
+    CLAIM ? CLAIM.label : null, claimWithRing, Math.max(0, IDLE_END - c.t0))
 }
 // the overlay's own transition (.16s) plus a frame — the ring is where it says it is after this
 const OVERLAY_SETTLE_MS = 220
+
+// WHERE A MOMENT'S ACTION MAY BE TAKEN TO BEGIN (2026-09-07). The recording has dead time the
+// reader must not play as if it were the gesture: every capture (snapPhase — the screenshot, the
+// walk, the replica, about a second of frozen page) and every narration hold (reveal's, the pace
+// gate's, the post-check hold) sits between one check and the next gesture, and a slice opened at
+// the previous anchor filmed all of it — the human's "continue from last small step entirely". So
+// the harness marks the END of each wait it owns, and snapValue stamps the latest such mark on the
+// moment as `open` (its offset from the beat's start, like `at`); the fold opens the moment's slice
+// there (tools/evidence.mjs beatSlices). Only waits that actually held mark — `reveal(…, { hold: 0 })`
+// inside proveVisible runs AFTER the gesture and must not move the mark past it. A moment whose mark
+// predates the previous anchor keeps the old opening at the fold: never an invented span (rule 3).
+let IDLE_END = 0
+function markIdle (): void { IDLE_END = Date.now() }
 
 // checkReq / coverReqs — how a test PROVES a requirement (R4/R5). A test tags the requirement ids it
 // covers (qualified, e.g. `asset-plan:R5`, so a flow can prove another screen's requirement) and

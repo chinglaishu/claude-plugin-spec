@@ -143,3 +143,37 @@ test('sliceOf refuses a moment with no slice, or one whose numbers do not make a
   assert.equal(sliceOf({ slice: { from: 'x', to: 1800 } }, 'blob/abc.webm'), null)
   assert.equal(sliceOf(null, 'blob/abc.webm'), null)
 })
+
+// ── THE SLICE OPENS WHERE THE ACTION BEGINS, NOT WHERE THE LAST CAPTURE DID (2026-09-07) ─────────
+// The human, on 0.48.5's semi-auto: "for the small step to click the Add button, it should only
+// contain the action of click the Add button (instead of continue from last small step entirely)".
+// Measured on demo/todo R1 beat 1: every slice opened at the previous moment's anchor, so it began
+// with the previous moment's own capture — a second of frozen page while the screenshot, the walk
+// and the replica were taken — and moment 1 opened on the 1.6 s narration hold of `reveal`. The
+// harness now stamps each value with `open`: the offset at which the last harness-owned wait before
+// its action ended (spec/_base.ts markIdle). The slice opens there.
+test('a value with an `open` stamp opens its slice there — after the previous capture, before its own anchor', () => {
+  const s = beatSlices(beat({ values: [{ k: 1, at: 800, open: 300 }, { k: 2, at: 2200, open: 1500 }] }))
+  assert.deepEqual(s.values, [
+    { k: 1, from: 1300, to: 1800 },
+    { k: 2, from: 2500, to: 3200 }
+  ])
+})
+
+test('an `open` outside [previous anchor, own anchor] is refused and the old opening stands — never an invented span', () => {
+  // before the previous anchor: the film would replay the previous moment's own action
+  let s = beatSlices(beat({ values: [{ k: 1, at: 800 }, { k: 2, at: 2200, open: 500 }] }))
+  assert.deepEqual(s.values[1], { k: 2, from: 1800, to: 3200 })
+  // after its own anchor: nothing left to play
+  s = beatSlices(beat({ values: [{ k: 1, at: 800, open: 900 }] }))
+  assert.deepEqual(s.values[0], { k: 1, from: 1000, to: 1800 })
+  // not a number: a legacy harvest keeps its answer
+  s = beatSlices(beat({ values: [{ k: 1, at: 800, open: 'x' }] }))
+  assert.deepEqual(s.values[0], { k: 1, from: 1000, to: 1800 })
+})
+
+test('the slice ENDS on the anchor: the rest on the still is the reader’s, and a settle would film the screenshot’s own blink', () => {
+  // snapEvidence hides the burned card for the photograph and puts it back — inside any tail past
+  // the anchor, so a settle there filmed the card blinking off and on at the end of every moment
+  assert.equal(SLICE_SETTLE_MS, 0)
+})

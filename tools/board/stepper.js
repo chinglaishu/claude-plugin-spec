@@ -77,14 +77,30 @@
   // exactly what a blink looks like. It is one number because BOTH clocks spend it: auto rests here
   // before the row advances, and semi-auto rests here before the approach replays (filmEnd).
   var REST = 900
+  // THE LEAD — the beat a playing moment opens on its START state before the approach runs (the
+  // human, 2026-09-07, on 0.48.5: "be aware of the pause between each action to make user able to
+  // observe" — and "now the expected column never moved"). A moment is three beats now, LEAD ·
+  // APPROACH · REST: the start state held still on BOTH columns, then the gesture, then the moment's
+  // own still. The lead is what the eye needs to see where the action starts from, and it is the
+  // instant the Expected shows the state the approach leaves — so the two columns move together,
+  // twice per moment, instead of one of them never moving at all. One number, spent by the film's
+  // own clock (filmLead) and by AUTO's row clock (modeHold), so the two can never disagree.
+  var LEAD = 700
+  function filmLead (mode, speed, opts) {
+    if (mode !== 'auto' && mode !== 'semi') return null      // step: nothing plays, nothing to lead into
+    var o = opts || {}
+    var lead = o.lead != null ? o.lead : LEAD
+    return scaleHold(lead, speed)
+  }
   function modeHold (mode, hold, sliceMs, speed, opts) {
     if (mode !== 'auto') return null
     var o = opts || {}
     var rest = o.rest != null ? o.rest : REST
+    var lead = o.lead != null ? o.lead : LEAD
     var cap = o.max != null ? o.max : 15000
     var h = scaleHold(hold, speed)
     var s = (typeof sliceMs === 'number' && isFinite(sliceMs) && sliceMs > 0)
-      ? scaleHold(sliceMs, speed) + scaleHold(rest, speed)
+      ? scaleHold(lead, speed) + scaleHold(sliceMs, speed) + scaleHold(rest, speed)
       : 0
     return Math.min(cap, Math.max(h, s))
   }
@@ -300,7 +316,9 @@
     scaleHold: scaleHold,
     modeHold: modeHold,
     filmEnd: filmEnd,
+    filmLead: filmLead,
     REST: REST,
+    LEAD: LEAD,
     cameraDur: cameraDur,
     cameraView: cameraView,
     cameraCss: cameraCss,

@@ -1,16 +1,17 @@
-// THE NARRATION OVERLAY — what a watcher of the recording actually sees (rewritten 2026-08-27,
-// when the burned-in top banner was retired). The banner dumped the whole requirement across the
-// top of the frame, disconnected from the thing being proven and shoving the app halfway down the
-// picture. In its place: a product-tour CALLOUT anchored to the element the check rings — a light
-// dim over the app, a ring on the proven element, a pointer notch, and a small card carrying the
-// CURRENT beat in the requirement's own words (When → Then, read from the prd — the same words the
-// board's storyboard shows), its verdict riding on the card (✓ proven, ✕ with the got value).
+// THE NARRATION OVERLAY — what a watcher of the recording actually sees. Rewritten 2026-08-27, when
+// the burned-in top banner was retired for a product-tour CALLOUT anchored to the ringed element;
+// rewritten again 2026-09-07, when the human retired the CALLOUT CARD too (option A: "drop the card
+// from the recording, keep the ring"). What is left is exactly what every still already kept: a
+// light dim over the app and a ring on the proven element — and NOTHING beside it. The reader's own
+// chip (board R20) is the one explanation on every picture, film or still; the card burned into the
+// pixels under it said the beat's sentence about a different instant, and pixels cannot be unburned.
 //
-// This test drives the REAL helpers and fails if the callout stops appearing, stops speaking the
-// prd's words, stops marking its verdict, stops ringing the element — or, the 2026-08-28 defect,
-// starts COVERING the thing it is pointing at. And when BOARD_BEAT_LOG names a file, every
-// flowStep / checkReq / narration appends a wall-clock JSONL line — the timeline a voice-over or
-// subtitle track is cut against.
+// This test drives the REAL helpers and fails if the ring stops appearing, the dim stops painting,
+// a card or a pointer comes BACK (rule 4: these three used to assert the card's words, placement and
+// reddening; the human decided the card away, so what is pinned now is its absence), or a failed
+// check stops reddening the ring. And when BOARD_BEAT_LOG names a file, every flowStep / checkReq /
+// narration appends a wall-clock JSONL line — the timeline a voice-over or subtitle track is cut
+// against.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
@@ -115,7 +116,7 @@ const READ = (dir) =>
 const overlaps = (a, b) =>
   !(a.x + a.w <= b.x || a.x >= b.x + b.w || a.y + a.h <= b.y || a.y >= b.y + b.h)
 
-test('the callout speaks the requirement in the prd\'s own words, and marks it proven', () => {
+test('the overlay is the ring and the dim — and no card, mid-check or at rest', () => {
   const r = run((dir) =>
     `import { test, expect, checkReq, coverReqs, flowStep, proveVisible } from ${JSON.stringify(BASE)}\n` +
     'import { writeFileSync } from \'node:fs\'\n' +
@@ -139,29 +140,18 @@ test('the callout speaks the requirement in the prd\'s own words, and marks it p
   const s = LAST.side
   assert.ok(s, 'the spec wrote its observations')
   assert.equal(s.during.present, true, 'the overlay is injected into the page under test')
-  assert.equal(s.during.callShown, true, 'the callout is on screen while the check runs')
-  assert.equal(s.during.ringShown, true, 'and the proven element is ringed')
+  assert.equal(s.during.ringShown, true, 'the proven element is ringed while the check runs')
   assert.equal(s.during.veil, true, 'over a light dim of the app — receded, never hidden')
-  // ONE SENTENCE, THE CURRENT SMALL STEP (the human, 2026-08-30: "only have to include the text for
-  // current small step (as less text as possible)"). Rule 4 — the assertions below used to demand
-  // the requirement TITLE and BOTH lines on every card; the human decided that away, so what is
-  // pinned now is the id chip plus the ONE line the scene is on. DURING the assertion body the beat
-  // is still being performed, so it says the When and nothing else.
-  assert.match(s.during.text, /R1/, 'the callout names the requirement it is proving')
-  assert.ok(!/The R&M growth rate/.test(s.during.text), 'no requirement title — the id chip is the tag')
-  assert.match(s.during.text, /When/, 'the beat is labelled with the half it is on')
-  assert.match(s.during.text, /you read the Repair row/, 'the prd\'s own When')
-  assert.ok(!/Then/.test(s.during.text), 'and never the other line stacked under it')
-  assert.ok(!/it shows 4\.00%/.test(s.during.text), 'the Then has not happened at this moment')
-  // …and once the beat comes to REST the card turns over to its Then, with the verdict on it
-  assert.match(s.after.text, /Then/, 'the resting scene says the Then')
-  assert.match(s.after.text, /it shows 4\.00%/, 'the prd\'s own Then')
-  assert.ok(!/you read the Repair row/.test(s.after.text), 'one sentence there too')
-  assert.match(s.after.text, /✓/, 'a passed requirement is marked proven on the callout')
-  assert.ok(!/✕/.test(s.after.text), 'and carries no failure mark')
+  // NO CARD, NO POINTER (the human, 2026-09-07). The elements are not created at all — an element
+  // hidden by style would still be one line away from coming back.
+  assert.equal(s.during.call, null, 'no card is painted beside the ring while the check runs')
+  assert.equal(s.during.ptr, null, 'and no pointer notch')
+  assert.equal(s.during.text, '', 'the overlay says nothing — the reader’s chip does')
+  assert.equal(s.after.call, null, 'and none once the beat comes to rest either')
+  assert.equal(s.after.ptr, null)
 })
 
-test('the callout is ATTACHED to the ring — never covering it, never covering the row beside it', () => {
+test('the ring sits ON the element it marks, and nothing in the overlay covers the row beside it', () => {
   const r = run((dir) =>
     `import { test, expect, checkReq, flowStep, proveVisible } from ${JSON.stringify(BASE)}\n` +
     'import { writeFileSync } from \'node:fs\'\n' +
@@ -181,25 +171,19 @@ test('the callout is ATTACHED to the ring — never covering it, never covering 
   {}, 'callout placed')
   assert.equal(r.status, 0, `the placement flow should pass:\n${r.stdout}\n${r.stderr}`)
   const s = LAST.side
-  assert.ok(s && s.call && s.target, 'the callout and its target were both measured')
-  // THE DEFECT (2026-08-27): a small ring inside a wide row put the card over the row's own title.
-  assert.ok(!overlaps(s.call, s.target), 'the callout never covers the element it is ringing')
-  assert.ok(!overlaps(s.call, s.ring), 'nor the ring drawn around it')
-  assert.ok(!overlaps(s.call, s.name), 'nor the row\'s own title beside it — the context stays readable')
-  // …and it reads as ATTACHED: below the target by default, with the notch touching the ring.
-  assert.ok(s.call.y >= s.target.y + s.target.h, 'the card sits BELOW the target it points at')
-  assert.ok(s.call.y - (s.target.y + s.target.h) <= 24,
-    `right next to it — a ${Math.round(s.call.y - (s.target.y + s.target.h))}px gap`)
-  assert.equal(s.ptrShown, true, 'the pointer notch is drawn')
-  assert.ok(s.ptr.y < s.call.y, 'above the card\'s top edge, pointing back up at the ring')
-  assert.ok(s.ptr.y + s.ptr.h >= s.call.y - 1, 'and touching the card, so the two read as one object')
-  const ptrMid = s.ptr.x + s.ptr.w / 2
-  assert.ok(ptrMid >= s.call.x && ptrMid <= s.call.x + s.call.w, 'the notch stays on the card\'s own edge')
-  assert.ok(Math.abs(ptrMid - (s.target.x + s.target.w / 2)) <= s.target.w / 2 + 8,
-    'and sits under the target, so it points at the ring rather than off into the page')
+  assert.ok(s && s.ring && s.target, 'the ring and its target were both measured')
+  // the ring is drawn AROUND the target (its box contains the target's, within the shared inset)
+  assert.ok(s.ring.x <= s.target.x + 1 && s.ring.y <= s.target.y + 1, 'the ring starts at or before the target')
+  assert.ok(s.ring.x + s.ring.w >= s.target.x + s.target.w - 1 && s.ring.y + s.ring.h >= s.target.y + s.target.h - 1,
+    'and ends at or after it')
+  // THE 2026-08-27 DEFECT — a card over the row's own title — cannot recur: there is no card
+  assert.equal(s.call, null, 'no card to cover the row beside the ring')
+  assert.equal(s.ptr, null, 'no pointer either')
+  // (the ring's own inset — shared geometry, tools/overlay-geometry.mjs RING — may touch the
+  // neighbouring cell's edge by a few px; that is the ring's halo, not a card over the title)
 })
 
-test('a failed check reddens the callout: the value it GOT, and the ✕ mark', () => {
+test('a failed check reddens the RING — the got value is the step evidence’s, not a card’s', () => {
   const r = run((dir) =>
     `import { test, expect, checkReq, coverReqs, flowStep, proveVisible } from ${JSON.stringify(BASE)}\n` +
     'import { writeFileSync } from \'node:fs\'\n' +
@@ -227,11 +211,9 @@ test('a failed check reddens the callout: the value it GOT, and the ✕ mark', (
   assert.notEqual(r.status, 0, 'a flow with a failed check must fail')
   const s = LAST.side
   assert.ok(s, 'the spec wrote its observations before the aggregate failure')
-  assert.match(s.text, /R1/, 'the failed callout still names the requirement')
-  assert.match(s.text, /it shows 4\.00%/, 'and still shows the beat it was proving')
-  assert.match(s.text, /got 4\.00%/, 'plus the value it actually read')
-  assert.match(s.text, /✕/, 'marked failed — hue never carries the state alone')
-  assert.match(String(s.ringColor), /141, 74, 56/, 'and the ring turns bengara')
+  assert.equal(s.call, null, 'no card comes back to carry the failure')
+  assert.equal(s.ringShown, true, 'the ring stays on the element that failed')
+  assert.match(String(s.ringColor), /141, 74, 56/, 'and turns bengara')
 })
 
 test('BOARD_BEAT_LOG records a wall-clock JSONL timeline of steps, checks and notes', () => {

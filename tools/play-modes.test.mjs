@@ -107,7 +107,7 @@ test('only AUTO is wound: semi-auto and step schedule nothing at all', () => {
 
 test('AUTO waits for the LONGER of the still’s hold and the moment’s own action', () => {
   // a 1535ms slice under a 500ms hold: cutting at 500 would chop the gesture mid-type
-  assert.equal(modeHold('auto', 500, 1535, 1), 1535 + REST)
+  assert.equal(modeHold('auto', 500, 1535, 1), globalThis.SBStepper.LEAD + 1535 + REST)
   // …and a moment with a long hold and a short slice keeps its hold
   assert.equal(modeHold('auto', 3000, 400, 1), 3000)
 })
@@ -165,12 +165,44 @@ test('a moment with no slice advances on its still’s hold alone', () => {
 
 test('the reader’s speed rates BOTH halves of that answer', () => {
   // 4×: the hold and the slice compress together, so a fast reader still sees the whole action
-  assert.equal(modeHold('auto', 500, 1535, 4), scaleHold(1535, 4) + scaleHold(REST, 4))
+  const LEAD = globalThis.SBStepper.LEAD
+  assert.equal(modeHold('auto', 500, 1535, 4), scaleHold(LEAD, 4) + scaleHold(1535, 4) + scaleHold(REST, 4))
   assert.equal(modeHold('auto', 8000, 400, 4), scaleHold(8000, 4))
   // 0.25×: both stretch
-  assert.equal(modeHold('auto', 500, 1535, 0.25), scaleHold(1535, 0.25) + scaleHold(REST, 0.25))
+  assert.equal(modeHold('auto', 500, 1535, 0.25), scaleHold(LEAD, 0.25) + scaleHold(1535, 0.25) + scaleHold(REST, 0.25))
 })
 
 test('a very long slice cannot park the row forever — the auto hold is capped', () => {
   assert.equal(modeHold('auto', 1200, 600000, 1), 15000)
+})
+
+// ── ONE MOMENT IS THREE BEATS: LEAD · APPROACH · REST (the human, 2026-09-07, four reports on 0.48.5)
+// "Now the expected column never moved"; "semi-auto is not smooth … a small step should only contain
+// the action of click the Add button (instead of continue from last small step entirely)"; "the
+// explaining text box in semi-auto should same as the one in step"; "be aware of the pause between
+// each action to make user able to observe". A playing moment now opens on its START state, held
+// for a LEAD both columns share; then the approach runs; then the moment's own still stands for the
+// REST. The lead is the pause the human asked for, and it is what lets the Expected MOVE: it shows
+// the start state through the lead and the approach, and the moment's own state at rest.
+test('a playing mode leads with a pause on the start state; step has nothing to lead into', () => {
+  const { filmLead, LEAD } = globalThis.SBStepper
+  assert.ok(LEAD >= 500, 'the lead is a pause a person can register: ' + LEAD)
+  assert.equal(filmLead('semi', 1), LEAD)
+  assert.equal(filmLead('auto', 1), LEAD)
+  assert.equal(filmLead('step', 1), null)
+  assert.equal(filmLead('gif', 1), null)
+})
+
+test('the lead is rated by the reader’s speed like every other hold', () => {
+  const { filmLead, LEAD } = globalThis.SBStepper
+  assert.equal(filmLead('semi', 4), scaleHold(LEAD, 4))
+  assert.equal(filmLead('auto', 0.25), scaleHold(LEAD, 0.25))
+})
+
+test('AUTO’s clock spends the LEAD, the approach AND the REST before the row advances', () => {
+  const { LEAD } = globalThis.SBStepper
+  assert.equal(modeHold('auto', 500, 1535, 1), LEAD + 1535 + REST)
+  assert.equal(modeHold('auto', 500, 1535, 4), scaleHold(LEAD, 4) + scaleHold(1535, 4) + scaleHold(REST, 4))
+  // a moment with no film has no lead either — its still simply holds
+  assert.equal(modeHold('auto', 1200, 0, 1), 1200)
 })

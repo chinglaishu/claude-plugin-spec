@@ -215,28 +215,19 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     // "nothing injected without a recording"; that gate was the defect, so the branch is gone.
     await reveal(dt.locator('.focusov .fread .frmeta .fid'))
     const focusOv = page.locator('#__specboard-focus')
-    const call = focusOv.locator('.sb-call')
     {
       await expect(focusOv).toBeAttached()
-      await expect(focusOv.locator('.sb-ring')).toBeVisible()   // the ring the callout is anchored to
-      await expect(call).toBeVisible()
-      await expect(call).toContainText('R10')
-      // ONE SENTENCE, THE CURRENT SMALL STEP (the human, 2026-08-30: "only have to include the text
-      // for current small step (as less text as possible) — and both the schematic and proof need to
-      // have exact same text"). RULE 4, and the human's decision is the reason: this beat used to
-      // assert the card carried the requirement TITLE and BOTH the When and the Then. It carries
-      // neither the title nor both lines now — the card is the id chip and the line THIS scene
-      // proves, chosen by tools/callout-text.mjs, the very rule tools/viz.mjs draws the schematic's
-      // card by. We are mid-assertion here (the verdict has not landed), so the scene is the When.
-      await expect(call).toContainText('When')
-      await expect(call).not.toContainText('Then')
-      await expect(call).not.toContainText(await titleOf('R10'))
-      // …and it really is the prd's own When, not a label with nothing behind it
-      const beatsR10 = prdBeats('R10')
-      expect(beatsR10 && beatsR10.beats.length > 0, 'R10 carries a behavior block').toBe(true)
-      expect(plain(await call.innerText()), 'the card carries this beat\'s own When, in full')
-        .toContain(plain(beatsR10!.beats[0].when))
+      await expect(focusOv.locator('.sb-ring')).toBeVisible()
       await expect(focusOv.locator('.sb-veil')).toHaveCount(1)  // the light dim under it
+      // NO CARD (the human, 2026-09-07, option A: "drop the card from the recording, keep the
+      // ring"). RULE 4 and the human's decision is the reason: this leg used to assert the burned
+      // card beside the ring — the id chip and the one line the scene was proving. With the reader's
+      // own chip (R20) staying on the picture through a moment's film, that card was a second box
+      // under it saying a different thing about a different instant, and pixels cannot be unburned.
+      // The ring and the dim are the whole overlay; the ABSENCE is claimed as the fact it is.
+      await proveVisible(focusOv.locator('.sb-call'), MISSING,
+        'no card is burned beside the ring — the reader’s own chip is the one explanation',
+        { anchor: focusOv.locator('.sb-ring'), phrase: 'no card' })
     }
     await hudCheck('first check', 1, 1)
     await hudCheck('second check', 2, 2)
@@ -357,11 +348,12 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     // there is no player in the reader left to measure. It is NOT re-asserted on the Flow player
     // here, because that surface belongs to R13's own test; said plainly rather than quietly dropped.)
 
-    // the CALLOUT SURVIVES a navigation — a beat that walks to another page keeps its narration
+    // the RING SURVIVES a navigation — a beat that walks to another page keeps its overlay
     // (renderOverlay repaints on framenavigated). On every run, like the paint above (2026-09-02).
+    // (This read the card until 2026-09-07; the card is gone by the human's ruling — see above.)
     await page.reload()
-    await expect(call).toBeVisible()
-    await expect(call).toContainText('R10')
+    await expect(focusOv.locator('.sb-ring')).toBeVisible()
+    await expect(focusOv.locator('.sb-call')).toHaveCount(0)
   })
 })
 
@@ -1438,6 +1430,11 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
     expect(spec, 'a board requirement harvested WITH its layout skeleton and its replica').toBeTruthy()
     await page.goto('/#/board/' + spec.rid)
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    // HELD IN STEP BEFORE THE PICTURE IS READ (2026-09-07): in a playing mode the Expected shows the
+    // state the approach LEAVES (the base, or the previous moment) while the film runs and the
+    // moment's own picture only at rest — so a read taken at an arbitrary instant is a coin toss.
+    // Step is totally still: the moment's own picture, and nothing else, is what stands.
+    await ov.locator('.fread .frmeta .frtools .medbar.pmode button[data-mode="step"]').click()
     const cell = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1).locator('.sbframe')
     const frame = cell.locator('iframe.repframe')
     await expect(frame, 'the Expected cell is one sandboxed frame, not a drawing').toHaveCount(1)
@@ -1986,6 +1983,11 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     await page.goto('/#/board/' + (spec.rid === 'R2' ? 'R3' : 'R2'))
     await page.goto('/#/board/' + spec.rid)
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    // HELD IN STEP BEFORE THE PICTURE IS READ (2026-09-07): in a playing mode the Expected shows the
+    // state the approach LEAVES (the base, or the previous moment) while the film runs and the
+    // moment's own picture only at rest — so a read taken at an arbitrary instant is a coin toss.
+    // Step is totally still: the moment's own picture, and nothing else, is what stands.
+    await ov.locator('.fread .frmeta .frtools .medbar.pmode button[data-mode="step"]').click()
     const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)     // beat 1's own row
     await reveal(row)
     const drawn = row.locator('.sbframe .pcbox')      // the Expected cell's camera
@@ -2027,6 +2029,11 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     await page.goto('/#/board/' + (cs!.rid === 'R2' ? 'R3' : 'R2'))
     await page.goto('/#/board/' + cs!.rid)
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText(cs!.rid)
+    // HELD IN STEP BEFORE THE PICTURE IS READ (2026-09-07): in a playing mode the Expected shows the
+    // state the approach LEAVES (the base, or the previous moment) while the film runs and the
+    // moment's own picture only at rest — so a read taken at an arbitrary instant is a coin toss.
+    // Step is totally still: the moment's own picture, and nothing else, is what stands.
+    await ov.locator('.fread .frmeta .frtools .medbar.pmode button[data-mode="step"]').click()
     const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
     await reveal(row)
     const vw = Number(cs!.beat.vw || (cs!.beat.focus && cs!.beat.focus.vw) || 0)
@@ -2159,21 +2166,11 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     // drawings carry no overlay to read a card off. The DRAWN side of the same rule is pinned where
     // it can actually fail, in tools/viz.test.mjs, against a harvest that has one.)
     await reveal(row.locator('.sbtext'))
-    const call19 = page.locator('#__specboard-focus .sb-call')
-    {
-      await expect(call19).toBeVisible()
-      const said = plain(await call19.innerText())
-      // this is the SECOND checkReq('R19') of the test, so the callout has advanced to R19's second
-      // beat — BEAT_CURSOR counts checkReq calls per id (spec/_base.ts), clamped to the last
-      const bs19 = prdBeats('R19')!.beats
-      const b19 = bs19[Math.min(1, bs19.length - 1)]
-      expect(said, 'the burned card names the requirement').toContain('R19')
-      expect(said, 'and carries this beat\'s own When, mid-assertion').toContain(plain(b19.when))
-      expect(said.includes(plain(b19.then)), 'and NOT the Then — one sentence, the current step').toBe(false)
-      const titleR19 = (await dt.locator('.reqpane .req[data-r="R19"] .rt').textContent() || '').trim()
-      expect(said.includes(plain(titleR19)), 'and no requirement title — the id chip is the whole tag').toBe(false)
-      await hudCheck('one sentence per scene', 'the When alone', said.includes(plain(b19.then)) ? 'both lines' : 'the When alone')
-    }
+    // (This used to read the burned card's one sentence here. The card is gone from the recording by
+    // the human's 2026-09-07 ruling — see the R10 leg above — so the ring alone is what this row's
+    // recording carries, and the one sentence a moment shows is the reader's chip, asserted in R20.)
+    await expect(page.locator('#__specboard-focus .sb-ring')).toBeVisible()
+    await expect(page.locator('#__specboard-focus .sb-call')).toHaveCount(0)
     // THE GIVEN ROW — the context row: the whole page on both sides, the Given alone, no camera toggle
     const given = story.locator('.sbwrap .sbrow').first()
     await expect(given).toHaveClass(/\bbgiven\b/)
@@ -2313,51 +2310,60 @@ test('The proof plays itself — semi-auto is the default, no dots/counter/toggl
       'in step nothing in the Actual column is playing').toBe(true)
     }
 
-    // ── THE FILM IS THE APPROACH; THE MOMENT IS THE STILL ────────────────────────────────────────
-    // Two bugs the human reported on the live board, 2026-09-07, and one rule that closes both:
-    //
-    //   "for semi-auto and step, it have multiple explaining text box in actual column (looks like
-    //    auto and step overlapping or what)" — the RECORDING carries the app's own burned callout
-    //    (board R10's canon; every STILL hides it, spec/_base.ts snapEvidence, but the film cannot),
-    //    and the reader drew its own chip on top of it. Two boxes, saying two different things about
-    //    two different instants, on one picture.
-    //
-    //   "For auto and semi-auto, it only moving on the actual, but i expect both side always sync to
-    //    be comparable" — a moment's slice ENDS on the instant the check read its value, so the film
-    //    is the APPROACH; semi-auto looped it forever and never showed the moment at all. Measured on
-    //    demo/todo R1 beat 1 moment 3/6 at 0.48.4: twelve seconds of semi-auto with the film on and
-    //    never once paused, the Actual a page scrolled a row off the Expected — the new row it claims
-    //    not even on screen — under a chip reading `ACTUAL ✓ empty`.
-    //
-    // So: the slice plays, then the layer STANDS DOWN and the moment's own photograph stands — the
-    // picture the Expected replica is the pair of — with the chip (R20's own "over the photograph")
-    // back on it. semi-auto rests there and replays; auto rests there and lets the ROW advance.
+    // ── ONE MOMENT IS THREE BEATS: LEAD · APPROACH · REST ───────────────────────────────────────
+    // The human, on 0.48.5's live board (2026-09-07): "Now the expected column never moved"; "semi-auto
+    // is not smooth"; "the explaining text box in semi-auto should same as the one in step"; "be aware
+    // of the pause between each action to make user able to observe". A playing moment now opens on
+    // its START state, held for a lead on BOTH columns (the Expected shows the state the approach
+    // leaves — the previous moment's, or the beat's base); the approach plays; then the film stands
+    // down and the moment's own still stands for the rest, the Expected showing the moment's own
+    // picture — two pictures a moment, on both sides, at the same two instants. The chip is the SAME
+    // box throughout: it never fades (0.48.5's fade read as a different box per mode, and on the first
+    // loop never engaged at all — measured at 100 ms on demo/todo R1, chip at opacity 1 over the
+    // burned card, the very overlap it was for); only its value line waits for the picture that
+    // shows the value — and then, offered that, the human chose "verbatim": the whole chip, every
+    // phase. semi-auto rests and replays; auto rests and lets the ROW advance.
     await tools.locator('.medbar.pmode button[data-mode="semi"]').click()
     if (await row.locator('video.pclive').count()) {
       const filmBox = cell.locator('.pcbox.pcplay')
       // ONE READING, TAKEN AT ONE INSTANT. The loop alternates every second or so, so asking two
       // questions in two calls would compare two different instants of it — the very drift this
-      // whole row exists to refuse. The film's state and the chip's PAINT are read together, and
-      // each of the two states the loop must have is polled for as one string.
-      // (The paint is what steps aside, never `visibility` or `display`: the chip's WORDS are the
-      // row's claim and other legs read them with proveVisible, which reads innerText.)
+      // whole row exists to refuse. The film's state, the phase the row was told, the chip and its
+      // value line are read together, and each state the loop must pass through is polled for as
+      // one string.
       const shot = () => filmBox.evaluate((box: HTMLElement) => {
         const v = box.querySelector('video.pclive') as HTMLVideoElement
         const c = box.querySelector('.pcchips') as HTMLElement
-        const on = !!v && !v.paused && v.classList.contains('on')
-        const chip = c && Number(getComputedStyle(c).opacity) > 0.5 ? 'chip' : 'no chip'
-        return (on ? 'film' : 'still') + ' · ' + chip + ' · ' + (box.classList.contains('filming') ? 'filming' : 'rested')
+        const chip = c && c.querySelector('.pchip') && Number(getComputedStyle(c).opacity) > 0.5 ? 'chip' : 'no chip'
+        // VERBATIM in every phase (the human, 2026-09-07: "verbatim seems better") — the value line
+        // never waits, so a reading of 'words only' anywhere is a regression
+        const line = c && c.querySelector('.pcrow') && getComputedStyle(c.querySelector('.pcrow') as HTMLElement).display !== 'none' ? 'value line' : 'words only'
+        const film = !v ? 'no film' : (!v.classList.contains('on') ? 'still' : (v.paused ? 'film held' : 'film'))
+        const stage = v && v.parentElement as HTMLElement
+        const row = box.closest('.sbrow') as HTMLElement
+        return film + ' · ' + chip + ' · ' + line + ' · ' + (stage && stage.classList.contains('approach') ? 'approach' : 'rest') +
+          ' · row ' + (row && row.dataset.phase || '?')
       })
-      // while the approach runs, the burned callout inside the film is the explanation and the
-      // reader's chip steps aside
-      await expect.poll(shot, { timeout: 15000, message: 'semi-auto plays the moment on show, and its chip steps off the approach' })
-        .toBe('film · no chip · filming')
-      // …and when the approach runs out the film stands down: the moment's own photograph — the
-      // picture the Expected replica is the pair of — stands, with the chip back over it
-      await expect.poll(shot, { timeout: 15000, message: 'the film stood down and the moment’s own still stands, chip and all' })
-        .toBe('still · chip · rested')
-      await expect(row.locator('.pcchips.actual .pchip'), 'and exactly one of it').toHaveCount(1)
+      // THE LEAD: the film on show but held on its first frame — the pause — with the whole chip
+      // already there
+      await expect.poll(shot, { timeout: 15000, message: 'a playing moment opens on its lead: film held, the whole chip on' })
+        .toBe('film held · chip · value line · approach · row approach')
+      // THE APPROACH: the same chip, verbatim, the film running
+      await expect.poll(shot, { timeout: 15000, message: 'then the approach plays under the same chip' })
+        .toBe('film · chip · value line · approach · row approach')
+      // THE REST: the film stood down, the moment's own still stands, the same chip over it
+      await expect.poll(shot, { timeout: 15000, message: 'the film stood down and the moment’s own still stands, the same chip over it' })
+        .toBe('still · chip · value line · rest · row rest')
+      await expect(row.locator('.pcchips.actual .pchip'), 'and exactly one chip').toHaveCount(1)
       await expect(row.locator('.pcchips.expected .pchip'), 'one on the Expected too, never two').toHaveCount(1)
+      // …AND THE EXPECTED MOVED WITH IT: through the approach it painted the START state (the beat's
+      // base on the first moment), at rest the moment's own picture — read off the cell's own seam
+      const rep = row.locator('.sbframe.sbrep')
+      if (await rep.count()) {
+        const pic = () => rep.evaluate((f: HTMLElement) => (f.dataset.repphase || '?') + ' · ' + (f.dataset.reppic || '?'))
+        await expect.poll(pic, { timeout: 15000, message: 'the Expected shows the start state while the approach runs' }).toBe('approach · base')
+        await expect.poll(pic, { timeout: 15000, message: '…and the moment’s own picture when it rests' }).toBe('rest · 0')
+      }
     }
     await tools.locator('.medbar.pmode button[data-mode="step"]').click()
 

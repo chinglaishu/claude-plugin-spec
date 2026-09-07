@@ -103,7 +103,7 @@ test('introMs reserves the intro line at test start — the first step waits it 
     `the first step waited out the intro (${step1.t - r.side.t0}ms >= ~1500 reserved before the test body began)`)
 })
 
-test('the narration is a callout overlay that never shifts the page — on a recorded run and on a plain one alike', () => {
+test('the narration is a ring overlay that never shifts the page — on a recorded run and on a plain one alike', () => {
   // The top BANNER (a band that pushed the body down by 142px) was retired 2026-08-28 for the
   // tour CALLOUT anchored to the ringed element (#__specboard-focus, spec/_base.ts renderOverlay).
   // The layout contract inverted with it: the page is NEVER shifted, recording or not — the
@@ -141,16 +141,15 @@ test('the narration is a callout overlay that never shifts the page — on a rec
   assert.ok(s, 'the spec wrote its observations')
   assert.equal(s.parent, 'HTML', 'the overlay hangs off <html>, outside the app\'s stacking contexts')
   assert.ok(s.hasRing, 'the proven cell is ringed')
-  assert.ok(s.hasCall, 'the callout card is shown beside it')
-  assert.match(String(s.callText), /R1/, 'the callout names the requirement')
-  assert.equal(s.overlaps, false, 'the callout never covers the ringed cell')
+  // NO CARD since 2026-09-07 (the human's option A) — the ring is the whole overlay; the reader's
+  // chip explains the moment. Rule 4: this used to assert the card and its placement.
+  assert.equal(s.hasCall, false, 'no callout card is painted beside the ring')
   assert.equal(String(s.bodyTransform), 'none', 'the page is never shifted — the overlay floats above it')
   assert.ok(s.tableTop < 142, `page content stays where the app put it (top ${s.tableTop})`)
 
   const off = run(spec, {}, 'band layout')
   assert.equal(off.status, 0, `plain run should pass:\n${off.stdout}\n${off.stderr}`)
   assert.equal(off.side.parent, 'HTML', 'no recording → the same overlay, hung off <html>')
-  assert.ok(off.side.hasRing && off.side.hasCall, 'no recording → the ring and the card still paint')
-  assert.equal(off.side.overlaps, false, 'and the card still never covers the ringed cell')
+  assert.ok(off.side.hasRing && !off.side.hasCall, 'no recording → the ring still paints, and still no card')
   assert.equal(String(off.side.bodyTransform), 'none', 'no recording → the page is never shifted either')
 })

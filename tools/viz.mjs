@@ -560,7 +560,7 @@ const pinShape = p => ({
 })
 export const layoutHash = (a, b) =>
   reqHash(JSON.stringify((Array.isArray(a) ? a : [{ before: a || null, after: b || null }]).map(pinShape),
-    (k, v) => (k === 'at' ? undefined : v)))
+    (k, v) => (k === 'at' || k === 'open' ? undefined : v)))
 
 // App text is untrusted: collapse whitespace, drop control characters and backticks (the builder
 // interpolates this into board.html), then XML-escape.
@@ -804,7 +804,7 @@ const checkMark = (x, y, s, stroke = 'ok') =>
 // ring ~12 page px out from the element box against the burned one's ~5, which on a thin target is
 // a drawn ring twice the photographed one's height.
 const OV = {
-  card: CARD.width,   // .sb-call width
+  card: CARD.width,   // the card's width — the burned card is gone (2026-09-07); the reader's chip still takes this width
   rad: CARD.radius,   // its border-radius
   padX: CARD.padX,    // its padding: padY padX
   padY: CARD.padY,

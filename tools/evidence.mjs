@@ -479,6 +479,10 @@ export function valueMeta (layout) {
   const out = {}
   const at = layout ? Number(layout.at) : NaN
   if (Number.isFinite(at)) out.at = at
+  // …and where its ACTION may be taken to begin (2026-09-07, beatSlices `opening`): the end of the
+  // last harness-owned wait before it. Lifted only as a finite number, like `at`.
+  const open = layout ? Number(layout.open) : NaN
+  if (Number.isFinite(open)) out.open = open
   if (layout && typeof layout.label === 'string') {
     const label = oneLine(layout.label)
     if (label) out.label = label
@@ -546,7 +550,10 @@ export function valueLanded (got) {
 // snapValue → valueMeta). This is arithmetic on the harvest — never a second capture, and never an
 // invented pace: a beat with no window, an untimed value, or anchors that disagree with the window
 // yields NOTHING and the reader keeps the still it already has (rule 3).
-export const SLICE_SETTLE_MS = 400
+// …the settle is 0 since 2026-09-07: the REST on the still is the reader's own (SBStepper.REST), and
+// snapEvidence hides the burned card for the photograph and puts it back INSIDE any tail past the
+// anchor, so a settle here filmed that blink at the end of every moment. The knob stays.
+export const SLICE_SETTLE_MS = 0
 // how far past the window's own end an anchor may sit and still be read as rounding rather than as
 // disagreement: `d` is rounded to whole ms and the last check can land on the step's closing edge
 const SLICE_SLACK_MS = 250
@@ -569,9 +576,24 @@ export function beatSlices (beat, opts = {}) {
   }
   const span = (a, b) => ({ from: a, to: b + settle })
   const last = anchors.length ? anchors[anchors.length - 1] : from
+  // WHERE A VALUE'S SLICE OPENS (2026-09-07). The previous anchor is where the previous CHECK read
+  // its value — but the run then photographs, walks and serialises that moment (about a second of
+  // frozen page) and may hold for narration before the next gesture begins, and a slice opened at
+  // the anchor films all of it: the human's "continue from last small step entirely". The harness
+  // stamps each value with `open`, the offset at which the last harness-owned wait before its action
+  // ended (spec/_base.ts markIdle); the slice opens there when it sits inside [previous anchor, own
+  // anchor], and at the previous anchor otherwise — a legacy harvest, or a stamp that disagrees,
+  // keeps the old answer rather than an invented one (rule 3).
+  const opening = (i) => {
+    const prev = i === 0 ? from : anchors[i - 1]
+    const o = values[i] ? Number(values[i].open) : NaN
+    if (!Number.isFinite(o)) return prev
+    const at = from + o
+    return (at >= prev && at <= anchors[i]) ? at : prev
+  }
   return {
     before: span(from, from),
-    values: anchors.map((a, i) => ({ k: Number(values[i].k) || (i + 1), ...span(i === 0 ? from : anchors[i - 1], a) })),
+    values: anchors.map((a, i) => ({ k: Number(values[i].k) || (i + 1), ...span(opening(i), a) })),
     after: span(last, Math.max(to, last))
   }
 }

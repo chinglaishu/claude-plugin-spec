@@ -1292,6 +1292,14 @@ const B = window.__BOARD__ || {}
       cur = { spot: chipSpot(m.aim, vp, chipRows(m, side)), chip: chip, vp: vp }
       place(box._view, 0)
     }
+    // THE SAME BOX IN EVERY MODE (the human, 2026-09-07: "the explaining text box in semi-auto should
+    // same as the one in step"). The chip never steps aside any more — 0.48.5 faded it out for the
+    // film and the reader saw a different box in each mode. What changes with the phase is only its
+    // VALUE LINE: while the approach runs the picture is on its way to the value, so the chip carries
+    // the moment's own words alone ("You typed the task — it sits in the Add box") and the EXPECTED /
+    // ACTUAL line joins the instant the moment's own picture stands. The class rides the layer, set by
+    // the row's wiring from the live layer's report — never looked up through a selector.
+    layer._phase = function (ph) { layer.classList.toggle('approach', ph === 'approach') }
     return layer
   }
   // THE MOMENT'S FRAME — the ring and the chip box the camera must hold, computed ONCE for the row
@@ -1731,7 +1739,27 @@ const B = window.__BOARD__ || {}
   // the very same camera transform (it wears .camsub, so aimCamera/aimFrame move it with everything
   // else). `pointer-events:none` — a click on the proof still opens the lightbox on the FRAME, which
   // is the evidence; the moving picture is a view over it, never a target.
-  function liveLayer (stage, src, shots) {
+  //
+  // ONE MOMENT IS THREE BEATS — LEAD · APPROACH · REST (the human, 2026-09-07, on 0.48.5: "Now the
+  // expected column never moved"; "semi-auto is not smooth"; "the explaining text box in semi-auto
+  // should same as the one in step"; "be aware of the pause between each action to make user able to
+  // observe"). A playing moment opens on its START state — the film's first frame, which is where the
+  // previous moment left the app — held still for the LEAD (SBStepper.filmLead); then the APPROACH
+  // runs to the end of its slice; then the layer stands down and the moment's own photograph stands
+  // for the REST (SBStepper.filmEnd). The row is told each phase through `report(idx, phase)` with
+  // exactly two words, `approach` and `rest`, so the Expected cell can show the start state while the
+  // approach runs and the moment's own state when it rests — the two columns moving together, twice
+  // a moment — and so the chips can drop their value line while the picture is still on its way.
+  //
+  // THE PHASE IS SAID ON THE STAGE ITSELF, never looked up. 0.48.5 wrote a `filming` class on
+  // `stage.closest('.pcbox')` — and the reader is built DETACHED, so on the first play there was no
+  // .pcbox to find and the class was never set: measured on demo/todo R1 at 100 ms, the whole first
+  // loop ran with the chip at opacity 1 over the burned card, exactly the "multiple explaining text
+  // box" the class existed to prevent. The stage is the one element this layer owns from the first
+  // line, so the class lives there (`.fsteps.approach`), and the row's wiring — not a selector —
+  // carries the phase to the chips. Pinned in a real browser by tools/live-layer.test.mjs, on a
+  // stage that is appended only after show() has run.
+  function liveLayer (stage, src, shots, report) {
     const vid = document.createElement('video')
     vid.className = 'camsub pclive'
     vid.src = src
@@ -1742,150 +1770,143 @@ const B = window.__BOARD__ || {}
     vid.setAttribute('aria-hidden', 'true')
     vid.preload = 'auto'
     stage.appendChild(vid)
-    let cur = null
+    let cur = null              // this moment's slice {from, to} in seconds, or null
+    let idx = -1                // which moment the layer is on
     let raf = 0
-    // what this layer is allowed to do at this moment, in this mode — livePlan above is the rule
+    let timer = 0               // the LEAD timer or the REST timer — never both
+    let phase = 'off'           // 'off' | 'lead' | 'film' | 'rest'
     let plan = { show: false, play: false, loop: false }
-    // …and whether the approach has already run: while the layer RESTS, the moment's own still is
-    // what the cell shows (see standDown), and nothing here may put the film back over it until the
-    // rest is up or the moment changes.
-    let resting = false
-    let restT = 0
-    const unrest = function () { if (restT) { clearTimeout(restT); restT = 0 } resting = false }
-    // THE CELL SAYS WHEN IT IS FILMING, so the chip over it can step aside (the human, 2026-09-07:
-    // "it have multiple explaining text box in actual column"). The recording carries the app's OWN
-    // burned callout — board R10's canon, "a callout burned into the recording … carries the
-    // requirement's id chip beside the ONE line that scene is proving" — so while the film runs there
-    // is already an explanation on the picture, and the reader's chip beside it was a second one.
-    // R20's chip belongs to the PHOTOGRAPH ("`ACTUAL ✓ "…"` over the photograph"), and the photograph
-    // is exactly what is NOT on show while the approach plays: one explanation at any instant, the
-    // burned card while it moves and the moment's own chip the moment it rests. The class rides the
-    // .pcbox because that is the box both the film and the chip layer live in.
-    const filming = function (on) {
-      const box = stage.closest ? stage.closest('.pcbox') : null
-      if (box) box.classList.toggle('filming', !!on)
-    }
+    let dead = false
+    let starts = 0
+    let waited = 0
+    const clearTimer = function () { if (timer) { clearTimeout(timer); timer = 0 } }
+    const disarm = function () { if (raf && window.cancelAnimationFrame) cancelAnimationFrame(raf); raf = 0 }
     const play = function () {
       const p = vid.play()
       if (p && p.catch) p.catch(function () { /* autoplay refused, or no decoder — the still stands */ })
     }
     const rewind = function () { try { vid.currentTime = cur.from } catch (e) { /* not seekable yet */ } }
-    // THE FILM IS THE APPROACH; THE MOMENT IS THE STILL. Its slice ends on the instant the check read
-    // the value, so when it runs out the layer steps off and the moment's own photograph — the thing
-    // the Expected replica beside it is the pair of — stands. Only what comes next differs by mode
-    // (SBStepper.filmEnd): semi-auto rests and replays the approach; auto rests and leaves the
-    // advance to the row's one clock.
-    const standDown = function () {
-      if (restT) { clearTimeout(restT); restT = 0 }
-      resting = true
-      const how = window.SBStepper.filmEnd(PLAY_MODE, PLAY_SPD)
-      vid.classList.toggle('on', !!how.show)
-      filming(false)
-      disarm()
-      try { vid.pause() } catch (e) { /* nothing playing */ }
-      if (how.replayIn == null) return
-      restT = setTimeout(function () {
-        restT = 0
-        if (!vid.isConnected || !cur) return
-        resting = false
-        apply()
-      }, how.replayIn)
+    const word = function (p) { return (p === 'lead' || p === 'film') ? 'approach' : 'rest' }
+    // the row hears two words, and hears each once per moment: lead → film is one `approach` to it
+    let said = ''
+    const say = function (p) {
+      phase = p
+      const w = word(p)
+      stage.classList.toggle('approach', w === 'approach')
+      if (said === idx + ':' + w) return
+      said = idx + ':' + w
+      if (report) report(idx, w)
     }
-    // LOOP INSIDE THE SLICE, never past it: a moment that ran off its own end would show the NEXT
-    // moment's action under this moment's chip — a picture claiming to be one thing while showing
-    // another, which is the whole class of drift the row exists to refuse. `timeupdate` fires about
-    // four times a second, which is coarser than the shortest slice (a beat's opening hold is 400 ms),
-    // so the wrap is watched on the animation frame and `timeupdate` is only the safety net.
-    // …AND IT STARTS THE PLAY, because show() cannot. The reader is built DETACHED and appended a
-    // moment later (aimCamera has its own bounded rAF retry for exactly this), so the `play()` in
-    // show() runs on an element that is not in the document yet and does not take — measured on the
-    // demo's R2: `readyState 4`, `currentTime 4.585` (the slice's own start, so the SEEK worked) and
-    // `paused true`. An earlier cut of this watcher returned on `!isConnected` and therefore gave up
-    // for good. It waits instead, bounded, and starts the film the frame the cell lands.
-    let waited = 0
-    let starts = 0
+    // nothing plays and nothing is scheduled: the still under this layer is what the cell shows
+    const off = function () {
+      clearTimer(); disarm()
+      try { vid.pause() } catch (e) { /* nothing playing */ }
+      vid.classList.remove('on')
+    }
+    // THE APPROACH HAS RUN. The film steps off and the moment's own photograph stands — in EVERY
+    // playing mode, because that still is the picture the Expected cell is the pair of and the only
+    // one the two columns can be compared on. semi-auto replays after its rest; auto leaves the
+    // advance to the row's one clock (SBStepper.modeHold), so the two columns never move apart.
+    const standDown = function () {
+      off()
+      say('rest')
+      const how = window.SBStepper.filmEnd(PLAY_MODE, PLAY_SPD)
+      if (how.replayIn == null) return
+      timer = setTimeout(function () { timer = 0; if (!dead && vid.isConnected && cur) apply() }, how.replayIn)
+    }
+    // the LEAD is up: the approach plays to the end of its slice and not a frame past it — a moment
+    // that ran off its own end would show the NEXT moment's action under this moment's chip
+    const film = function () {
+      if (dead || !cur) return
+      say('film')
+      vid.playbackRate = (PLAY_SPD > 0 ? PLAY_SPD : 1)
+      starts = 0                 // a new approach gets the full budget of attempts to start
+      play()
+      arm()
+    }
+    // `timeupdate` fires about four times a second, coarser than the shortest slice, so the end is
+    // watched on the animation frame and `timeupdate` is only the safety net. …AND IT STARTS THE
+    // PLAY, because film() cannot always: the reader is built DETACHED and appended a moment later,
+    // so a `play()` on an element not yet in the document does not take (0.48.2, measured on the
+    // demo's R2: readyState 4, currentTime at the slice start, paused true). It waits, bounded, and
+    // starts the film the frame the cell lands. `play()` clears `paused` synchronously, so this is
+    // one call per genuine stall, capped so a browser that will simply not play is asked a bounded
+    // number of times and then left alone with the still showing through.
     const watch = function () {
       raf = 0
-      if (!cur || !plan.play || resting) return   // held (step), resting on the still, or no slice
+      if (!cur || phase !== 'film') return
       if (vid.isConnected) {
         waited = 0
         if (vid.currentTime < cur.from - 0.25) rewind()
-        else if (vid.currentTime >= cur.to) {
-          // THE APPROACH HAS RUN. The film steps off and the moment's own photograph stands — in
-          // EVERY playing mode, because that still is the picture the Expected cell is the pair of
-          // and the only one the two columns can be compared on. semi-auto replays after its rest;
-          // auto leaves the advance to the row's one clock (SBStepper.modeHold), so the two columns
-          // can never move at different instants.
-          standDown()
-          return
-        }
-        // `play()` clears `paused` synchronously, so this is one call per genuine stall, not per
-        // frame — and it is capped, so a browser that will simply not play (no decoder left, an
-        // autoplay policy this page cannot satisfy) is asked a bounded number of times and then left
-        // alone with the still showing through.
+        else if (vid.currentTime >= cur.to) { standDown(); return }
         if (vid.paused && starts++ < 240) play()
       } else if (++waited > 600) return    // ~10 s of frames: this cell was discarded before it landed
       raf = window.requestAnimationFrame ? requestAnimationFrame(watch) : 0
     }
     const arm = function () { if (!raf && window.requestAnimationFrame) raf = requestAnimationFrame(watch) }
-    const disarm = function () { if (raf && window.cancelAnimationFrame) cancelAnimationFrame(raf); raf = 0 }
     vid.addEventListener('timeupdate', function () {
-      if (!cur || !plan.play || resting) return
+      if (!cur || phase !== 'film') return
       if (vid.currentTime < cur.from - 0.25) rewind()
       else if (vid.currentTime >= cur.to) standDown()
     })
-    vid.addEventListener('ended', function () { if (cur && plan.play && !resting) standDown() })
+    vid.addEventListener('ended', function () { if (cur && phase === 'film') standDown() })
     // A RECORDING THAT WILL NOT LOAD IS NOT A PICTURE. The still is stacked underneath and an empty
     // <video> paints nothing, so the row already reads correctly — this just stops the layer trying
     // again on every moment of every beat once the source has failed.
-    let dead = false
     vid.addEventListener('error', function () {
-      dead = true; cur = null; unrest(); disarm(); vid.classList.remove('on'); filming(false)
+      dead = true; cur = null; off(); stage.classList.remove('approach')
     })
-    // …AND THE MODE DECIDES, every time (the human's 2026-09-07 bug report). One place recomputes the
-    // plan from the reader's mode and the moment's slice, and it is called both when the moment
-    // changes and when the mode does — so switching to step stops the film wherever it is, and
-    // switching back re-starts it from this moment's own beginning, never mid-action.
+    // …AND THE MODE DECIDES, every time. One place recomputes the plan from the reader's mode and the
+    // moment's slice, and it is called when the moment changes, when the mode does, and when the row
+    // scrolls back into view — so switching to step stops the film wherever it is and stands the
+    // still up, and switching back starts THIS moment from its own lead, never mid-action.
     const apply = function () {
       if (dead) return
-      if (restT) { clearTimeout(restT); restT = 0 }
-      resting = false
+      off()
       plan = livePlan(PLAY_MODE, !!cur)
-      vid.classList.toggle('on', plan.show)
-      filming(plan.show)
-      if (!plan.play) { disarm(); try { vid.pause() } catch (e) { /* nothing playing */ } return }
+      if (!plan.show) { say('rest'); return }      // step, or a moment with no slice: the still, still
+      const lead = window.SBStepper.filmLead(PLAY_MODE, PLAY_SPD)
+      if (lead == null) { say('rest'); return }     // livePlan already said no; kept honest here too
+      // THE LEAD: the film's first frame — the state the previous moment left — held on show
+      vid.classList.add('on')
       rewind()
-      vid.playbackRate = (PLAY_SPD > 0 ? PLAY_SPD : 1)
-      starts = 0                 // a new moment gets the full budget of attempts to start
-      play()
-      arm()
+      say('lead')
+      timer = setTimeout(function () { timer = 0; film() }, lead)
     }
     const show = function (i) {
       if (dead) return
+      idx = i
       cur = sliceOf(shots[i], src)
-      apply()                    // a NEW moment always starts from its own approach, never mid-rest
+      apply()                    // a NEW moment always starts from its own lead, never mid-rest
     }
     // a seek asked for before the metadata arrived is silently dropped by the element, so re-aim once
     // it is ready — otherwise the first moment plays from 0 and the row opens on the wrong action
-    vid.addEventListener('loadeddata', function () { if (cur && plan.play && !resting) { rewind(); play(); arm() } })
+    vid.addEventListener('loadeddata', function () {
+      if (!cur) return
+      if (phase === 'lead') rewind()
+      else if (phase === 'film') { rewind(); play(); arm() }
+    })
     onSpd(vid, function (sp) { vid.playbackRate = (sp > 0 ? sp : 1) })
     onMode(vid, apply)
     // …AND ONLY THE ROWS A READER CAN SEE ARE DECODING. A requirement's reader builds EVERY beat row
     // at once, so a ten-beat requirement would otherwise keep ten 1440×900 decoders running for rows
-    // scrolled well off the screen. Off-screen pauses and holds its place; back on screen it resumes
-    // from the moment's own start. Where there is no IntersectionObserver nothing changes — the film
-    // simply plays as it did.
+    // scrolled well off the screen. Off-screen pauses where it is; back on screen the moment starts
+    // again from its own lead. Where there is no IntersectionObserver nothing changes.
+    // …RESUMING ONLY A MOMENT IT PARKED: the observer also fires the first time the stage lands in
+    // the document, and re-applying there restarted every row's first moment a frame after show()
+    // had started it — two leads, the row told `approach` twice with no rest between (caught by
+    // tools/live-layer.test.mjs, which builds the stage detached exactly as the reader does).
+    let parked = false
     if (window.IntersectionObserver) {
       new IntersectionObserver(function (es) {
         for (const e of es) {
-          // a RESTING moment is showing its still, which costs no decoder and is what an off-screen
-          // row should be left on anyway — coming back must not put the film over it again
-          if (!cur || !plan.play || resting) continue
-          if (e.isIntersecting) { rewind(); play(); arm() } else { disarm(); try { vid.pause() } catch (x) { /* nothing playing */ } }
+          if (!cur || !plan.show) continue
+          if (e.isIntersecting) { if (parked) { parked = false; apply() } }
+          else { parked = true; clearTimer(); disarm(); try { vid.pause() } catch (x) { /* nothing playing */ } }
         }
       }, { rootMargin: '200px' }).observe(vid)
     }
-    return { el: vid, show: show }
+    return { el: vid, show: show, phase: function () { return word(phase) } }
   }
 
   // ── THE FRAME-STEPPER, at any scale ──────────────────────────────────────────────────────────
@@ -1908,7 +1929,9 @@ const B = window.__BOARD__ || {}
     // …and the LIVE LAYER over them where this beat's harvest carries the recording and the moments'
     // own slices of it (the human, 2026-09-06). It is stacked in the same grid cell as the frames and
     // moved by the same camera; a moment with no slice simply leaves it off and the still shows.
-    const player = (live && live.src) ? liveLayer(stage, live.src, frames) : null
+    const player = (live && live.src)
+      ? liveLayer(stage, live.src, frames, function (i, p) { if (el._onPhase) el._onPhase(i, p) })
+      : null
     // NO dots and NO n/N counter in the proof cell any more (the human, 2026-09-02): the row's ONE
     // moment strip over the pictures (momentStrip, fed by _onStep below) is the single readout and
     // walk for the beat, so the frames stack alone here with nothing under them.
@@ -1933,9 +1956,12 @@ const B = window.__BOARD__ || {}
       // on one region at every moment of the beat — not only at its start.
       if (el._onScene) el._onScene(i)
       imgs.forEach(function (im, k) { im.classList.toggle('on', k === i) })
-      // …and the moving picture moves with them: this moment's own slice of the recording, seeked
-      // and looping, over the still it is the live version of
+      // …and the moving picture moves with them: this moment's own slice of the recording, led,
+      // played and rested over the still it is the live version of — and the PHASE goes to the row
+      // (el._onPhase), which is what moves the Expected: a cell with no film has only the one
+      // phase, and says so, so the Expected still steps with it.
       if (player) player.show(i)
+      else if (el._onPhase) el._onPhase(i, 'rest')
       // the row's MOMENT STRIP is the readout now — it lights the segment of the moment on show
       // (the human, 2026-09-02), tracking the loop in auto and the walk in step alike.
       if (el._onStep) el._onStep(cur)
@@ -1987,6 +2013,8 @@ const B = window.__BOARD__ || {}
       schedule()
     }
     el._cur = function () { return cur }
+    // …and which PHASE of it: the row wires _onPhase after the first show(), so it asks
+    el._phaseNow = function () { return player ? player.phase() : 'rest' }
     onSpd(el, function () { if (!el.hidden) schedule() })
     // switching the reader's mode arms or holds every loop at once (schedule() itself is the gate)
     onMode(el, function () { if (!el.hidden) schedule() })
@@ -2457,7 +2485,9 @@ const B = window.__BOARD__ || {}
         im.classList.add('on')
         stage1.appendChild(im)
         box.appendChild(stage1)
-        liveLayer(stage1, live.src, got.shots).show(0)
+        const one = liveLayer(stage1, live.src, got.shots, function (i, p) { if (cell._onPhase) cell._onPhase(i, p) })
+        one.show(0)
+        cell._phaseNow = one.phase
       } else box.appendChild(im)
       fig.appendChild(box)
       strip.appendChild(fig)
@@ -2583,7 +2613,6 @@ const B = window.__BOARD__ || {}
       // builder has already pointed at the dir it lives in — and it is here before the first paint,
       // so a replica never flashes its fallback stack on the way to its own type.
       const want = { faces: Promise.resolve((BD.faces || {})[facesPath] || ''), lay: repJson(layPath) }
-      let cur = -1
       let seq = 0
       // AN HONEST BLANK, NEVER THE NEIGHBOUR'S PICTURE (the review's C3, 2026-09-04). A moment whose
       // harvest landed no replica — a byte budget, a timeout, a beat with no skeleton to gate
@@ -2642,12 +2671,12 @@ const B = window.__BOARD__ || {}
         // comment above says it closed.
         const mine = ++seq
         const sh = shots[j]
-        if (!sh || !sh.rep) { fr.dataset.repmoment = String(j); blank('no Expected for this moment'); return }
+        if (!sh || !sh.rep) { fr.dataset.reppic = String(j); blank('no Expected for this moment'); return }
         Promise.all([repFetch(sh.rep), want.faces, want.lay]).then(function (got) {
           if (mine !== seq || !fr.isConnected) return    // a later step won the race, or the reader closed
           const body = repBody(got[0])
           if (!body) {
-            fr.dataset.repmoment = String(j)
+            fr.dataset.reppic = String(j)
             fr.dataset.repgone = '1'
             blank('no Expected for this moment — the committed picture would not read')
             return
@@ -2693,7 +2722,7 @@ const B = window.__BOARD__ || {}
             // index rather than against a tween.
             fr.dataset.repside = sh.repSide
             fr.dataset.repsrc = sh.rep
-            fr.dataset.repmoment = String(j)
+            fr.dataset.reppic = String(j)
           }
           // THE GRAFT (phase 8, 2026-09-05): the Expected of a moment is the beat's BASE — the whole
           // page as the beat found it — with this moment's PATCH standing where its own scene root
@@ -2758,12 +2787,62 @@ const B = window.__BOARD__ || {}
             fr.dataset.repbase = sh.base
             fr.dataset.repside = sh.repSide
             fr.dataset.repsrc = sh.rep
-            fr.dataset.repmoment = String(j)
+            fr.dataset.reppic = String(j)
           }
         })
       }
       for (const sh of shots) if (sh.rep) repFetch(sh.rep)      // prefetch the row, once
-      fr._step = function (j) { if (j === cur) return; cur = j; paint(j) }
+      // THE BEAT'S OWN BASE, ALONE — the state a beat's FIRST moment approaches from (2026-09-07).
+      // The Given as the run found it, body-rooted, one blob shared by every beat that opens on that
+      // page (phase 8); painted whole, the way paintLone paints a body-rooted picture, so it stands
+      // on the same page the moment's own graft will stand on. A beat with no base keeps the
+      // moment's own picture through the approach — no start state is invented (rule 3).
+      const paintBase = function (j) {
+        const mine = ++seq
+        const sh = shots[j]
+        const base = sh && sh.base
+        if (!base) { paint(j); return }
+        Promise.all([repFetch(base), want.faces]).then(function (got) {
+          if (mine !== seq || !fr.isConnected) return
+          const text = got[0]
+          const body = repBody(text)
+          if (!body) { paint(j); return }
+          const sc = repScroll(text)
+          const whole = !repAttr(text, 'data-replica-path')
+          const ring = repRect(text, 'data-ring-box')
+          const stood = repStand({ whole: whole, region: repRect(text, 'data-replica-region'), scroll: sc, moment: sc }) ||
+            { x: 0, y: 0, w: vp.vw, h: vp.vh }
+          show(repSrcdoc({ body: body, faces: got[1] || '', plates: [], region: stood, ring: ring, ok: true, vw: vp.vw, vh: vp.vh }),
+            { seq: mine, ns: repAttr(text, 'data-replica-ns'), ring: ring, stood: stood })
+          fr.dataset.repbase = base
+          fr.dataset.repside = 'expected'
+          fr.dataset.repsrc = base
+          fr.dataset.reppic = 'base'
+        })
+      }
+      // WHICH PICTURE THIS CELL PAINTS IS A QUESTION OF PHASE (the human, 2026-09-07: "Now the
+      // expected column never moved"). The Actual's film is the APPROACH to moment j — the app on its
+      // way there from where moment j−1 left it — so while it runs this cell shows THAT state: the
+      // previous moment's own Expected, or the beat's base for the first. When the film stands down
+      // and the moment's own still stands, this cell shows the moment's own Expected: the pair of that
+      // still. Two pictures a moment, on both columns, at the same two instants. A cell that is
+      // stepped with no film (step mode, or no recording) has only the second, exactly as before.
+      // `data-repmoment` says which moment the row is on and `data-repphase` which phase; `reppic`
+      // which picture is painted (an index, or `base`); `repsrc` keeps naming the painted file.
+      let picAt = null
+      fr._phase = function (j, ph) {
+        fr.dataset.repmoment = String(j)
+        fr.dataset.repphase = ph
+        const start = ph === 'approach'
+        const t = start ? j - 1 : j
+        if (start && t < 0) {
+          if (picAt === 'base') return
+          picAt = 'base'; paintBase(j); return
+        }
+        if (picAt === t) return
+        picAt = t; paint(t)
+      }
+      fr._step = function (j) { fr._phase(j, 'rest') }
       fr._aimScene = function (rect, card, animate) { box._aim(rect || null, card || null, animate) }
       fr._step(0)
       return fr
@@ -2991,10 +3070,25 @@ const B = window.__BOARD__ || {}
             said.forEach(function (p, k) { underlineIn(p.el, p.html, k === hit ? rng : null) })
           }
           rowEl._showMoment = showMoment
-          if (pc._stepper) {
-            pc._stepper._onFrame = function (j) { if (fc._step) fc._step(j); showMoment(j, true) }
+          // …AND THE PHASE (2026-09-07). The live layer says `approach` when a moment's film opens on
+          // its start state and `rest` when the moment's own still stands; a cell with no film says
+          // `rest` on every step. The Expected paints the start state or the moment from it, and both
+          // chips drop or carry their value line from it — one source, so the two columns and their
+          // captions can never be on different beats of the same moment.
+          const onPhase = function (j, ph) {
+            rowEl.dataset.phase = ph
+            if (fc._phase) fc._phase(j, ph)
+            if (pc._chips && pc._chips._phase) pc._chips._phase(ph)
+            if (fc._chips && fc._chips._phase) fc._chips._phase(ph)
           }
-          showMoment(pc._stepper ? pc._stepper._cur() : 0, false)
+          if (pc._stepper) {
+            pc._stepper._onFrame = function (j) { showMoment(j, true) }
+            pc._stepper._onPhase = onPhase
+          } else pc._onPhase = onPhase
+          const j0 = pc._stepper ? pc._stepper._cur() : 0
+          showMoment(j0, false)
+          // the first show() ran before this wiring existed, so its phase is asked for, not waited on
+          onPhase(j0, pc._stepper ? pc._stepper._phaseNow() : (pc._phaseNow ? pc._phaseNow() : 'rest'))
         }
         // the row's own strip and the ← → keys (targeting the SELECTED row) drive the walk; clicking
         // anywhere on the row SELECTS it (the human, 2026-09-02: "make clear which when/then is

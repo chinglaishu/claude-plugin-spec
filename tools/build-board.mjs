@@ -2318,22 +2318,15 @@ export function build () {
      5.50:1, --koke on --paper 7.02:1. */
   .pcbox .pcchips { position:absolute; left:0; top:0; right:0; bottom:0; z-index:3;
     pointer-events:none; }
-  /* ONE EXPLANATION AT ANY INSTANT (the human, 2026-09-07: "for semi-auto and step, it have multiple
-     explaining text box in actual column (looks like auto and step overlapping or what)"). The chip
-     is a claim about a MOMENT — R20's own words put it "over the photograph" — and while the film is
-     running the photograph is not what the cell is showing: the approach is, carrying the app's own
-     burned callout (board R10's canon, painted on the page by spec/_base.ts renderOverlay and kept
-     by the recording even though every STILL hides it). Two boxes on one picture, saying two
-     different things about two different instants. So the chip steps aside for exactly as long as
-     the film runs and is back the moment the still stands — see liveLayer's \`filming\`.
-     OPACITY, not visibility or display, and deliberately: the chip's WORDS are the row's claim and
-     several of the board's own legs read them (proveVisible reads innerText, which a
-     visibility:hidden element answers empty), so what steps aside is the PAINT. The pointer goes
-     with it — an invisible thing must not be hoverable — and the fade is short enough to read as
-     the picture changing rather than as a control blinking. */
-  .pcbox .pcchips { transition:opacity 180ms linear; }
-  .pcbox.filming .pcchips { opacity:0; transition:opacity 60ms linear; }
-  .pcbox.filming .pchip { pointer-events:none; }
+  /* THE SAME BOX IN EVERY MODE, VERBATIM (the human, 2026-09-07: "the explaining text box in
+     semi-auto should same as the one in step" — and, offered the value line waiting for the picture,
+     "verbatim seems better"). 0.48.5 faded the chip out while the film ran, so a reader saw the
+     burned card in semi-auto and the chip in step — two different boxes for one moment — and on the
+     first loop the fade never even engaged (the class was looked up through a .pcbox the detached
+     reader did not have yet). The chip now stays on the picture in every mode and every phase with
+     every line it has; the phase still rides the layer as .approach (client.js chipLayer._phase),
+     a readout and nothing more. The burned card that used to sit under it is gone from the
+     recording by the same ruling (spec/_base.ts renderOverlay). */
   /* THE CHIP IS A REAL CONTROL (2026-09-04, the review's I1). It is a real button element, not a
      div: a long value still clamps, so the only way to read the whole of it is the tooltip, and a
      tooltip a keyboard cannot reach is a tooltip half the readers do not have. A

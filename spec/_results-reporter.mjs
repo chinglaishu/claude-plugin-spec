@@ -365,6 +365,7 @@ export async function harvestEvidence (harvest, ranAt) {
             // yields neither, and the board falls back to a generic name and equal holds.
             const meta = valueMeta(parsed)
             if (typeof meta.at === 'number') got.at = meta.at
+            if (typeof meta.open === 'number') got.open = meta.open
             if (meta.label) got.label = meta.label
             // …and the CLAIM it made (the human, 2026-09-02): what the assertion asked for beside
             // what the page gave it. The Expected shows the intended value on a moment the app
@@ -768,6 +769,16 @@ export default class ResultsIndexReporter {
         writeFileSync(join(process.env.BOARD_RECORD, 'shots.json'), JSON.stringify(shotsByTest))
       } catch (err) { console.error('shots manifest write failed:', err) }
     }
+    // THE FOLD REBUILDS THE BOARD IT JUST CHANGED (2026-09-07). board.html is a generated file and the
+    // server's watcher rebuilds it on spec/ changes — which fires at globalTeardown (the state guard's
+    // snapshot under spec/), BEFORE this fold has landed its rows, and never again. Measured on
+    // demo/todo after a CLI harvest: the page named the recording this very fold had just collected
+    // (gcBlobs retains a blob only while a row names it), so every film was dead until a manual
+    // rebuild. The fold owns the rows, so the fold rebuilds — in a child process (the module cache
+    // trap, tools/serve-board.mjs), best-effort, after everything above has landed.
+    try {
+      execFileSync(process.execPath, [join(ROOT, 'tools/build-board.mjs')], { cwd: ROOT, stdio: 'ignore', timeout: 120000 })
+    } catch (err) { console.error('board rebuild after the fold failed:', err && err.message) }
   }
 
   // THE RAW JSON REPORT BECOMES A ROW (the data home, 2026-09-05/06). Playwright's json reporter can

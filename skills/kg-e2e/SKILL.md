@@ -206,10 +206,15 @@ way. Read it before writing your first one.
    **EACH STEP IS LIVE ACTION — the Actual plays the recording slice, so the When must be PERFORMED**
    *(2026-09-06 — the human: "i expect each small step could be gif / live-action (like within a small
    step, really see the text input being change)")*. Every harvest records now, and the fold files
-   beside each moment the span of that recording which **ends on it** — from the previous moment's
-   anchor (or the beat's window start, where the When begins) to its own, plus a short settle. The
-   ACTUAL cell plays that span, looping while the moment is parked; the still stays underneath as the
-   fallback, as what `npm run proof mirror` composes against, and as what the lightbox opens.
+   beside each moment the span of that recording which **ends on it** — opening where the moment's
+   ACTION begins (the end of the last wait the harness owned before it: the previous moment's
+   capture, a `reveal` hold, the post-check hold — stamped as `open`, 2026-09-07) and ending on the
+   instant the check read the value. The reader plays a moment as **three beats on BOTH columns**:
+   a LEAD on the start state (the Expected shows the state the approach leaves — the previous
+   moment's, or the beat's base), the approach itself, then the moment's own still for a REST — so
+   the pause a person needs to observe is the reader's, not something to author into the beat. The
+   still stays underneath as the fallback, as what `npm run proof mirror` composes against, and as
+   what the lightbox opens.
    **What this asks of you as an author:**
    - **A When that types must TYPE.** `fill()` sets a value in one frame — on video the text
      teleports and the moment "You typed the task" is a still wearing a video's clothes. Use
@@ -218,7 +223,9 @@ way. Read it before writing your first one.
      pace is one knob, `BOARD_TYPE_DELAY_MS` (default 55 ms a key; 0 turns it off).
    - **Put an `actPause()` after a click whose effect the next moment is about** — the tick, the
      press, the double-click — so the recording carries the frames in which the app responds rather
-     than cutting straight to the assertion.
+     than cutting straight to the assertion. That pause is part of the ACTION and stays in the film;
+     do NOT pad a beat with waits BEFORE a gesture to "let the reader see" — the lead and the rest
+     are the reader's, and a wait the harness does not own is filmed as frozen page.
    - **Fixture setup keeps `fill()`.** Seeding a page, signing in and arranging a fixture are
      plumbing nobody watches; the pace belongs in the When's own gestures and nowhere else.
    - **Nothing is invented.** A harvest with no recording, or a beat whose window and offsets the fold
