@@ -2318,6 +2318,22 @@ export function build () {
      5.50:1, --koke on --paper 7.02:1. */
   .pcbox .pcchips { position:absolute; left:0; top:0; right:0; bottom:0; z-index:3;
     pointer-events:none; }
+  /* ONE EXPLANATION AT ANY INSTANT (the human, 2026-09-07: "for semi-auto and step, it have multiple
+     explaining text box in actual column (looks like auto and step overlapping or what)"). The chip
+     is a claim about a MOMENT — R20's own words put it "over the photograph" — and while the film is
+     running the photograph is not what the cell is showing: the approach is, carrying the app's own
+     burned callout (board R10's canon, painted on the page by spec/_base.ts renderOverlay and kept
+     by the recording even though every STILL hides it). Two boxes on one picture, saying two
+     different things about two different instants. So the chip steps aside for exactly as long as
+     the film runs and is back the moment the still stands — see liveLayer's \`filming\`.
+     OPACITY, not visibility or display, and deliberately: the chip's WORDS are the row's claim and
+     several of the board's own legs read them (proveVisible reads innerText, which a
+     visibility:hidden element answers empty), so what steps aside is the PAINT. The pointer goes
+     with it — an invisible thing must not be hoverable — and the fade is short enough to read as
+     the picture changing rather than as a control blinking. */
+  .pcbox .pcchips { transition:opacity 180ms linear; }
+  .pcbox.filming .pcchips { opacity:0; transition:opacity 60ms linear; }
+  .pcbox.filming .pchip { pointer-events:none; }
   /* THE CHIP IS A REAL CONTROL (2026-09-04, the review's I1). It is a real button element, not a
      div: a long value still clamps, so the only way to read the whole of it is the tooltip, and a
      tooltip a keyboard cannot reach is a tooltip half the readers do not have. A

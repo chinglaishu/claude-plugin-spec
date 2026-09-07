@@ -2313,6 +2313,54 @@ test('The proof plays itself — semi-auto is the default, no dots/counter/toggl
       'in step nothing in the Actual column is playing').toBe(true)
     }
 
+    // ── THE FILM IS THE APPROACH; THE MOMENT IS THE STILL ────────────────────────────────────────
+    // Two bugs the human reported on the live board, 2026-09-07, and one rule that closes both:
+    //
+    //   "for semi-auto and step, it have multiple explaining text box in actual column (looks like
+    //    auto and step overlapping or what)" — the RECORDING carries the app's own burned callout
+    //    (board R10's canon; every STILL hides it, spec/_base.ts snapEvidence, but the film cannot),
+    //    and the reader drew its own chip on top of it. Two boxes, saying two different things about
+    //    two different instants, on one picture.
+    //
+    //   "For auto and semi-auto, it only moving on the actual, but i expect both side always sync to
+    //    be comparable" — a moment's slice ENDS on the instant the check read its value, so the film
+    //    is the APPROACH; semi-auto looped it forever and never showed the moment at all. Measured on
+    //    demo/todo R1 beat 1 moment 3/6 at 0.48.4: twelve seconds of semi-auto with the film on and
+    //    never once paused, the Actual a page scrolled a row off the Expected — the new row it claims
+    //    not even on screen — under a chip reading `ACTUAL ✓ empty`.
+    //
+    // So: the slice plays, then the layer STANDS DOWN and the moment's own photograph stands — the
+    // picture the Expected replica is the pair of — with the chip (R20's own "over the photograph")
+    // back on it. semi-auto rests there and replays; auto rests there and lets the ROW advance.
+    await tools.locator('.medbar.pmode button[data-mode="semi"]').click()
+    if (await row.locator('video.pclive').count()) {
+      const filmBox = cell.locator('.pcbox.pcplay')
+      // ONE READING, TAKEN AT ONE INSTANT. The loop alternates every second or so, so asking two
+      // questions in two calls would compare two different instants of it — the very drift this
+      // whole row exists to refuse. The film's state and the chip's PAINT are read together, and
+      // each of the two states the loop must have is polled for as one string.
+      // (The paint is what steps aside, never `visibility` or `display`: the chip's WORDS are the
+      // row's claim and other legs read them with proveVisible, which reads innerText.)
+      const shot = () => filmBox.evaluate((box: HTMLElement) => {
+        const v = box.querySelector('video.pclive') as HTMLVideoElement
+        const c = box.querySelector('.pcchips') as HTMLElement
+        const on = !!v && !v.paused && v.classList.contains('on')
+        const chip = c && Number(getComputedStyle(c).opacity) > 0.5 ? 'chip' : 'no chip'
+        return (on ? 'film' : 'still') + ' · ' + chip + ' · ' + (box.classList.contains('filming') ? 'filming' : 'rested')
+      })
+      // while the approach runs, the burned callout inside the film is the explanation and the
+      // reader's chip steps aside
+      await expect.poll(shot, { timeout: 15000, message: 'semi-auto plays the moment on show, and its chip steps off the approach' })
+        .toBe('film · no chip · filming')
+      // …and when the approach runs out the film stands down: the moment's own photograph — the
+      // picture the Expected replica is the pair of — stands, with the chip back over it
+      await expect.poll(shot, { timeout: 15000, message: 'the film stood down and the moment’s own still stands, chip and all' })
+        .toBe('still · chip · rested')
+      await expect(row.locator('.pcchips.actual .pchip'), 'and exactly one of it').toHaveCount(1)
+      await expect(row.locator('.pcchips.expected .pchip'), 'one on the Expected too, never two').toHaveCount(1)
+    }
+    await tools.locator('.medbar.pmode button[data-mode="step"]').click()
+
     // WALKED BY HAND in step: the › advances the SELECTED row's two cells by exactly one moment,
     // and the strip PAINTS the moment on show — the current segment is the one the frames are at
     const posText = () => tour.locator('.mpos').textContent()
@@ -2343,6 +2391,19 @@ test('The proof plays itself — semi-auto is the default, no dots/counter/toggl
     await spd.selectOption('4')
     const at = await posText()
     await expect.poll(posText, { timeout: 15000 }).not.toBe(at)
+    // …AND THE EXPECTED CELL RENDERS THE MOMENT IT MOVED TO, on a TIMED advance and not only on a
+    // click (the human, 2026-09-07: "i expect both side always sync to be comparable"). The segment
+    // click above reads `data-repsrc`, which is the cell NAMING its picture; this reads the composed
+    // page the iframe actually rendered, because an attribute that moved over a document that did
+    // not would be exactly the drift a name cannot catch. (Not red at 0.48.4 — measured on demo/todo
+    // R1, the srcdoc swapped 9ms behind each advance — so this is a REGRESSION PIN on the seam the
+    // human's report pointed at, kept honest rather than claimed as a fix.)
+    const repDoc = () => row.locator('.sbframe iframe').evaluate((f: HTMLIFrameElement) => {
+      const d = f.contentDocument
+      return d && d.body ? d.body.innerHTML.length + '|' + (d.body.textContent || '').replace(/\s+/g, ' ').slice(0, 120) : ''
+    })
+    const doc0 = await repDoc()
+    await expect.poll(repDoc, { timeout: 20000, message: 'the Expected cell RENDERED the new moment, not merely named it' }).not.toBe(doc0)
 
     // FRAMED ON THE COMPONENT (both cells), and the whole frame is the LIGHTBOX a proof click opens —
     // there is no inline toggle to press

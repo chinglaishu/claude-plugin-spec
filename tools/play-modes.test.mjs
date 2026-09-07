@@ -34,7 +34,7 @@ const modes = (() => {
   return new Function(body + '; return { MODES, normMode, livePlan, sliceMsOf }')()
 })()
 const { MODES, normMode, livePlan, sliceMsOf } = modes
-const { modeHold, scaleHold } = globalThis.SBStepper
+const { modeHold, scaleHold, filmEnd, REST } = globalThis.SBStepper
 
 // ── the three stops ──────────────────────────────────────────────────────────────────────────────
 
@@ -107,9 +107,55 @@ test('only AUTO is wound: semi-auto and step schedule nothing at all', () => {
 
 test('AUTO waits for the LONGER of the still’s hold and the moment’s own action', () => {
   // a 1535ms slice under a 500ms hold: cutting at 500 would chop the gesture mid-type
-  assert.equal(modeHold('auto', 500, 1535, 1), 1535 + 200)
+  assert.equal(modeHold('auto', 500, 1535, 1), 1535 + REST)
   // …and a moment with a long hold and a short slice keeps its hold
   assert.equal(modeHold('auto', 3000, 400, 1), 3000)
+})
+
+// ── THE FILM IS THE APPROACH; THE MOMENT IS THE STILL ────────────────────────────────────────────
+// (the human, 2026-09-07: "For auto and semi-auto, it only moving on the actual, but i expect both
+// side always sync to be comparable".) Measured on demo/todo R1 beat 1, moment 3 of 6, in semi-auto:
+// at ct 6.18 s the ACTUAL was a page scrolled one row off the Expected — the new row it claims is
+// not even on screen — while the chip over it still read `ACTUAL ✓ empty`. A moment's slice ENDS on
+// the instant the check read the value, so everything before that end is the APPROACH: the app on
+// its way to the moment, not the moment. The still beside it IS the moment, and it is the picture
+// the Expected replica is the pair of.
+//
+// So the film stands down when its slice runs out, in every playing mode, and the moment's own
+// photograph stands. What differs is only what happens next: semi-auto rests there and replays the
+// approach; auto rests there and lets the ROW move on (one clock, still).
+test('when the film reaches the end of its slice it stands down — the still IS the moment', () => {
+  for (const m of ['auto', 'semi', 'step']) {
+    assert.equal(filmEnd(m, 1).show, false, m + ' left the film standing over its own moment')
+  }
+})
+
+test('SEMI-AUTO rests on the still, then replays the approach — that rest IS the loop’s pause', () => {
+  assert.equal(filmEnd('semi', 1).replayIn, REST)
+})
+
+test('AUTO never replays: the rest is the row’s clock (modeHold), so a row still has ONE clock', () => {
+  assert.equal(filmEnd('auto', 1).replayIn, null)
+  assert.equal(filmEnd('step', 1).replayIn, null)
+  assert.equal(filmEnd('gif', 1).replayIn, null)     // an unknown mode never starts a replay timer
+})
+
+test('the reader’s speed rates the rest, like every other hold', () => {
+  assert.equal(filmEnd('semi', 4).replayIn, scaleHold(REST, 4))
+  assert.equal(filmEnd('semi', 0.25).replayIn, scaleHold(REST, 0.25))
+})
+
+test('the REST is readable — long enough to compare the two columns, not a flash', () => {
+  // 200ms (the tail this replaced) is a blink: the still it uncovers is the ONLY frame of the beat
+  // the Expected can be compared against, so it has to be readable at 1×.
+  assert.ok(REST >= 600, 'the rest on the still is a beat a person can read: ' + REST)
+})
+
+test('AUTO holds a moment for its film AND that same rest — never 200ms after the gesture', () => {
+  // the still stands from the film's end to the advance, and that gap is the rest at the reader's
+  // speed however long the film ran
+  assert.ok(modeHold('auto', 500, 1535, 1) - 1535 >= REST)
+  assert.ok(modeHold('auto', 500, 1535, 4) - scaleHold(1535, 4) >= scaleHold(REST, 4))
 })
 
 test('a moment with no slice advances on its still’s hold alone', () => {
@@ -119,10 +165,10 @@ test('a moment with no slice advances on its still’s hold alone', () => {
 
 test('the reader’s speed rates BOTH halves of that answer', () => {
   // 4×: the hold and the slice compress together, so a fast reader still sees the whole action
-  assert.equal(modeHold('auto', 500, 1535, 4), scaleHold(1535, 4) + scaleHold(200, 4))
+  assert.equal(modeHold('auto', 500, 1535, 4), scaleHold(1535, 4) + scaleHold(REST, 4))
   assert.equal(modeHold('auto', 8000, 400, 4), scaleHold(8000, 4))
   // 0.25×: both stretch
-  assert.equal(modeHold('auto', 500, 1535, 0.25), scaleHold(1535, 0.25) + scaleHold(200, 0.25))
+  assert.equal(modeHold('auto', 500, 1535, 0.25), scaleHold(1535, 0.25) + scaleHold(REST, 0.25))
 })
 
 test('a very long slice cannot park the row forever — the auto hold is capped', () => {

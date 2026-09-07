@@ -346,7 +346,29 @@ change.
   too (`livePlan`, `tools/play-modes.test.mjs`) — it did not, which is why a held reader used to show
   a still Expected beside a looping Actual. Only auto is on a timer, and it advances when the moment
   is DONE: `SBStepper.modeHold` — the longer of the still's hold and the moment's slice, at the
-  reader's speed. *(This paragraph said the cell "ALWAYS loops"; corrected in place, rule 6.)* The **asserted-value frames
+  reader's speed. *(This paragraph said the cell "ALWAYS loops"; corrected in place, rule 6.)*
+  **AND THE FILM IS THE APPROACH; THE MOMENT IS THE STILL** (the human, 2026-09-07, on 0.48.4: "For
+  auto and semi-auto, it only moving on the actual, but i expect both side always sync to be
+  comparable" — and, on the same board, "for semi-auto and step, it have multiple explaining text box
+  in actual column (looks like auto and step overlapping or what)"). A moment's slice ENDS on the
+  instant the check read its value, so everything before that end is the app on its WAY to the
+  moment: semi-auto looped that approach forever and never showed the moment at all — measured on
+  demo/todo R1 b1 moment 3/6, twelve seconds with the film on and never once paused, the Actual a
+  page scrolled a row off the Expected (the row it claims not even on screen) under a chip reading
+  `ACTUAL ✓ empty`. So the film now STANDS DOWN when its slice runs out (`SBStepper.filmEnd`,
+  `liveLayer`) and the moment's own photograph — the picture the Expected replica is the pair of,
+  the one the compose gate answers for and the lightbox opens — stands, for a readable `REST`
+  (900 ms at 1×, rated by the reader's speed like every hold). Semi-auto rests there and replays the
+  approach; auto rests there and lets the ROW advance (`modeHold` spends the same REST, where a
+  200 ms `tail` used to make the still a blink) — one clock, still. And **the chip steps aside for
+  exactly as long as the film runs** (`.pcbox.filming`, the paint only — the words stay readable
+  because other legs assert them): the RECORDING carries the app's own burned callout (board R10's
+  canon; every STILL hides it, `snapEvidence`, but a film cannot), and R20's chip is a claim "over
+  the photograph" — so two boxes stood on one picture saying different things about different
+  instants. The burned card explains the approach, the chip explains the moment, and never both at
+  once. *(Both rules are reader-side: no re-harvest, and neither requirement's text changed — the
+  R10 × R20 collision is resolved by reading R20's chip as belonging to the photograph it captions.
+  If the human wants that written into R20's prose, that is theirs to write.)* The **asserted-value frames
   are real since 2026-08-29** (the human: the When must be visible in the proof, not only the Then —
   a box carrying what was typed is empty in the before frame and cleared again by the after one):
   every `proveVisible` inside a `checkReq` photographs the page with its ring on, files the frame
@@ -445,9 +467,13 @@ change.
   value, or anchors that disagree with the window yields NOTHING and the row keeps its still (rule 3).
   **(3)** The reader's ACTUAL cell stacks one muted, inert `<video class="camsub pclive">` in the same
   `.fsteps` grid cell as the frames — so the ONE camera transforms it with everything else — seeks it
-  to the moment's slice, plays to the slice's end and loops there while the moment is parked
-  (`sliceOf`/`liveLayer`, tools/board/client.js; `pointer-events:none`, because a click on a proof
-  opens the lightbox on the FRAME, which is the evidence). The reader-wide speed dropdown drives it
+  to the moment's slice and plays to the slice's end — where it STANDS DOWN and the moment's own
+  still takes the cell back (`sliceOf`/`filmEnd`/`liveLayer`, tools/board/client.js;
+  `pointer-events:none`, because a click on a proof
+  opens the lightbox on the FRAME, which is the evidence). *(It used to LOOP there instead, which is
+  what the human's 2026-09-07 "both side always sync to be comparable" report was: the approach on
+  repeat is never the moment. Corrected in place, rule 6 — see the play-mode paragraph above.)*
+  The reader-wide speed dropdown drives it
   through `playbackRate`. The still underneath is the fallback, the subject of `npm run proof mirror`,
   and what the lightbox opens — **stills are still captured for every moment and nothing may stop
   capturing them.** Two consequences that cost time to find: **the committed recording is a REMUX

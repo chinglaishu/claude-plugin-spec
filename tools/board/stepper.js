@@ -68,16 +68,42 @@
   // `sliceMs` is 0/absent for a moment with no recorded slice — an old harvest, or the Expected
   // column, which has no recording and whose "playing" IS the stepping. Nothing is invented there:
   // the hold stands alone.
+  //
+  // THE REST — the beat the moment's own STILL stands, alone, after its film has run (the human,
+  // 2026-09-07: "For auto and semi-auto, it only moving on the actual, but i expect both side always
+  // sync to be comparable"). A moment's slice ENDS on the instant the check read its value, so the
+  // film is the APPROACH and the still is the moment; the two columns are comparable only while that
+  // still is what the Actual shows. This was a 200ms `tail` — a blink, and the human's report is
+  // exactly what a blink looks like. It is one number because BOTH clocks spend it: auto rests here
+  // before the row advances, and semi-auto rests here before the approach replays (filmEnd).
+  var REST = 900
   function modeHold (mode, hold, sliceMs, speed, opts) {
     if (mode !== 'auto') return null
     var o = opts || {}
-    var tail = o.tail != null ? o.tail : 200
+    var rest = o.rest != null ? o.rest : REST
     var cap = o.max != null ? o.max : 15000
     var h = scaleHold(hold, speed)
     var s = (typeof sliceMs === 'number' && isFinite(sliceMs) && sliceMs > 0)
-      ? scaleHold(sliceMs, speed) + scaleHold(tail, speed)
+      ? scaleHold(sliceMs, speed) + scaleHold(rest, speed)
       : 0
     return Math.min(cap, Math.max(h, s))
+  }
+
+  // WHAT THE FILM DOES WHEN ITS SLICE RUNS OUT, in each mode. It STANDS DOWN in every one of them —
+  // the moment's own photograph is stacked under it, it is the picture the Expected replica is the
+  // pair of, it is what the compose gate answers for and what the lightbox opens, so it is what a
+  // parked moment must show. Only what happens NEXT differs:
+  //   semi — rest on the still, then replay the approach. That rest IS the loop's pause; without it
+  //          the film ran back to the previous state and the chip over it claimed a value the
+  //          picture no longer showed.
+  //   auto — rest on the still and stand down for good: the ADVANCE is the row's one clock
+  //          (modeHold above), never a second timer inside the picture.
+  //   step — nothing was playing (livePlan), so nothing rests or replays.
+  // Pure, and lifted by tools/play-modes.test.mjs beside the clock it shares its REST with.
+  function filmEnd (mode, speed, opts) {
+    var o = opts || {}
+    var rest = o.rest != null ? o.rest : REST
+    return { show: false, replayIn: mode === 'semi' ? scaleHold(rest, speed) : null }
   }
 
   // THE CAMERA'S GLIDE (the human, 2026-08-31: "make the transition to the next small step in the
@@ -273,6 +299,8 @@
     stepperHolds: stepperHolds,
     scaleHold: scaleHold,
     modeHold: modeHold,
+    filmEnd: filmEnd,
+    REST: REST,
     cameraDur: cameraDur,
     cameraView: cameraView,
     cameraCss: cameraCss,

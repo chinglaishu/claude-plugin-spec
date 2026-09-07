@@ -1746,11 +1746,51 @@ const B = window.__BOARD__ || {}
     let raf = 0
     // what this layer is allowed to do at this moment, in this mode — livePlan above is the rule
     let plan = { show: false, play: false, loop: false }
+    // …and whether the approach has already run: while the layer RESTS, the moment's own still is
+    // what the cell shows (see standDown), and nothing here may put the film back over it until the
+    // rest is up or the moment changes.
+    let resting = false
+    let restT = 0
+    const unrest = function () { if (restT) { clearTimeout(restT); restT = 0 } resting = false }
+    // THE CELL SAYS WHEN IT IS FILMING, so the chip over it can step aside (the human, 2026-09-07:
+    // "it have multiple explaining text box in actual column"). The recording carries the app's OWN
+    // burned callout — board R10's canon, "a callout burned into the recording … carries the
+    // requirement's id chip beside the ONE line that scene is proving" — so while the film runs there
+    // is already an explanation on the picture, and the reader's chip beside it was a second one.
+    // R20's chip belongs to the PHOTOGRAPH ("`ACTUAL ✓ "…"` over the photograph"), and the photograph
+    // is exactly what is NOT on show while the approach plays: one explanation at any instant, the
+    // burned card while it moves and the moment's own chip the moment it rests. The class rides the
+    // .pcbox because that is the box both the film and the chip layer live in.
+    const filming = function (on) {
+      const box = stage.closest ? stage.closest('.pcbox') : null
+      if (box) box.classList.toggle('filming', !!on)
+    }
     const play = function () {
       const p = vid.play()
       if (p && p.catch) p.catch(function () { /* autoplay refused, or no decoder — the still stands */ })
     }
     const rewind = function () { try { vid.currentTime = cur.from } catch (e) { /* not seekable yet */ } }
+    // THE FILM IS THE APPROACH; THE MOMENT IS THE STILL. Its slice ends on the instant the check read
+    // the value, so when it runs out the layer steps off and the moment's own photograph — the thing
+    // the Expected replica beside it is the pair of — stands. Only what comes next differs by mode
+    // (SBStepper.filmEnd): semi-auto rests and replays the approach; auto rests and leaves the
+    // advance to the row's one clock.
+    const standDown = function () {
+      if (restT) { clearTimeout(restT); restT = 0 }
+      resting = true
+      const how = window.SBStepper.filmEnd(PLAY_MODE, PLAY_SPD)
+      vid.classList.toggle('on', !!how.show)
+      filming(false)
+      disarm()
+      try { vid.pause() } catch (e) { /* nothing playing */ }
+      if (how.replayIn == null) return
+      restT = setTimeout(function () {
+        restT = 0
+        if (!vid.isConnected || !cur) return
+        resting = false
+        apply()
+      }, how.replayIn)
+    }
     // LOOP INSIDE THE SLICE, never past it: a moment that ran off its own end would show the NEXT
     // moment's action under this moment's chip — a picture claiming to be one thing while showing
     // another, which is the whole class of drift the row exists to refuse. `timeupdate` fires about
@@ -1766,20 +1806,18 @@ const B = window.__BOARD__ || {}
     let starts = 0
     const watch = function () {
       raf = 0
-      if (!cur || !plan.play) return       // held (step), or this moment has no slice — nothing to watch
+      if (!cur || !plan.play || resting) return   // held (step), resting on the still, or no slice
       if (vid.isConnected) {
         waited = 0
         if (vid.currentTime < cur.from - 0.25) rewind()
         else if (vid.currentTime >= cur.to) {
-          if (plan.loop) rewind()
-          else {
-            // AUTO: the action has played once. It HOLDS its last frame here and the watcher stands
-            // down — moving on is the row's stepper's job (SBStepper.modeHold gives it the longer of
-            // the still's hold and this slice), so the row still has exactly ONE clock and the two
-            // columns cannot advance at different instants.
-            try { vid.pause() } catch (e) { /* nothing playing */ }
-            return
-          }
+          // THE APPROACH HAS RUN. The film steps off and the moment's own photograph stands — in
+          // EVERY playing mode, because that still is the picture the Expected cell is the pair of
+          // and the only one the two columns can be compared on. semi-auto replays after its rest;
+          // auto leaves the advance to the row's one clock (SBStepper.modeHold), so the two columns
+          // can never move at different instants.
+          standDown()
+          return
         }
         // `play()` clears `paused` synchronously, so this is one call per genuine stall, not per
         // frame — and it is capped, so a browser that will simply not play (no decoder left, an
@@ -1792,24 +1830,29 @@ const B = window.__BOARD__ || {}
     const arm = function () { if (!raf && window.requestAnimationFrame) raf = requestAnimationFrame(watch) }
     const disarm = function () { if (raf && window.cancelAnimationFrame) cancelAnimationFrame(raf); raf = 0 }
     vid.addEventListener('timeupdate', function () {
-      if (!cur || !plan.play) return
+      if (!cur || !plan.play || resting) return
       if (vid.currentTime < cur.from - 0.25) rewind()
-      else if (vid.currentTime >= cur.to && plan.loop) rewind()
+      else if (vid.currentTime >= cur.to) standDown()
     })
-    vid.addEventListener('ended', function () { if (cur && plan.loop) { rewind(); play() } })
+    vid.addEventListener('ended', function () { if (cur && plan.play && !resting) standDown() })
     // A RECORDING THAT WILL NOT LOAD IS NOT A PICTURE. The still is stacked underneath and an empty
     // <video> paints nothing, so the row already reads correctly — this just stops the layer trying
     // again on every moment of every beat once the source has failed.
     let dead = false
-    vid.addEventListener('error', function () { dead = true; cur = null; disarm(); vid.classList.remove('on') })
+    vid.addEventListener('error', function () {
+      dead = true; cur = null; unrest(); disarm(); vid.classList.remove('on'); filming(false)
+    })
     // …AND THE MODE DECIDES, every time (the human's 2026-09-07 bug report). One place recomputes the
     // plan from the reader's mode and the moment's slice, and it is called both when the moment
     // changes and when the mode does — so switching to step stops the film wherever it is, and
     // switching back re-starts it from this moment's own beginning, never mid-action.
     const apply = function () {
       if (dead) return
+      if (restT) { clearTimeout(restT); restT = 0 }
+      resting = false
       plan = livePlan(PLAY_MODE, !!cur)
       vid.classList.toggle('on', plan.show)
+      filming(plan.show)
       if (!plan.play) { disarm(); try { vid.pause() } catch (e) { /* nothing playing */ } return }
       rewind()
       vid.playbackRate = (PLAY_SPD > 0 ? PLAY_SPD : 1)
@@ -1820,11 +1863,11 @@ const B = window.__BOARD__ || {}
     const show = function (i) {
       if (dead) return
       cur = sliceOf(shots[i], src)
-      apply()
+      apply()                    // a NEW moment always starts from its own approach, never mid-rest
     }
     // a seek asked for before the metadata arrived is silently dropped by the element, so re-aim once
     // it is ready — otherwise the first moment plays from 0 and the row opens on the wrong action
-    vid.addEventListener('loadeddata', function () { if (cur && plan.play) { rewind(); play(); arm() } })
+    vid.addEventListener('loadeddata', function () { if (cur && plan.play && !resting) { rewind(); play(); arm() } })
     onSpd(vid, function (sp) { vid.playbackRate = (sp > 0 ? sp : 1) })
     onMode(vid, apply)
     // …AND ONLY THE ROWS A READER CAN SEE ARE DECODING. A requirement's reader builds EVERY beat row
@@ -1835,7 +1878,9 @@ const B = window.__BOARD__ || {}
     if (window.IntersectionObserver) {
       new IntersectionObserver(function (es) {
         for (const e of es) {
-          if (!cur || !plan.play) continue
+          // a RESTING moment is showing its still, which costs no decoder and is what an off-screen
+          // row should be left on anyway — coming back must not put the film over it again
+          if (!cur || !plan.play || resting) continue
           if (e.isIntersecting) { rewind(); play(); arm() } else { disarm(); try { vid.pause() } catch (x) { /* nothing playing */ } }
         }
       }, { rootMargin: '200px' }).observe(vid)
