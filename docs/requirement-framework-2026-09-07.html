@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The requirement framework — rules, examples, questions, worked on the todolist</title>
+<style>
+:root{--paper:#f6f2ea;--card:#fdfcf9;--ink:#2b2a27;--mute:#6f6a60;--line:#d9d2c3;--indigo:#3f4f7a;--indigo-tint:#e6eaee;--koke:#5b6b3c;--koke-tint:#eaece1;--bengara:#8a4a3c;--bengara-tint:#f2e8e4;--yamabuki:#8a6412;--yamabuki-tint:#f6eeda;--tint:#ecebe3}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 -apple-system,Helvetica,Arial,sans-serif;padding:36px 44px;max-width:1180px}
+h1{font-size:26px;margin:0 0 6px}
+h2{font-size:20px;margin:56px 0 6px;border-bottom:2px solid var(--ink);padding-bottom:8px}
+h2 .step{display:inline-block;background:var(--ink);color:var(--paper);border-radius:6px;padding:2px 12px;font-size:15px;margin-right:10px;vertical-align:2px}
+h3{font-size:16px;margin:26px 0 8px}
+.sub{color:var(--mute);margin:0 0 18px;font-size:15px}
+p{margin:8px 0;max-width:900px}
+.k{font:13px ui-monospace,Menlo,monospace;background:var(--tint);padding:1px 6px;border-radius:4px;white-space:nowrap}
+a{color:var(--indigo)}
+.hero{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px 28px;margin:20px 0;font-size:21px;line-height:1.5;max-width:none}
+.hero b{color:var(--indigo)}
+.note{border-left:4px solid var(--yamabuki);background:var(--yamabuki-tint);padding:10px 16px;border-radius:0 8px 8px 0;margin:14px 0;font-size:14.5px;max-width:900px}
+.rec{border-left:4px solid var(--koke);background:var(--koke-tint);padding:10px 16px;border-radius:0 8px 8px 0;margin:14px 0;font-size:15px;max-width:900px}
+.bad{border-left:4px solid var(--bengara);background:var(--bengara-tint);padding:10px 16px;border-radius:0 8px 8px 0;margin:14px 0;font-size:14.5px;max-width:900px}
+
+/* the flow */
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:18px 0}
+.flow .st{background:var(--card);border:2px solid var(--line);border-radius:10px;padding:12px 14px;position:relative}
+.flow .st.on{border-color:var(--indigo);background:var(--indigo-tint)}
+.flow .st .n{font-size:12px;color:var(--mute);font-weight:700;letter-spacing:.06em}
+.flow .st .t{font-size:15px;font-weight:700;margin:3px 0 4px}
+.flow .st .d{font-size:13px;color:var(--mute)}
+.flow .st .w{font-size:12.5px;margin-top:8px;padding-top:6px;border-top:1px dashed var(--line)}
+.flow .st .w b{color:var(--indigo)}
+
+/* tables */
+table{border-collapse:collapse;width:100%;font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--tint);font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--mute)}
+tr:last-child td{border-bottom:0}
+td.take b{color:var(--koke)}
+td.drop{color:var(--mute)}
+
+/* card anatomy */
+.anat{display:grid;grid-template-columns:360px 1fr;gap:26px;align-items:start;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13.5px}
+.card .hd{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line)}
+.card .hd .id{font:12px ui-monospace,Menlo,monospace;color:var(--mute)}
+.card .hd .ttl{font-weight:700;flex:1}
+.card .src{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line)}
+.stamp{font:11.5px ui-monospace,Menlo,monospace;padding:1px 7px;border-radius:4px;border:1px solid var(--line);color:var(--mute);background:var(--paper)}
+.stamp.on{border-color:var(--ink);color:var(--ink);background:var(--tint);font-weight:700}
+.stamp.conf{border-color:var(--bengara);color:var(--bengara);background:var(--bengara-tint);font-weight:700}
+.card .gwt{padding:8px 12px;border-bottom:1px solid var(--line);color:var(--mute)}
+.card .gwt b{color:var(--ink)}
+.card .ex{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px 12px}
+.slot{border:1px dashed var(--line);border-radius:6px;padding:5px 7px;font-size:12px;color:var(--mute);min-height:38px}
+.slot.full{border-style:solid;border-color:var(--koke);background:var(--koke-tint);color:var(--ink)}
+.slot.gap{border-color:var(--yamabuki);background:var(--yamabuki-tint);color:var(--yamabuki)}
+.slot .sk{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute)}
+.badge{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:99px;border:1px solid}
+.b-ok{color:var(--koke);border-color:var(--koke);background:var(--koke-tint)}
+.b-conf{color:var(--bengara);border-color:var(--bengara);background:var(--bengara-tint)}
+.b-q{color:var(--yamabuki);border-color:var(--yamabuki);background:var(--yamabuki-tint)}
+.b-mis{color:var(--paper);border-color:var(--bengara);background:var(--bengara)}
+.b-ch{color:var(--indigo);border-color:var(--indigo);background:var(--indigo-tint)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px;margin:10px 0}
+.legend div{display:flex;align-items:center;gap:8px}
+.callouts{font-size:14px}
+.callouts li{margin:6px 0}
+
+/* the worked grid */
+.counter{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 22px}
+.counter .c{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.counter .c .n{font-size:28px;font-weight:700;line-height:1.1}
+.counter .c .l{font-size:12.5px;color:var(--mute);margin-top:2px}
+.counter .c.conf .n{color:var(--bengara)} .counter .c.q .n{color:var(--yamabuki)} .counter .c.mis .n{color:var(--bengara)} .counter .c.ok .n{color:var(--koke)}
+.bucket{border:1px solid var(--line);border-radius:10px;background:var(--card);margin:14px 0;overflow:hidden}
+.bucket>header{display:flex;align-items:baseline;gap:12px;padding:10px 14px;background:var(--tint);border-bottom:1px solid var(--line)}
+.bucket>header .bn{font-weight:800;font-size:15px}
+.bucket>header .bg{color:var(--mute);font-size:13px;flex:1}
+.bucket>header .bc{font-size:12.5px;color:var(--mute)}
+.rows{display:grid;grid-template-columns:1fr}
+.row{display:grid;grid-template-columns:270px 1fr 150px;gap:14px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13.5px;align-items:start}
+.row:last-child{border-bottom:0}
+.row .who{font-weight:700}
+.row .who .id{font:12px ui-monospace,Menlo,monospace;color:var(--mute);font-weight:400;margin-right:6px}
+.row .who .st{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap}
+.row .what{color:var(--mute)}
+.row .what b{color:var(--ink)}
+.row .what .q{display:block;margin-top:4px;color:var(--ink)}
+.row .what .q:before{content:"→ ";color:var(--yamabuki);font-weight:700}
+.row .ask{text-align:right}
+.row .ask small{display:block;color:var(--mute);font-size:11.5px;margin-top:3px}
+.row.dim{background:var(--paper)}
+
+/* approaches */
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0}
+.opt{border:1px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden}
+.opt.pick{border:2px solid var(--koke)}
+.opt header{padding:10px 14px;font-weight:700;font-size:15px;border-bottom:1px solid var(--line)}
+.opt header small{display:block;font-weight:400;color:var(--mute);font-size:12.5px}
+.opt .bd{padding:10px 14px;font-size:13.5px}
+.opt .bd .fm{color:var(--bengara);margin-top:8px}
+.opt .bd .fm b{color:var(--bengara)}
+.mini{font-size:12px;line-height:1.35;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:8px;margin:8px 0;color:var(--mute)}
+.mini b{color:var(--ink)}
+.mini .g{display:block;border-top:1px dashed var(--line);margin-top:4px;padding-top:4px}
+</style></head><body>
+
+<h1>The requirement framework — rules, examples, questions</h1>
+<p class="sub">2026-09-07 · a proposal on the human's re-thought flow ("user found a page super hard to debug") · references found online, not invented · worked on the todolist demo's real doc, code and spec · <b>nothing here is built yet</b></p>
+
+<div class="hero">A feature is a set of <b>rules</b>. A rule is proven by <b>examples</b> (its Given / When → Then beats). Whatever the sources cannot settle is a <b>question</b> — and the questions, sorted <b>conflict → orphan → mismatch</b>, are exactly the list the human has to confirm.</div>
+
+<h2><span class="step">0</span>The re-thought flow, and where this sits</h2>
+<p class="sub">Your five steps, in your order. The framework is step 2.2; the board already serves 2.3, 4 and 5. Step 2.1 (extract from doc + code) and 2.4 (conflicts) are new work.</p>
+<div class="flow">
+  <div class="st"><div class="n">1</div><div class="t">A page is hard to debug</div><div class="d">one or more screens; the user has a symptom in mind</div><div class="w"><b>entry</b> — the screen row</div></div>
+  <div class="st on"><div class="n">2</div><div class="t">Capture</div><div class="d">2.1 the spec the doc and the code each imply (every G/W→T) · <b>2.2 apply the framework</b> · 2.3 the actual, auto / semi-auto / step · 2.4 conflicts doc↔code, code↔code, doc↔doc</div><div class="w"><b>this doc</b> = 2.2; the cards carry 2.1 and 2.4</div></div>
+  <div class="st"><div class="n">3</div><div class="t">Decide conflicts</div><div class="d">the human picks which source to follow</div><div class="w"><b>rule 5</b> — canonical side is theirs</div></div>
+  <div class="st"><div class="n">4</div><div class="t">Mismatch</div><div class="d">requirement vs actual, or requirement vs what the user expected</div><div class="w"><b>the board's red</b> — proven / unproven / failed</div></div>
+  <div class="st"><div class="n">5</div><div class="t">Expected html</div><div class="d">when text cannot explain the mismatch</div><div class="w"><b>the Expected column</b>, as shipped</div></div>
+</div>
+
+<h2><span class="step">1</span>What the references say — and what is taken from each</h2>
+<p class="sub">Ten families were surveyed; the five that matter are here. Every URL was read, not recalled.</p>
+<table>
+<tr><th style="width:24%">Reference</th><th style="width:36%">Its structure</th><th>Taken / dropped for us</th></tr>
+<tr><td><b>Example Mapping</b><br>Matt Wynne, Cucumber<br><a href="https://cucumber.io/blog/bdd/example-mapping-introduction/">cucumber.io/blog/…/example-mapping</a></td><td>Four index cards: one <b>Story</b>, its <b>Rules</b> (blue), the <b>Examples</b> under exactly one rule each (green), and <b>Questions</b> parked aside (red). The map's <i>shape</i> is the review signal — a rule with no example is ambiguous, many red cards means "not ready".</td><td class="take"><b>Taken whole:</b> Rule → Example → Question is the card model. The red Question card is the missing object on our board today: a place for "the capture could not tell".</td></tr>
+<tr><td><b>Gherkin <code>Rule:</code></b><br>Cucumber, Gherkin 6+<br><a href="https://cucumber.io/docs/gherkin/reference/">cucumber.io/docs/gherkin/reference</a></td><td><code>Feature</code> → <code>Rule</code> → <code>Example</code> → Given/When/Then. The Rule keyword was added in 2018 precisely to make Example Mapping's rule/example relationship first-class so tools can group scenarios by rule.</td><td class="take"><b>Taken:</b> the literal proof that one rule owns several examples. Our <span class="k">## R</span> is the Rule, each beat is an Example — the prd already has the grammar.</td></tr>
+<tr><td><b>Feature Mapping</b><br>John Ferguson Smart<br><a href="https://johnfergusonsmart.com/feature-mapping-a-simpler-path-from-stories-to-executable-acceptance-criteria/">johnfergusonsmart.com/feature-mapping…</a></td><td>Steps of the main flow laid out horizontally; each example is a <b>row</b> across the steps with a <b>consequence</b> per step; variant paths are extra rows.</td><td class="take"><b>Taken:</b> variants as rows beside the happy row — our example <i>slots</i> (below). <span style="color:var(--mute)">Dropped: the horizontal step table; our beats are already one film each.</span></td></tr>
+<tr><td><b>Traceability matrix</b> as Xray / Zephyr present it<br><a href="https://www.getxray.app/blog/xray-test-management-for-jira">getxray.app</a> · <a href="https://zephyrdocs.atlassian.net/wiki/spaces/ZFJCLOUD/pages/1433796610/New+Traceability+Matrix">zephyrdocs</a></td><td>One row per requirement; its covering tests and latest result beside it; coverage read from <i>both</i> sides; a filter for "requirements with no test".</td><td class="take"><b>Taken:</b> the "no example / no test" filter as a first-class count on top. <span style="color:var(--mute)">The matrix itself specboard already derives by tag.</span></td></tr>
+<tr><td><b>ISTQB black-box techniques</b> + happy / sad / edge<br><a href="https://astqb.org/4-2-black-box-test-techniques/">astqb.org 4.2</a></td><td>Equivalence partitions, boundary values, decision tables, state transitions. Practitioners collapse them to <b>happy / negative / edge</b>.</td><td class="take"><b>Taken, cut to four:</b> the example kinds a rule must show — <b>happy · boundary · absence · mistake</b>. It is the checklist that says what a captured page (always the happy path) is <i>missing</i>.</td></tr>
+<tr><td class="drop"><b>Dropped</b>: ISO 25010 / FURPS (non-functional — not this product's job), User Story Mapping (release planning, hides missing kinds — see approach B), HTSM / SFDIPOT (a tester's vocabulary; a stakeholder cannot sign it), Session-based charters (exploratory, not spec).</td><td class="drop" colspan="2">Each was read; each solves a different problem. The five-bucket walk the human ruled on 2026-09-06 already does what HTSM's Product Elements branch would — in the app's own nouns.</td></tr>
+</table>
+
+<h2><span class="step">2</span>The framework — one card, three layers, three sources, four states</h2>
+
+<div class="anat">
+  <div class="card">
+    <div class="hd"><span class="id">R2</span><span class="ttl">A task is edited in place, and the edit is stamped</span><span class="badge b-ok">agreed</span></div>
+    <div class="src"><span class="stamp on">DOC ✓</span><span class="stamp on">CODE ✓</span><span class="stamp on">SPEC ✓</span><span class="stamp on">PROVEN ✓</span></div>
+    <div class="gwt"><b>Given</b> a row stamped "added" · <b>When</b> double-click, retype, Enter · <b>Then</b> new text in place, stamp "edited just now"</div>
+    <div class="ex">
+      <div class="slot full"><span class="sk">happy</span>rename → "edited just now"</div>
+      <div class="slot gap"><span class="sk">boundary</span>empty / unchanged → title kept, <b>no</b> stamp</div>
+      <div class="slot gap"><span class="sk">absence</span>—</div>
+      <div class="slot gap"><span class="sk">mistake</span>Escape cancels</div>
+    </div>
+  </div>
+  <div>
+    <ol class="callouts">
+      <li><b>Layer 1 · GROUP</b> = the five buckets ruled canon yesterday (lifecycle · derived numbers · views &amp; chips · survival · mistake path). Fixed rows, in fixed order, on every screen — an empty bucket is a visible hole, the way Example Mapping reads a rule with no examples.</li>
+      <li><b>Layer 2 · RULE</b> = a requirement card, one promise. It carries a <b>source stamp</b>: what the DOC says, what the CODE does, what the SPEC (prd) says, and whether a test PROVES it. The stamps are the capture (step 2.1) made visible.</li>
+      <li><b>Layer 3 · EXAMPLES</b> = the beats, filed into four <b>slots</b>: <b>happy</b> (the promise kept), <b>boundary</b> (the empty, the max, the no-change), <b>absence</b> (what must <i>not</i> appear — our rule 2 said out loud), <b>mistake</b> (the slip is safe). A rule is fully understood only when every slot the rule <i>needs</i> is filled or explicitly marked "not needed". A yellow slot is a gap, not a red.</li>
+      <li><b>The four states</b>, in the order the human works them — this is what "what needs confirming" means:</li>
+    </ol>
+    <div class="legend">
+      <div><span class="badge b-ok">agreed</span> every source says the same, a test proves it — nothing to confirm</div>
+      <div><span class="badge b-conf">conflict</span> two sources disagree — <b>pick a side</b> (step 3)</div>
+      <div><span class="badge b-q">orphan / gap</span> one source only, or a slot empty — <b>is it a requirement?</b></div>
+      <div><span class="badge b-mis">mismatch</span> agreed rule, actual differs — <b>bug, or wrong rule?</b> (step 4; step 5 when words fail)</div>
+    </div>
+    <div class="note"><b>Why conflict comes before orphan.</b> An orphan behaviour is only a question once the rule around it is settled: "the code hard-deletes" is a question about delete until the human says whether delete must be reversible — then it is a mismatch. Ordering the states this way is what turns a capture into a queue the human can walk top to bottom.</div>
+  </div>
+</div>
+
+<h2><span class="step">3</span>Worked on the todolist — every card is a fact read today</h2>
+<p class="sub">Sources: the app's own <span class="k">app/requirements.html</span> (DOC) · <span class="k">app/todo.html</span> (CODE, ~20 named behaviours) · <span class="k">spec/todo/prd.md</span> R1–R9 (SPEC) · <span class="k">steps.ts</span> (PROVEN). What the human would see first is the counter:</p>
+<div class="counter">
+  <div class="c conf"><div class="n">2</div><div class="l">conflicts — pick a side</div></div>
+  <div class="c q"><div class="n">4 + 7</div><div class="l">orphans (code-only behaviours) + empty slots — is it a requirement?</div></div>
+  <div class="c mis"><div class="n">1</div><div class="l">mismatch — after the delete conflict is decided the spec's way</div></div>
+  <div class="c ok"><div class="n">7</div><div class="l">agreed rules — glance, no decision</div></div>
+</div>
+
+<div class="bucket"><header><span class="bn">① The task's life</span><span class="bg">create · change · finish · remove</span><span class="bc">2 agreed · 1 conflict · 3 orphans · 3 gaps</span></header><div class="rows">
+  <div class="row"><div class="who"><span class="id">R1</span>Adding puts it in the list<div class="st"><span class="stamp on">DOC</span><span class="stamp on">CODE</span><span class="stamp on">SPEC</span><span class="stamp on">PROVEN</span></div></div><div class="what">happy ✓ (typed, Add pressed, row at bottom, box reset) · boundary ✓ (empty/whitespace: button disabled, claimed as an absence) <span class="q">gap · DOC and CODE both say <b>Enter adds too</b> (the placeholder even says "press Enter"); no beat films it.</span></div><div class="ask"><span class="badge b-ok">agreed</span><small>+1 gap: film Enter, or say "button only"?</small></div></div>
+  <div class="row"><div class="who"><span class="id">R2</span>Edited in place, stamped<div class="st"><span class="stamp on">DOC</span><span class="stamp on">CODE</span><span class="stamp on">SPEC</span><span class="stamp on">PROVEN</span></div></div><div class="what">happy ✓ <span class="q">gap · <b>Escape cancels</b> — DOC, CODE and the SPEC's prose all say it; no beat.</span><span class="q">gap · CODE: an <b>empty or unchanged</b> edit keeps the title and does <b>not</b> stamp "edited" (DOC: "a real change"); nothing films the boundary.</span></div><div class="ask"><span class="badge b-ok">agreed</span><small>+2 gaps</small></div></div>
+  <div class="row"><div class="who"><span class="id">—</span>Add with a due date<div class="st"><span class="stamp">DOC</span><span class="stamp on">CODE</span><span class="stamp">SPEC</span></div></div><div class="what">CODE only: the Add form has a date field (<span class="k">#nd</span>) and stores it. Neither the doc nor the spec mentions adding a date, yet R7's chips depend on one.</div><div class="ask"><span class="badge b-q">orphan</span><small>requirement, or not?</small></div></div>
+  <div class="row"><div class="who"><span class="id">—</span>Collapse / expand a container<div class="st"><span class="stamp">DOC</span><span class="stamp on">CODE</span><span class="stamp">SPEC</span></div></div><div class="what">CODE only: <span class="k">fold()</span> on the ring or caret, and the open state is <b>saved</b> (so it also survives reload — a fact R8 never names).</div><div class="ask"><span class="badge b-q">orphan</span><small>requirement, or not?</small></div></div>
+  <div class="row"><div class="who"><span class="id">—</span>Delete a sub-task<div class="st"><span class="stamp">DOC</span><span class="stamp on">CODE</span><span class="stamp">SPEC</span></div></div><div class="what">CODE only: <span class="k">delSub()</span> — and it <b>reflows</b>: deleting the last open sub-task <b>completes the container by itself</b>. A derived consequence (bucket ②) nobody wrote down.</div><div class="ask"><span class="badge b-q">orphan</span><small>and a hidden ② rule</small></div></div>
+</div></div>
+
+<div class="bucket"><header><span class="bn">② Every derived number</span><span class="bg">exact, on the seed</span><span class="bc">2 agreed · 1 conflict · 1 gap</span></header><div class="rows">
+  <div class="row"><div class="who"><span class="id">R3</span>Container ring, no checkbox<div class="st"><span class="stamp conf">DOC 2/3</span><span class="stamp on">CODE</span><span class="stamp conf">SPEC 1/3</span><span class="stamp on">PROVEN</span></div></div><div class="what">DOC illustrates the ring as "2 of 3"; the seed and the SPEC's Given say <b>1/3</b> (one of three sub-tasks done). The rule agrees; the number does not — a doc ↔ doc conflict, small but exactly the kind that makes a page "hard to debug".</div><div class="ask"><span class="badge b-conf">conflict</span><small>doc ↔ doc: fix requirements.html?</small></div></div>
+  <div class="row"><div class="who"><span class="id">R4</span>Completion rolls up both ways<div class="st"><span class="stamp on">DOC</span><span class="stamp on">CODE</span><span class="stamp on">SPEC</span><span class="stamp on">PROVEN</span></div></div><div class="what">happy ✓ both directions, absence ✓ ("nobody ticked the parent") <span class="q">gap · DOC names an explicit <b>"Complete all / Reopen all"</b>; CODE has it (<span class="k">bulk()</span>); the SPEC's beats never press it.</span></div><div class="ask"><span class="badge b-ok">agreed</span><small>+1 gap</small></div></div>
+  <div class="row"><div class="who"><span class="id">R5</span>"To do" counts leaves only<div class="st"><span class="stamp on">DOC</span><span class="stamp on">CODE</span><span class="stamp on">SPEC</span><span class="stamp on">PROVEN</span></div></div><div class="what">happy ✓, and the trap named ("down by two, not three"). The model card — every slot the rule needs is filled.</div><div class="ask"><span class="badge b-ok">agreed</span></div></div>
+</div></div>
+
+<div class="bucket"><header><span class="bn">③ Every view &amp; chip</span><span class="bg">badges agree; frozen clock</span><span class="bc">2 agreed · 2 gaps</span></header><div class="rows">
+  <div class="row"><div class="who"><span class="id">R6</span>Views filter; badges agree<div class="st"><span class="stamp on">DOC</span><span class="stamp on">CODE</span><span class="stamp on">SPEC</span><span class="stamp on">PROVEN</span></div></div><div class="what">happy ✓, absences ✓ (no done task in Active/Today) <span class="q">gap · DOC and CODE: <b>Today includes overdue</b> ("due on or before today", <span class="k">t.due &lt;= TODAY</span>); the SPEC's Then never says so.</span></div><div class="ask"><span class="badge b-ok">agreed</span><small>+1 gap</small></div></div>
+  <div class="row"><div class="who"><span class="id">R7</span>Overdue / today chips<div class="st"><span class="stamp on">DOC</span><span class="stamp on">CODE</span><span class="stamp on">SPEC</span><span class="stamp on">PROVEN</span></div></div><div class="what">happy ✓ (overdue, today) <span class="q">gap · absence: <b>a done task wears no chip</b> — DOC, CODE and the SPEC's prose say it; the Then does not, so nothing claims it (rule 2: say absences out loud).</span></div><div class="ask"><span class="badge b-ok">agreed</span><small>+1 gap</small></div></div>
+</div></div>
+
+<div class="bucket"><header><span class="bn">④ Survival</span><span class="bg">what outlives a reload</span><span class="bc">1 agreed · 1 gap</span></header><div class="rows">
+  <div class="row"><div class="who"><span class="id">R8</span>Everything survives a reload<div class="st"><span class="stamp on">DOC</span><span class="stamp on">CODE</span><span class="stamp on">SPEC</span><span class="stamp on">PROVEN</span></div></div><div class="what">happy ✓ (title, 3/4 ring, completed stamp) <span class="q">gap · CODE also saves the <b>current view</b> and each container's <b>open/closed</b> state; DOC's "everything" is silent on both.</span></div><div class="ask"><span class="badge b-ok">agreed</span><small>+1 gap: is "everything" really everything?</small></div></div>
+</div></div>
+
+<div class="bucket"><header><span class="bn">⑤ The mistake path</span><span class="bg">the slip is safe</span><span class="bc">1 conflict → 1 mismatch</span></header><div class="rows">
+  <div class="row"><div class="who"><span class="id">R9</span>Delete is reversible; the count holds<div class="st"><span class="stamp">DOC —</span><span class="stamp conf">CODE hard-delete</span><span class="stamp conf">SPEC undo</span><span class="stamp on">FAILED</span></div></div><div class="what">DOC never mentions delete at all. CODE deletes immediately and permanently (<span class="k">delTask()</span>). SPEC demands an Undo and the count holding. Two sources, two answers: the human picks a side <b>first</b>. If the spec is the side (the demo's stance), the row becomes the board's one honest <b>mismatch</b> — three red moments beside the intended Expected, exactly as it reads today. If the code is the side, R9 is rewritten and the row goes green with no code change.</div><div class="ask"><span class="badge b-conf">conflict</span><small>then</small><span class="badge b-mis">mismatch</span></div></div>
+</div></div>
+
+<div class="note"><b>What the todolist teaches.</b> Seven of nine rules are agreed, yet the page still carries <b>14 things the human has never been asked</b> — two conflicts, four behaviours the code has that no document owns, seven promises three sources make that no film shows. None of them is on the board today, because the board only knows a requirement once someone wrote a <span class="k">## R</span>. The framework's whole value is that the capture <i>writes the questions down</i> in the bucket they belong to, so the human confirms one bucket at a time instead of re-reading the code.</div>
+
+<h2><span class="step">4</span>How to group it — three ways, the failure mode first</h2>
+<div class="opts">
+  <div class="opt pick"><header>A · By bucket, states inside <small>recommended · five fixed rows, cards sorted conflict → orphan → gap → agreed within each</small>
+  </header><div class="bd">
+    <div class="mini"><b>① The task's life</b> — R1 · R2 · <span style="color:var(--yamabuki)">3 orphans</span><span class="g"><b>② Derived numbers</b> — <span style="color:var(--bengara)">R3 conflict</span> · R4 · R5</span><span class="g"><b>③ Views &amp; chips</b> — R6 · R7</span><span class="g"><b>④ Survival</b> — R8</span><span class="g"><b>⑤ Mistake path</b> — <span style="color:var(--bengara)">R9 conflict</span></span></div>
+    It is the canon walk of 2026-09-06 with the questions filed where they belong. An empty bucket is a hole the human can see; a bucket with three orphans says the doc is thin there.
+    <div class="fm"><b>Failure mode:</b> bucket names are the author's vocabulary. A user arriving with a symptom ("the ring is wrong") may not know it lives in ②. <b>Mitigation:</b> the counter on top lists mismatches and conflicts by name and links into their bucket — the symptom finds its row without the user knowing the taxonomy.</div>
+  </div></div>
+  <div class="opt"><header>B · By journey <small>Patton's backbone: add → organise → complete → review → keep</small></header><div class="bd">
+    <div class="mini"><b>Add</b> — R1 · due date · Enter<span class="g"><b>Organise</b> — R2 · sub-tasks · fold · R3</span><span class="g"><b>Complete</b> — R4 · R5 · bulk</span><span class="g"><b>Review</b> — R6 · R7</span><span class="g"><b>Keep</b> — R8</span></div>
+    Reads like the app; a stakeholder recognises every row. Feature Mapping is built on it.
+    <div class="fm"><b>Failure mode:</b> a journey has no slot for survival or the mistake path — R8 is bolted on as "keep", and <b>R9 has nowhere to live at all</b>: delete is not a stage of the journey, so the demo's one red row and its conflict vanish into "Organise". The buckets exist precisely because a journey hides what is missing.</div>
+  </div></div>
+  <div class="opt"><header>C · By decision kind <small>three queues: conflicts · orphans/gaps · mismatches</small></header><div class="bd">
+    <div class="mini"><b>Conflicts (2)</b> — R3 number · R9 delete<span class="g"><b>Orphans / gaps (11)</b> — due date · fold · delSub · Enter · Escape · …</span><span class="g"><b>Mismatches (1)</b> — R9</span></div>
+    The shortest path to "what do I have to decide" — a pure to-do list.
+    <div class="fm"><b>Failure mode:</b> it strips context. R9 appears in two queues; the delete orphan (<span class="k">delSub</span>) and the delete conflict never sit together; the human reassembles the rule in their head. <b>Kept as the counter</b>, never as the grouping.</div>
+  </div></div>
+</div>
+<div class="rec"><b>Recommendation: A, with C as the counter on top.</b> The buckets are already the human's ruling, they are the only grouping that makes an <i>absent</i> requirement visible, and sorting by state inside each bucket gives the human the queue without losing the rule around it. When a bucket grows past ~5 cards (a dojostack calculation screen will put twenty in ②), the author-named families of today (<span class="k">### n · family</span>) become sub-groups <b>inside</b> a bucket, not a rival grouping.</div>
+
+<h2><span class="step">5</span>What this changes on the board — the shape, not the build</h2>
+<table>
+<tr><th style="width:26%">Piece</th><th>Today</th><th>With the framework</th></tr>
+<tr><td><b>Grouping</b></td><td>author-named <span class="k">###</span> families, free order</td><td>five fixed buckets on every screen, families optional inside one. <i>A meaning decision — the human signs it.</i></td></tr>
+<tr><td><b>A rule's sources</b></td><td>nothing; a <span class="k">## R</span> just exists</td><td>a source stamp per rule — DOC / CODE / SPEC / PROVEN — written by the capture (step 2.1) beside the requirement, derived and never hand-kept where it can be measured (PROVEN already is)</td></tr>
+<tr><td><b>Questions</b></td><td>no object — a question lives in a comment, or nowhere</td><td>a <b>question card</b> per bucket (conflict / orphan / gap) with its two sides quoted verbatim; resolved by the human editing, adding or striking a rule — then it disappears, like a red card at the end of an example-mapping session</td></tr>
+<tr><td><b>Example slots</b></td><td>beats, unlabelled</td><td>each beat tagged happy / boundary / absence / mistake; an empty slot a rule needs shows yellow; "not needed" is said out loud, never left blank</td></tr>
+<tr><td><b>The capture (2.1)</b></td><td>kg-deep phase 1 studies the screen by hand</td><td>reads DOC and CODE into candidate rules per bucket <i>before</i> drafting; drafts only what the sources agree on, files the rest as questions. The drafted prd stays canon on write — nothing waits on a gate.</td></tr>
+<tr><td><b>States</b></td><td>proven / unproven / failed / changed, derived</td><td>the same four stay derived; <b>conflict</b> and <b>orphan / gap</b> are new, also derived — from the stamps and the slots, never stored</td></tr>
+</table>
+<div class="bad"><b>What this is not.</b> Not a new status field (there is none, and this adds none: every state above is derived from stamps and slots). Not a gate (a question card blocks nothing; the board keeps folding). Not non-functional coverage — performance and accessibility stay out, as they are today.</div>
+
+<h2><span class="step">6</span>The one thing to settle first</h2>
+<p><b>Should the five buckets become the fixed grouping on every screen, replacing free-form families?</b> Everything else above follows from the answer: the question cards need a bucket to live in, the empty-bucket signal needs fixed rows, and the counter needs a place to link into. My recommendation is yes, with today's families demoted to optional sub-groups inside a bucket. If no, approach A collapses into B-with-badges and the "what is missing" signal is lost.</p>
+<p class="sub">Answer that and the next step is the written spec (docs/superpowers/specs/…) and a plan — the capture of doc + code into candidate cards first, on the todolist, before any board rendering.</p>
+
+</body></html>
