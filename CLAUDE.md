@@ -365,8 +365,10 @@ change.
   because other legs assert them): the RECORDING carries the app's own burned callout (board R10's
   canon; every STILL hides it, `snapEvidence`, but a film cannot), and R20's chip is a claim "over
   the photograph" — so two boxes stood on one picture saying different things about different
-  instants. The burned card explains the approach, the chip explains the moment, and never both at
-  once. *(Both rules are reader-side: no re-harvest, and neither requirement's text changed — the
+  instants. The burned card explains the approach, the chip explains the moment; the chip leaves in
+  60 ms and comes back in 180, so the only overlap left is that fade — measured on demo/todo R1, one
+  reading in 120 at a 120 ms sample, against a permanent duplicate before. *(Both rules are
+  reader-side: no re-harvest, and neither requirement's text changed — the
   R10 × R20 collision is resolved by reading R20's chip as belonging to the photograph it captions.
   If the human wants that written into R20's prose, that is theirs to write.)* The **asserted-value frames
   are real since 2026-08-29** (the human: the When must be visible in the proof, not only the Then —

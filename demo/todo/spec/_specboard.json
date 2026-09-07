@@ -1,10 +1,10 @@
 {
-  "version": "0.48.4",
+  "version": "0.48.5",
   "files": {
     "tools/spec-store.mjs": "7dffd7b061a3e5eb3e8e99376fc25cf6eba6c891ff7b17c1da7ee9bc562169e5",
     "tools/coverage.mjs": "2f97051ed7035c0d75255a957d9c8ffd56192f920b3e6ad4fc7888dcbb902397",
     "tools/journey.mjs": "8ea1d34d2db8a4152e15a0dc123b61bee5b8c5efaa1fbfcf95945533031fecfa",
-    "tools/build-board.mjs": "114553d0450604eaee44151232c03e010d7e627d8999a48a2ab2f9ccd4b40e69",
+    "tools/build-board.mjs": "9ad9e7fc6d5a9f809bafc82a88017d66c1c53fe58037875bc7f7652907372e2b",
     "tools/behavior.mjs": "e8e77bd5993afddd792716ae333068ecf35027ea3fbd930bc20de8257c03a445",
     "tools/flow.mjs": "4051dcf5db27b585edba65b85bf1bc3eca1232f4233c6fc8d177da80f5fe16d4",
     "tools/reqhash.mjs": "212fac74a5e289dbc3ca3b556fe0f6bf0fd5e6bc1513ab28eb8421be04cc0e89",
@@ -15,8 +15,8 @@
     "tools/viz-derive.mjs": "a7d8693aec7188c717ee45bca4bbf0e0b6b18b46f1f45d7cce9084bea056a719",
     "tools/evidence.mjs": "0cdb91549964f7592db73fb41074a302b37634d408d51c15518d4da2db482fbe",
     "tools/compose.mjs": "0bc7cda2ef3ece3df0c522265eb9d38b95663384d41b00e664d300c49ae6a76f",
-    "tools/board/client.js": "635fd5f9b8667c17c649de465837825185500509a1079436e0f42162fd31c25e",
-    "tools/board/stepper.js": "4a083da6860e0e0484a533f83d7c49c4022ea7d81503994618ba22ab0e2c654f",
+    "tools/board/client.js": "68e70fd53dcdfa274d25ec70dca04605a76e055b17d4e86bc03babb01896d849",
+    "tools/board/stepper.js": "60c05e52796db7e1bf1530e83ca08a11c1b9dec12e66ab6a120ff0a61a785683",
     "tools/serve-board.mjs": "4284d3b8ccf2e2981ff7dc0bffec04bd741b9290bf8807be22a39b824805900f",
     "tools/watch-dir.mjs": "d990826c25a9a26ecd4d5862a4c5d8cb3055088892b66abd77322f71244d916a",
     "tools/narrate.mjs": "a93bfc3d3ab04d1ea518811a5dc1a3be48c42102982166f4af781379e53e11df",
