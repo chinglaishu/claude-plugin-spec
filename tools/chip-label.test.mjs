@@ -85,15 +85,22 @@ test('a moment that claimed nothing reserves nothing — no chip is drawn at all
 const ABSENT = { expected: '(missing)', got: '(missing)', ok: true, missing: true,
   label: 'active — no done task is on screen', phrase: 'not one done row in the list' }
 
-test('an absence does not say its own label twice — the EXPECTED side drops the leading line', () => {
+// …UPDATED 2026-09-07 (the human: "The actual and expected should use same copy write, otherwise
+// it's not comparable"): where the author gave a PHRASE, the Expected speaks it too, so the two
+// chips carry the same two lines and stand the same height. The label-only case (a harvest that
+// recorded no phrase) is still where the Expected's leading line would repeat, and is still dropped.
+test('with a phrase, BOTH sides carry the label line and the same value line — the same copy', () => {
   const m = moment('active — no done task is on screen', ABSENT)
-  assert.equal(chip.chipHead(m, 'expected'), '', 'the value line already IS the label')
-  assert.equal(chip.chipRows(m, 'expected'), 1)
-})
-
-test('…and the ACTUAL side keeps both, because there the two lines say different things', () => {
-  const m = moment('active — no done task is on screen', ABSENT)
+  assert.equal(chip.chipHead(m, 'expected'), 'active — no done task is on screen')
+  assert.equal(chip.chipLines(m, 'expected')[0].text, 'not one done row in the list')
   assert.equal(chip.chipHead(m, 'actual'), 'active — no done task is on screen')
   assert.equal(chip.chipLines(m, 'actual')[0].text, 'not one done row in the list')
-  assert.equal(chip.chipRows(m, 'actual'), 2)
+  assert.equal(chip.chipRows(m, 'expected'), chip.chipRows(m, 'actual'))
+})
+
+test('an absence with NO phrase does not say its own label twice — the EXPECTED side drops the leading line', () => {
+  const bare = { expected: '(missing)', got: '(missing)', ok: true, missing: true, label: 'active — no done task is on screen' }
+  const m = moment('active — no done task is on screen', bare)
+  assert.equal(chip.chipHead(m, 'expected'), '', 'the value line already IS the label')
+  assert.equal(chip.chipRows(m, 'expected'), 1)
 })

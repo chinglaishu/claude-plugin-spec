@@ -43,7 +43,7 @@ const words = (() => {
 
 const NOTHING = words.NOTHING
 
-test('an absence names ITSELF on the Expected side — the claim\'s own label, not one generic sentence', () => {
+test('an absence names ITSELF on the Expected side — the claim\'s own label when it has no phrase, not one generic sentence', () => {
   const c = { expected: NOTHING, got: NOTHING, ok: true, missing: true,
     label: 'The new row\'s checkbox — empty, nothing ticked' }
   assert.equal(words.expectedWords(c), 'The new row\'s checkbox — empty, nothing ticked')
@@ -51,9 +51,16 @@ test('an absence names ITSELF on the Expected side — the claim\'s own label, n
     'the generic sentence is the fallback, never what a named claim shows')
 })
 
-test('…and the Actual side speaks the author\'s short phrase for the emptiness', () => {
+// THE TWO SIDES SAY THE SAME WORDS (the human, 2026-09-07: "The actual and expected should use same
+// copy write, otherwise it's not comparable"). Until then the Expected spoke the claim's LABEL and
+// the Actual the author's PHRASE — "EXPECTED The new row's checkbox — empty, nothing ticked" beside
+// "ACTUAL ✓ empty" — two sentences for one fact, and two chips of different heights landing in
+// different places. Where the author gave a phrase, BOTH sides speak it. (Rule 4: the test above
+// used to pin the label on a claim that carried a phrase; the human decided that away.)
+test('…and where the author gave a phrase, BOTH sides speak it — the same copy, comparable', () => {
   const c = { expected: NOTHING, got: NOTHING, ok: true, missing: true,
     label: 'The new row\'s checkbox — empty, nothing ticked', phrase: 'empty' }
+  assert.equal(words.expectedWords(c), 'empty')
   assert.equal(words.actualWords(c), 'empty')
 })
 
@@ -66,8 +73,8 @@ test('the two generic sentences remain — an old harvest carries no label and n
 test('a FAILED absence is quoted like any other wrong value — the app DID show something', () => {
   const c = { expected: NOTHING, got: 'checked', ok: false, label: 'The new row\'s checkbox — empty', phrase: 'empty' }
   assert.equal(words.actualWords(c), '“checked”', 'what the app showed, verbatim')
-  assert.equal(words.expectedWords(c), 'The new row\'s checkbox — empty',
-    'the requirement still says what it asked for, in its own words')
+  assert.equal(words.expectedWords(c), 'empty',
+    'the requirement still says what it asked for — the same word the passing side would show')
 })
 
 test('an ordinary value is untouched — the label never replaces the value a Then names', () => {
@@ -79,7 +86,7 @@ test('an ordinary value is untouched — the label never replaces the value a Th
 test('an EMPTY value reads as the absence it is — never EXPECTED “”', () => {
   const c = { expected: '', got: '', ok: true, label: 'The Add box — empty again', phrase: 'empty' }
   assert.equal(words.wantsNothing(c), true, 'nothing expected and nothing read is an absence')
-  assert.equal(words.expectedWords(c), 'The Add box — empty again')
+  assert.equal(words.expectedWords(c), 'empty')
   assert.equal(words.actualWords(c), 'empty')
 })
 

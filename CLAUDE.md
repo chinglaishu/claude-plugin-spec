@@ -378,7 +378,15 @@ change.
   `stage.closest('.pcbox')` on a reader that is built detached (measured at 100 ms on demo/todo R1:
   chip at opacity 1 over the burned card for the whole first loop). The phase now lives on the stage
   the layer owns (`.fsteps.approach`) and the chip is VERBATIM in every phase (offered a value line
-  that waits for the picture, the human chose "verbatim"; `.pcchips.approach` is a readout only).
+  that waits for the picture, the human chose "verbatim"; `.pcchips.approach` is a readout only). **And the two chips are ONE caption in two places**
+  (0.49.1, the human's second round the same day: "the actual and expected should use same copy
+  write, otherwise it's not comparable"; "many things are not align / sync"; "avoid having too
+  much tooltip … don't allow multi tooltip at once"; "let user choose have zoom-in or not"): where
+  the author gave a `phrase`, `expectedWords` speaks it like `actualWords` does; both chips take ONE
+  spot from the taller line count (`chipSpot` in `chipLayer._paint`), so a side that wraps one
+  line more no longer takes the other placement; every `.mtip` opens on hover or `:focus-visible`
+  only, never a click's `:focus`; and `ZOOM · in | full` sits on the title row beside the play
+  controls (`zoomPicker` → the session's `setZoom`, which had lost its face with `.pczoom`).
   And a slice OPENS WHERE THE ACTION BEGINS: the harness
   marks the end of every wait it owns (`markIdle` — each capture, `reveal`'s hold, the post-check
   hold) and stamps each value with `open`; `beatSlices` opens the moment there instead of at the

@@ -2378,7 +2378,11 @@ export function build () {
   /* :focus, not only :focus-visible — the whole value has to be reachable by keyboard, and a
      programmatic focus (which is what a reader's own "jump to the chip" would do, and what the
      board's test drives) does not always set :focus-visible. */
-  .pcbox .pchip:hover .mtip, .pcbox .pchip:focus .mtip { display:block; }
+  /* ONE TOOLTIP AT A TIME (the human, 2026-09-07: "don't allow to have multi tooltip at once"). A
+     clicked chip or segment keeps FOCUS, so its tooltip stayed open while the mouse hovered another —
+     two, three boxes on the row. Hover opens one; :focus-visible keeps the keyboard's way in and
+     leaves a mouse click alone. */
+  .pcbox .pchip:hover .mtip, .pcbox .pchip:focus-visible .mtip { display:block; }
 
   /* ── THE DIFFERENCE MARKER (phase 5) ─────────────────────────────────────────────────────────
      One label ACROSS the two cells on a failed moment, on the seam, at the ring's own height: the
@@ -2586,7 +2590,7 @@ export function build () {
     padding:var(--s2) var(--s3); background:var(--paper); color:var(--ink); border:1px solid var(--line2);
     border-radius:var(--r); box-shadow:var(--sh-md); font:var(--t-md)/1.45 var(--sans);
     text-align:left; white-space:normal; pointer-events:none; }
-  .mstrip .mseg:hover .mtip, .mstrip .mseg:focus .mtip { display:block; }
+  .mstrip .mseg:hover .mtip, .mstrip .mseg:focus-visible .mtip { display:block; }
   /* …and the two VALUES under the name (2026-09-04, the review's C1): one expected / actual pair,
      or one ticked line per fact on the beat's result. The key is the system's one label style, the
      value its mono; a failed one takes iron-oxide AND the ✕ its key already carries, so hue never
@@ -2682,6 +2686,7 @@ export function build () {
      names both the beat it steps and the moment it steps to. The gutter tour that stood here in
      between (.tourstep, 2026-09-01) is gone with the two clocks it read from. */
   .frtools .medbar.pmode button { min-width:calc(38px * var(--scale)); }
+  .frtools .medbar.pzoom button { min-width:calc(34px * var(--scale)); }
   /* the cell's one control, under the media: zoom ↔ full frame. The loop/stills mode toolbar is GONE
      (the human, 2026-08-28) — the loop is the only mode a proof cell has. */
   .sbproof .pcbar { display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }

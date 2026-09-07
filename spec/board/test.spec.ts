@@ -980,7 +980,10 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // row's own moment strip), never a reader-wide control — so the bar still has ONE .medbar.
     await expect(fbar.locator('.medbar.pmode button')).toHaveText(['auto', 'semi-auto', 'step'])
     await expect(fbar.locator('.medbar.pmode button.on')).toHaveText('semi-auto')
-    await expect(fbar.locator('.medbar')).toHaveCount(1)
+    // TWO named .medbars since 2026-09-07 — the mode trio and the ZOOM pair (the human: "let user
+    // choose have zoom-in or not") — and nothing unnamed beside them
+    await expect(fbar.locator('.medbar.pzoom button')).toHaveText(['in', 'full'])
+    await expect(fbar.locator('.medbar')).toHaveCount(2)
     await expect(fbar.locator('.medbar.pstep')).toHaveCount(0)      // no advance control in the bar
     await expect(fbar).not.toContainText('‹')
     await expect(fbar).not.toContainText('›')
@@ -2292,6 +2295,18 @@ test('The proof plays itself — semi-auto is the default, no dots/counter/toggl
     await expect(tools.locator('.medbar.pmode button.on')).toHaveText('semi-auto')
     const spd = tools.locator('select.pspd')
     await expect(spd, 'semi-auto plays the moment on show, so its pace is rateable').toBeEnabled()
+    // …AND THE ZOOM IS THE READER'S CHOICE (the human, 2026-09-07: "let user choose have zoom-in or
+    // not (on both expected and actual)"): a third reader-wide control, in | full, and it reaches
+    // BOTH cells of the row at once — `full` frames the whole page on each, `in` the moment again.
+    await expect(tools.locator('.medbar.pzoom button')).toHaveText(['in', 'full'])
+    await expect(tools.locator('.medbar.pzoom button.on')).toHaveText('in')
+    const zoomedCells = () => row.locator('.pcbox.zoomed').count()
+    await expect.poll(zoomedCells, { message: 'zoomed in: both cells wear the moment camera' }).toBe(2)
+    await tools.locator('.medbar.pzoom button[data-zoom="full"]').click()
+    await expect.poll(zoomedCells, { message: 'full: neither cell magnifies — the whole page on both' }).toBe(0)
+    await expect(row.locator('.pcchips .pchip'), 'the chips still stand over their rings at full').toHaveCount(2)
+    await tools.locator('.medbar.pzoom button[data-zoom="in"]').click()
+    await expect.poll(zoomedCells, { message: 'and back in, on both' }).toBe(2)
     // …and STEP is totally still, so there is nothing for a speed to rate
     await tools.locator('.medbar.pmode button[data-mode="step"]').click()
     await expect(spd).toBeDisabled()
@@ -2741,8 +2756,12 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     // tooltip is the ONLY way to read the whole of it; a chip a keyboard cannot focus hides it from
     // half the readers. It is a real button, so it takes focus and its aria-label is announced.
     expect(await aChip.evaluate(el => el.tagName.toLowerCase()), 'the chip is a real control').toBe('button')
+    // KEYBOARD focus, not a click's (2026-09-07, the human: "don't allow to have multi tooltip at
+    // once"): the tooltip opens on :focus-visible, so a mouse click no longer pins one open while
+    // the pointer opens another. A key press after focusing is what makes the focus visible.
     await aChip.focus()
-    await expect(tip, 'focusing a chip shows its whole text').toBeVisible()
+    await page.keyboard.press('Shift')
+    await expect(tip, 'focusing a chip from the keyboard shows its whole text').toBeVisible()
     expect(plain(await aChip.getAttribute('aria-label') || ''), 'and it is announced with both parts')
       .toContain(plain(wrong))
     await row.locator('.sbtext').hover()
@@ -2837,7 +2856,8 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
       'The reader-wide speed, on the requirement\'s title row', { soft: true })
     intentGap('"left of its ⋯ menu" is a position — the controls\' box against the menu button\'s, which the row\'s layout decides; no element says where it sits')
     await expect(bar.locator('.medbar.pstep')).toHaveCount(0)                 // the top-bar walker is GONE
-    await expect(bar.locator('.medbar')).toHaveCount(1)                       // mode only; speed is a <select>
+    await expect(bar.locator('.medbar.pzoom')).toHaveCount(1)                 // …and the zoom pair (2026-09-07)
+    await expect(bar.locator('.medbar')).toHaveCount(2)                       // mode + zoom; speed is a <select>
     await expect(bar.locator('.mstrip')).toHaveCount(0)                       // the stepper is per-ROW, never on the bar
     await expect(ov.locator('.fread .tourstep')).toHaveCount(0)               // and the retired gutter tour is gone
     // the speed is live wherever something PLAYS — semi-auto included since the three-mode ruling —
@@ -3203,8 +3223,10 @@ test('The reader reads behaviour first — one fixed order, and no control to ch
     // merely pre-selected one stop fails here. The reader's bar carries ONLY the PLAY-MODE pair now
     // (2026-09-01): the scene stepper moved onto each beat row's rail (board R20), so the bar's one
     // .medbar is the mode — a re-dealt column-order pair would be a second, unnamed .medbar and caught.
-    await expect(ov.locator('.fread .medbar')).toHaveCount(1)
+    // (two since 2026-09-07: the mode trio and the ZOOM pair, both named — an unnamed third is caught)
+    await expect(ov.locator('.fread .medbar')).toHaveCount(2)
     await expect(ov.locator('.fread .medbar.pmode')).toHaveCount(1)
+    await expect(ov.locator('.fread .medbar.pzoom')).toHaveCount(1)
     await expect(ov.locator('.fread .medbar.pstep')).toHaveCount(0)
     // the second fact, CLAIMED AS AN ABSENCE (fix round 1, 2026-09-04): there is no control to
     // change the order. MISSING passes exactly while the order pair is gone and fails, naming it,

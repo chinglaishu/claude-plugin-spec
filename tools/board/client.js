@@ -556,6 +556,12 @@ const B = window.__BOARD__ || {}
       tools.appendChild(ml); tools.appendChild(modePicker())
       const bl = document.createElement('span'); bl.className = 'fbarl'; bl.textContent = 'play speed'
       tools.appendChild(bl); tools.appendChild(spdSelect())
+      // …AND THE ZOOM, chosen by the reader (the human, 2026-09-07: "let user choose have zoom-in or
+      // not (on both expected and actual)"). The switch itself (ZOOMED / setZoom) has been session
+      // state since the per-cell .pczoom toggle went; this is its face — reader-wide like the speed,
+      // so both cells of every row frame the same way at once.
+      const zl = document.createElement('span'); zl.className = 'fbarl'; zl.textContent = 'zoom'
+      tools.appendChild(zl); tools.appendChild(zoomPicker())
       rmeta.appendChild(tools)
     }
     // THE COVERING TEST'S ACTIONS RIDE THE TITLE ROW TOO (the human, 2026-09-02: a proof header at
@@ -858,6 +864,27 @@ const B = window.__BOARD__ || {}
     onMode(box, paint)
     return box
   }
+  // ZOOM · in | full — the reader's choice, on the title row beside the play controls (the human,
+  // 2026-09-07). `in` frames each moment's ring and chip at up to 1.25× (aimFrame); `full` shows the
+  // whole page on BOTH cells, the chips still standing over their rings. One switch, every row.
+  const ZOOM_STOPS = [{ v: true, label: 'in', title: 'frame the ringed element and its chip — up to 1.25×, both cells' },
+    { v: false, label: 'full', title: 'the whole page on both cells, no magnification' }]
+  function zoomPicker () {
+    const box = document.createElement('span'); box.className = 'medbar pzoom'
+    const btns = ZOOM_STOPS.map(function (st) {
+      const b = document.createElement('button'); b.type = 'button'
+      b.textContent = st.label; b.dataset.zoom = st.v ? 'in' : 'full'; b.title = st.title
+      b.addEventListener('click', function () { setZoom(st.v) })
+      box.appendChild(b)
+      return b
+    })
+    const paint = function () {
+      btns.forEach(function (b) { b.classList.toggle('on', (b.dataset.zoom === 'in') === !!ZOOMED) })
+    }
+    paint()
+    onZoom(box, paint)
+    return box
+  }
   // THE WALK IS PER BEAT ROW (the human, 2026-08-30: "the go to next small step can NOT be on top as
   // there could be multi when/then, so the go to next small step need to be by each when/then"). The
   // advance lives on each beat row's own moment strip now (momentStrip), never a single reader-wide
@@ -1104,8 +1131,15 @@ const B = window.__BOARD__ || {}
     return c.expected === '' && c.got === ''
   }
   // what the REQUIREMENT says this moment should show
+  // …AND THE TWO SIDES SAY THE SAME WORDS (the human, 2026-09-07: "The actual and expected should
+  // use same copy write, otherwise it's not comparable"). The Expected spoke the claim's LABEL and
+  // the Actual the author's PHRASE — "EXPECTED The new row's checkbox — empty, nothing ticked"
+  // beside "ACTUAL ✓ empty": one fact in two sentences, and two chips of different heights landing
+  // in different places (chipSpot reads the line count). Where the author gave a phrase, BOTH sides
+  // speak it; the label is the Expected's fallback for a harvest that recorded none.
   function expectedWords (c) {
     if (!wantsNothing(c)) return quoteVal(c && c.expected)
+    if (c.phrase && String(c.phrase).trim()) return String(c.phrase)
     return (c.label && String(c.label).trim()) ? String(c.label) : MUST_BE_ABSENT
   }
   // …and what the APP did. An absence is a sentence, never a quoted value, whichever side asked for
@@ -1289,7 +1323,12 @@ const B = window.__BOARD__ || {}
       chip.setAttribute('aria-label', tip.textContent)
       layer.textContent = ''
       layer.appendChild(chip)
-      cur = { spot: chipSpot(m.aim, vp, chipRows(m, side)), chip: chip, vp: vp }
+      // ONE SPOT FOR BOTH CHIPS (the human, 2026-09-07: "many things are not align / sync in the
+      // expected / actual"). Each side used to place its chip from ITS OWN line count, so a side
+      // that wrapped to one more line took the other placement rule — one chip above the ring, the
+      // other below it, on one moment. The spot is computed from the taller of the two, the same
+      // number momentFrame hands the camera, so the two chips land in one place.
+      cur = { spot: chipSpot(m.aim, vp, Math.max(chipRows(m, 'expected'), chipRows(m, 'actual'))), chip: chip, vp: vp }
       place(box._view, 0)
     }
     // THE SAME BOX IN EVERY MODE (the human, 2026-09-07: "the explaining text box in semi-auto should

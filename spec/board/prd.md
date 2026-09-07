@@ -491,7 +491,7 @@ sides carry that beat and no other — is unchanged.*
 - **When** the moment on show claimed a value
 - **Then** each picture carries ONE chip, LED BY THE MOMENT'S OWN WORDS — the label the run recorded, the same on both cells — and under it only what that side holds: `EXPECTED "…"` over the replica, `ACTUAL ✓ "…"` or `ACTUAL ✕ "…"` over the photograph, the mark carrying the state beside the hue — wrapped to read WHOLE inside the cell with the whole text in a hover tooltip; a moment that claimed nothing carries no chip at all
 - **When** the reader opens
-- **Then** it opens in **semi-auto** — each beat held on its first scene — with the reader-wide controls (the **auto · semi-auto · step** trio and the speed) on the requirement's title row, left of its ⋯ menu
+- **Then** it opens in **semi-auto** — each beat held on its first scene — with the reader-wide controls (the **auto · semi-auto · step** trio, the speed, and the **zoom · in | full** switch that frames both cells alike) on the requirement's title row, left of its ⋯ menu
 - **When** you walk a beat — its strip's `‹ ›`, a click on one of its named segments, or the ← → keys while its row is the **selected** one (visibly marked) — with ↑ ↓ selecting which When/Then and PgUp / PgDn paging the requirement
 - **Then** both pictures of that row move together to that one moment, the strip painting the segment they are on, the next chevron becoming a restart `↺` at the last moment that wraps to the first — and no other beat row moves
 - **When** you switch the play control to auto
