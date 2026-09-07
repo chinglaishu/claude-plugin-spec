@@ -32,9 +32,9 @@ A **rule card** is a requirement (`## R<n>`), with:
 
 - **Source stamps** — DOC · CODE · SPEC · PROVEN. SPEC is implicit (the card exists). PROVEN is measured (coverage, as today). DOC and CODE are **authored** and render as authored, never as a measured green.
 - **Example slots** — happy · boundary · absence · mistake. Each beat fills the slots it is tagged with; a slot the rule needs and nobody filled shows yellow; a slot explicitly declared not needed shows as such.
-- **A derived state**, in the order the human works them: **agreed** (nothing to confirm) → **conflict** (this card is a side in an open conflict — pick a side) → **gap** (an empty slot, or a missing DOC/CODE stamp the human asked for) → **mismatch** (the existing failed/unproven proof: bug, or wrong rule).
+- **A derived state**, in the order the human works them: **agreed** (nothing to confirm) → **conflict** (this card is a side in an open conflict — pick a side) → **gap** (a slot the rule needs that no beat fills and nobody declared not needed) → **mismatch** (the existing failed/unproven proof: bug, or wrong rule).
 
-A **question card** (`## Q<n>`) is a behaviour one source has and no requirement owns — a code-only `fold()`, a doc rule no test films. It is not a requirement, carries no flag and gates nothing (init R3 stands); it asks the human one question, "is this a requirement?", and is resolved by being rewritten into an `## R` or deleted.
+A **question card** (`## Q<n>`) is a behaviour one source has and no requirement owns — a code-only `fold()`, a doc rule no test films. It is not a requirement, carries no flag and gates nothing (init R3 stands); it asks the human one question, "is this a requirement?", and is resolved by being rewritten into an `## R` (a fresh id) or deleted. `Q` ids are never reused, like `R` ids.
 
 **Conflicts** stay on the Conflicts page (its R1: one fact stated two incompatible ways, never a gap). A rule card's *conflict* state is derived from that page's open findings naming it as a side. Nothing new is stored on the card.
 
