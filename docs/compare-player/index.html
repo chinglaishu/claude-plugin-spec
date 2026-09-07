@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>compare-player — dev</title>
+<link rel="stylesheet" href="compare-player.css">
+<style>body{margin:0;background:#f6f2ea;color:#2b2a27;font:15px/1.45 -apple-system,Helvetica,Arial,sans-serif;padding:32px 44px;max-width:1280px} h1{font-size:24px;margin:0 0 4px} .sub{color:#6f6a60;margin:0 0 14px;font-size:14px}</style>
+</head><body>
+<h1 id="t"></h1><p class="sub" id="s"></p>
+<div id="rows"></div>
+<script src="images-opgrowth.js"></script>
+<script src="compare-player.js"></script>
+<script src="decisions-opgrowth.js"></script>
+<script>
+document.getElementById('t').textContent = PAGE.title
+document.getElementById('s').innerHTML = PAGE.sub
+SBCompare.mountAll(document.getElementById('rows'), DECISIONS, { mode: 'semi' })
+</script>
+</body></html>

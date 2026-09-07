@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>__TITLE__</title>
+<style>
+body{margin:0;background:#f6f2ea;color:#2b2a27;font:15px/1.45 -apple-system,Helvetica,Arial,sans-serif;padding:32px 44px;max-width:1280px}
+h1{font-size:24px;margin:0 0 4px}
+.sub{color:#6f6a60;margin:0 0 14px;font-size:14px}
+.sub b{color:#2b2a27}
+/*__CSS__*/
+</style></head><body>
+<h1 id="t"></h1>
+<p class="sub" id="s"></p>
+<div class="cmp-legend"><span><i class="sw inh"></i> inherited (green mark)</span><span><i class="sw ovl"></i> overlay (blue mark + ↺)</span><span><i class="sw lock"></i> read-only</span><span><i class="sw typed"></i> being typed</span><span><i class="sw red"></i> grey "redundant"</span><span><i class="sw ring"></i> the difference</span><span>· <b>auto</b> plays each moment once and advances · <b>semi-auto</b> replays the moment and waits · <b>step</b> is still</span></div>
+<div id="rows"></div>
+<script>/*__IMG__*/</script>
+<script>/*__PLAYER__*/</script>
+<script>/*__DECISIONS__*/</script>
+<script>
+document.getElementById('t').textContent = PAGE.title
+document.getElementById('s').innerHTML = PAGE.sub
+SBCompare.mountAll(document.getElementById('rows'), DECISIONS, { mode: 'semi' })
+</script>
+</body></html>
