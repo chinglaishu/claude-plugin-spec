@@ -108,8 +108,8 @@ test('only AUTO is wound: semi-auto and step schedule nothing at all', () => {
 test('AUTO waits for the LONGER of the still’s hold and the moment’s own action', () => {
   // a 1535ms slice under a 500ms hold: cutting at 500 would chop the gesture mid-type
   assert.equal(modeHold('auto', 500, 1535, 1), globalThis.SBStepper.LEAD + 1535 + REST)
-  // …and a moment with a long hold and a short slice keeps its hold
-  assert.equal(modeHold('auto', 3000, 400, 1), 3000)
+  // …and a moment with a long hold and a short slice keeps its hold (longer than lead + slice + rest)
+  assert.equal(modeHold('auto', 6000, 400, 1), 6000)
 })
 
 // ── THE FILM IS THE APPROACH; THE MOMENT IS THE STILL ────────────────────────────────────────────
@@ -168,8 +168,9 @@ test('the reader’s speed rates BOTH halves of that answer', () => {
   const LEAD = globalThis.SBStepper.LEAD
   assert.equal(modeHold('auto', 500, 1535, 4), scaleHold(LEAD, 4) + scaleHold(1535, 4) + scaleHold(REST, 4))
   assert.equal(modeHold('auto', 8000, 400, 4), scaleHold(8000, 4))
-  // 0.25×: both stretch
-  assert.equal(modeHold('auto', 500, 1535, 0.25), scaleHold(LEAD, 0.25) + scaleHold(1535, 0.25) + scaleHold(REST, 0.25))
+  // 0.25×: both stretch — and the cap (15 s) is what a 2 s rest at quarter speed runs into, so the
+  // stretch is read on a shorter slice that stays under it
+  assert.equal(modeHold('auto', 500, 300, 0.25), scaleHold(LEAD, 0.25) + scaleHold(300, 0.25) + scaleHold(REST, 0.25))
 })
 
 test('a very long slice cannot park the row forever — the auto hold is capped', () => {

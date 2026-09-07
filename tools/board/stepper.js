@@ -76,7 +76,11 @@
   // still is what the Actual shows. This was a 200ms `tail` — a blink, and the human's report is
   // exactly what a blink looks like. It is one number because BOTH clocks spend it: auto rests here
   // before the row advances, and semi-auto rests here before the approach replays (filmEnd).
-  var REST = 900
+  // …2000 since 2026-09-07 evening (the human, on a screen recording of 0.49.1: "it's impossible to
+  // compare the expected and actual when it's not still"). The still is the only state the two
+  // columns can be compared in, so it is the LONGEST beat of the moment — longer than the lead and,
+  // on this demo, than every approach.
+  var REST = 2000
   // THE LEAD — the beat a playing moment opens on its START state before the approach runs (the
   // human, 2026-09-07, on 0.48.5: "be aware of the pause between each action to make user able to
   // observe" — and "now the expected column never moved"). A moment is three beats now, LEAD ·

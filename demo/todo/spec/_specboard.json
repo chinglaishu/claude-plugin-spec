@@ -1,10 +1,10 @@
 {
-  "version": "0.49.1",
+  "version": "0.49.2",
   "files": {
     "tools/spec-store.mjs": "7dffd7b061a3e5eb3e8e99376fc25cf6eba6c891ff7b17c1da7ee9bc562169e5",
     "tools/coverage.mjs": "2f97051ed7035c0d75255a957d9c8ffd56192f920b3e6ad4fc7888dcbb902397",
     "tools/journey.mjs": "8ea1d34d2db8a4152e15a0dc123b61bee5b8c5efaa1fbfcf95945533031fecfa",
-    "tools/build-board.mjs": "3349b9f508ed9e793ce279ee451130d0fed1a2e7221531ee92d6e8e7f8d564e9",
+    "tools/build-board.mjs": "587ddda274e6efb1d96008a674f914f8478e4b7f5ba3c9a2beb45021fd8f2239",
     "tools/store.mjs": "f3d57745e7a4c39775e38fbb4a4ea5386e9e58bb4b69af417bec5b733811a38b",
     "tools/store-address.mjs": "b236814e4b27143345da9ec8a357dcbdc7905e183c9eaa84c25e2456a5a4c887",
     "tools/store-sync.mjs": "572734ea1d1ddf926832f2608f758eb388b487d6818af19cc8c3ac4859b9a031",
@@ -23,8 +23,8 @@
     "tools/ci-select.mjs": "6cf8cc5148cbf7c453d7ab4c724e76e00c1ac5187002f6bdb82fdb18b9af56ae",
     "tools/evidence.mjs": "65dde332120e06eca1b4c0298cb5fe13a14729c77b5d4db7575ac598017100c3",
     "tools/compose.mjs": "0bc7cda2ef3ece3df0c522265eb9d38b95663384d41b00e664d300c49ae6a76f",
-    "tools/board/client.js": "3f905bf8beb6a822c0e5903134a7b65dccd63dc68e142abed92d100cb3be8950",
-    "tools/board/stepper.js": "7950f280867aaeb0a4553f06dbde86d0168154588d83eda36e13fec7c4e7b5a8",
+    "tools/board/client.js": "83493f9d80aa157bcae38df4757c63dd117a7222892d853e4158da8673ebe56d",
+    "tools/board/stepper.js": "34ded540558ae27f1810f095f775d1adb354120b056a5e4f9582179cfcbb7aad",
     "tools/board/words.js": "81badf895a3d1c632dfa145a457b0e1c654ddd3b82a2d32163324f6e4ac1d0f0",
     "tools/board/graft.js": "6f321ff69081a5258c074f33301c07744c32de4e83c36be57e0a2bce205ee52b",
     "tools/serve-board.mjs": "4284d3b8ccf2e2981ff7dc0bffec04bd741b9290bf8807be22a39b824805900f",

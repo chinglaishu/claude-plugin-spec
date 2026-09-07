@@ -2382,7 +2382,7 @@ export function build () {
      clicked chip or segment keeps FOCUS, so its tooltip stayed open while the mouse hovered another —
      two, three boxes on the row. Hover opens one; :focus-visible keeps the keyboard's way in and
      leaves a mouse click alone. */
-  .pcbox .pchip:hover .mtip, .pcbox .pchip:focus-visible .mtip { display:block; }
+  .pcbox .pchip.clamped:hover .mtip, .pcbox .pchip.clamped:focus-visible .mtip { display:block; }
 
   /* ── THE DIFFERENCE MARKER (phase 5) ─────────────────────────────────────────────────────────
      One label ACROSS the two cells on a failed moment, on the seam, at the ring's own height: the
@@ -2503,6 +2503,10 @@ export function build () {
      replica cell takes the same inset every other picture cell has. */
   .fstory .sbframe.sbrep { padding:var(--s3); }
   .fstory .sbframe .reppage { position:relative; width:100%; background:var(--paper); overflow:hidden; }
+  /* the back frame the Expected crossfades through (2026-09-07 evening): stacked over the front,
+     hidden until a film asks it to arrive, never a target */
+  .fstory .sbframe .reppage.repback { position:absolute; left:0; top:0; opacity:0; pointer-events:none; }
+  .fstory .sbframe .repfade { display:block; width:100%; height:100%; border:0; }
   .fstory .sbframe .repscale { position:absolute; left:0; top:0; transform-origin:0 0; }
   .fstory .sbframe .repframe { display:block; width:100%; height:100%; border:0;
     background:var(--paper); pointer-events:none; }

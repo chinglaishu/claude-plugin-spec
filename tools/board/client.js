@@ -1267,6 +1267,12 @@ const B = window.__BOARD__ || {}
       const bw = box.clientWidth; const bh = box.clientHeight
       if (bw > 0) el.style.maxWidth = Math.round(Math.min(bw * 0.9, CARDG.width)) + 'px'
       const cw = el.offsetWidth; const ch = el.offsetHeight
+      // THE TOOLTIP ONLY WHERE IT ADDS A WORD (the human, 2026-09-07: "avoid having too much
+      // tooltip/pop over"). The chip wraps its whole text, so on most moments a hover tooltip
+      // repeated every word already on the picture. It opens only when a value CLAMPED — the one
+      // case the whole text is not on the picture — measured on the laid-out chip.
+      const clamped = [].some.call(el.querySelectorAll('.pcv, .pcml'), function (t) { return t.scrollHeight > t.clientHeight + 1 || t.scrollWidth > t.clientWidth + 1 })
+      el.classList.toggle('clamped', clamped)
       if (bw > 0 && cw > 0) tx = Math.max(0, Math.min(tx, bw - cw))
       if (bh > 0 && ch > 0) ty = Math.max(0, Math.min(ty, bh - ch))
       el.style.transform = 'translate(' + tx + 'px,' + ty + 'px)'
@@ -1628,7 +1634,11 @@ const B = window.__BOARD__ || {}
       // the beat's OPENING and this moment's patch was not, so showing the two at equal weight would
       // be a picture claiming to be one instant. Faded, it does the one job it is there for: saying
       // WHERE the component sits. Marked by tools/board/graft.js, never by this sheet.
-      '[data-ctx][data-ctx][data-ctx]{opacity:.4;filter:saturate(.5)}',
+      // …FAINT, since 2026-09-07 evening (the human's recording of 0.49.1 at zoom full: the graft's
+      // context at opacity .4 made the Expected's still look like a different page from the
+      // photograph beside it — "impossible to compare"). The cue that the context was captured at
+      // the beat's opening stays; it no longer competes with the comparison the row exists for.
+      '[data-ctx][data-ctx][data-ctx]{opacity:.82;filter:saturate(.75)}',
       // (the .sbsk sketch layer that stood a drawing in a borrowed page went with the SKETCH, retired
       // by the human 2026-09-05 — an un-harvested requirement shows its prose and an honest empty
       // state, so no page here is ever a borrowed one.)
@@ -1825,16 +1835,27 @@ const B = window.__BOARD__ || {}
       if (p && p.catch) p.catch(function () { /* autoplay refused, or no decoder — the still stands */ })
     }
     const rewind = function () { try { vid.currentTime = cur.from } catch (e) { /* not seekable yet */ } }
-    const word = function (p) { return (p === 'lead' || p === 'film') ? 'approach' : 'rest' }
-    // the row hears two words, and hears each once per moment: lead → film is one `approach` to it
+    // THE ROW HEARS THREE WORDS — lead · film · rest — each once per moment (2026-09-07 evening; it
+    // heard two, `approach` for lead and film alike, until the human's recording of 0.49.1 showed
+    // why that is not enough: "both side always not sync … only one side keep moving and another
+    // side is still"). The Expected cannot film, but it can MOVE WITH the film: told `film` and how
+    // long it runs, the row crossfades the Expected from the start state to the moment over exactly
+    // that span, so the two columns start together, move together and stand together.
+    const word = function (p) { return p === 'off' ? 'rest' : p }
     let said = ''
-    const say = function (p) {
+    const say = function (p, ms) {
       phase = p
       const w = word(p)
-      stage.classList.toggle('approach', w === 'approach')
+      stage.classList.toggle('approach', w === 'lead' || w === 'film')
+      stage.dataset.phase = w
       if (said === idx + ':' + w) return
       said = idx + ':' + w
-      if (report) report(idx, w)
+      if (report) report(idx, w, ms || 0)
+    }
+    // how long THIS moment's film runs at the reader's speed — what the row's crossfade is timed to
+    const filmMs = function () {
+      if (!cur) return 0
+      return window.SBStepper.scaleHold(Math.round((cur.to - cur.from) * 1000), PLAY_SPD)
     }
     // nothing plays and nothing is scheduled: the still under this layer is what the cell shows
     const off = function () {
@@ -1857,7 +1878,7 @@ const B = window.__BOARD__ || {}
     // that ran off its own end would show the NEXT moment's action under this moment's chip
     const film = function () {
       if (dead || !cur) return
-      say('film')
+      say('film', filmMs())
       vid.playbackRate = (PLAY_SPD > 0 ? PLAY_SPD : 1)
       starts = 0                 // a new approach gets the full budget of attempts to start
       play()
@@ -1945,7 +1966,7 @@ const B = window.__BOARD__ || {}
         }
       }, { rootMargin: '200px' }).observe(vid)
     }
-    return { el: vid, show: show, phase: function () { return word(phase) } }
+    return { el: vid, show: show, phase: function () { return word(phase) }, filmMs: filmMs }
   }
 
   // ── THE FRAME-STEPPER, at any scale ──────────────────────────────────────────────────────────
@@ -1969,7 +1990,7 @@ const B = window.__BOARD__ || {}
     // own slices of it (the human, 2026-09-06). It is stacked in the same grid cell as the frames and
     // moved by the same camera; a moment with no slice simply leaves it off and the still shows.
     const player = (live && live.src)
-      ? liveLayer(stage, live.src, frames, function (i, p) { if (el._onPhase) el._onPhase(i, p) })
+      ? liveLayer(stage, live.src, frames, function (i, p, ms) { if (el._onPhase) el._onPhase(i, p, ms) })
       : null
     // NO dots and NO n/N counter in the proof cell any more (the human, 2026-09-02): the row's ONE
     // moment strip over the pictures (momentStrip, fed by _onStep below) is the single readout and
@@ -2000,7 +2021,7 @@ const B = window.__BOARD__ || {}
       // (el._onPhase), which is what moves the Expected: a cell with no film has only the one
       // phase, and says so, so the Expected still steps with it.
       if (player) player.show(i)
-      else if (el._onPhase) el._onPhase(i, 'rest')
+      else if (el._onPhase) el._onPhase(i, 'rest', 0)
       // the row's MOMENT STRIP is the readout now — it lights the segment of the moment on show
       // (the human, 2026-09-02), tracking the loop in auto and the walk in step alike.
       if (el._onStep) el._onStep(cur)
@@ -2054,6 +2075,7 @@ const B = window.__BOARD__ || {}
     el._cur = function () { return cur }
     // …and which PHASE of it: the row wires _onPhase after the first show(), so it asks
     el._phaseNow = function () { return player ? player.phase() : 'rest' }
+    el._filmMs = function () { return player ? player.filmMs() : 0 }
     onSpd(el, function () { if (!el.hidden) schedule() })
     // switching the reader's mode arms or holds every loop at once (schedule() itself is the gate)
     onMode(el, function () { if (!el.hidden) schedule() })
@@ -2524,9 +2546,10 @@ const B = window.__BOARD__ || {}
         im.classList.add('on')
         stage1.appendChild(im)
         box.appendChild(stage1)
-        const one = liveLayer(stage1, live.src, got.shots, function (i, p) { if (cell._onPhase) cell._onPhase(i, p) })
+        const one = liveLayer(stage1, live.src, got.shots, function (i, p, ms) { if (cell._onPhase) cell._onPhase(i, p, ms) })
         one.show(0)
         cell._phaseNow = one.phase
+        cell._filmMs = one.filmMs
       } else box.appendChild(im)
       fig.appendChild(box)
       strip.appendChild(fig)
@@ -2636,6 +2659,15 @@ const B = window.__BOARD__ || {}
       const fr = document.createElement('div'); fr.className = 'sbframe sbrep'
       const box = document.createElement('div'); box.className = 'pcbox'
       const ifr = repStage(box, vp, 'the requirement, in the app’s own component')
+      // …AND A SECOND, HIDDEN FRAME BEHIND THE SAME CAMERA (2026-09-07 evening): the picture a
+      // moment's film moves TOWARD is loaded here and faded in over the film's own length, so the
+      // Expected moves with the Actual instead of cutting once while the other column plays. It is
+      // `.repfade`, never `.repframe`: the front frame is the cell's one picture — what the board's
+      // own legs read, what the compose gate answers for — and this is a transition, not a second.
+      const back = repStage(box, vp, 'the requirement, in the app’s own component (arriving)')
+      back.className = 'repfade'
+      back.setAttribute('aria-hidden', 'true')
+      const backPage = back.closest('.reppage'); backPage.classList.add('repback')
       fr.appendChild(box)
       // ONE CAMERA, ONE RULE, BOTH CELLS (phase 4b): the Expected cell takes the moment camera
       // wherever its Actual does — same maths, same page coordinates, same chip box — and the older
@@ -2683,7 +2715,15 @@ const B = window.__BOARD__ || {}
       // compose every harvested moment with the READER'S OWN BYTES and check the landing
       // (tools/reader-compose-check.mjs) instead of restating the rule and drifting from it.
       let aim = null                         // what the last show() handed over, for the load below
+      let fading = false                     // the back frame is showing the arriving picture
+      let backAim = null                     // what the back frame is loading, for ITS load below
       const align = function () {
+        // the front frame has landed the picture the back frame faded in: the transition is over
+        if (fading) {
+          fading = false; backAim = null
+          backPage.style.transition = 'none'; backPage.style.opacity = '0'
+          frontPage.style.transition = 'none'; frontPage.style.opacity = '1'
+        }
         const a = aim
         if (!a || a.seq !== seq) return
         let doc = null
@@ -2692,7 +2732,59 @@ const B = window.__BOARD__ || {}
         if (how != null) fr.dataset.repalign = how
       }
       ifr.addEventListener('load', align)
-      const show = function (doc, standOn) { aim = standOn || null; fr.dataset.repalign = ''; ifr.srcdoc = doc }
+      // …and the back frame is DROPPED by every landing that is not its own handover (2026-09-07
+      // evening, found by the probe: a walk during a fade left the back at full opacity over the
+      // next moment's lead picture — the wrong picture, on top, for a whole lead)
+      const frontPage = ifr.closest('.reppage')
+      const dropBack = function () {
+        fading = false; backAim = null
+        backPage.style.transition = 'none'; backPage.style.opacity = '0'
+        frontPage.style.transition = 'none'; frontPage.style.opacity = '1'
+      }
+      const show = function (doc, standOn, handover) {
+        if (!handover) dropBack()
+        aim = standOn || null; fr.dataset.repalign = ''; ifr.srcdoc = doc
+      }
+      // …and a fade that is still running when the row moves on is SETTLED, not abandoned: the
+      // picture it was arriving at lands in the front at once. (Found by the by-eye pass, 2026-09-07
+      // evening: a walk mid-fade left the next moment's lead showing two pages blended.)
+      const settle = function () {
+        const a = backAim
+        if (!a || a.seq !== seq) { dropBack(); return }
+        show(a.doc, a, true)
+      }
+      // THE CROSSFADE: the arriving picture is laid out in the back frame, stood on its own ringed
+      // element like the front one, faded in over `ms`, and then handed to the front frame — so at
+      // the end of the film the front holds the moment exactly as an instant show() would have.
+      back.addEventListener('load', function () {
+        const a = backAim
+        if (!a || a.seq !== seq) return
+        let doc = null
+        try { doc = back.contentDocument } catch (e) { doc = null }
+        repAlignIn(doc, a)
+        fading = true
+        // THROUGH PAPER, never overlapped (the by-eye pass, 2026-09-07 evening): two pages of text at
+        // half opacity read as doubled text. The front fades out to the cell's paper over the first
+        // half of the film, the arriving page fades in over the second — the Expected visibly moves
+        // for exactly as long as the Actual does, and no instant shows two pages at once.
+        const half = Math.max(80, Math.round(a.ms / 2))
+        backPage.style.transition = 'none'; backPage.style.opacity = '0'
+        requestAnimationFrame(function () {
+          if (a.seq !== seq || backAim !== a) return
+          frontPage.style.transition = 'opacity ' + half + 'ms ease-in'
+          frontPage.style.opacity = '0'
+          setTimeout(function () {
+            if (a.seq !== seq || backAim !== a) return
+            backPage.style.transition = 'opacity ' + half + 'ms ease-out'
+            backPage.style.opacity = '1'
+            setTimeout(function () { if (a.seq === seq && backAim === a) show(a.doc, a, true) }, half)
+          }, half)
+        })
+      })
+      const fadeIn = function (doc, standOn, ms) {
+        backAim = Object.assign({}, standOn || {}, { doc: doc, ms: ms })
+        back.srcdoc = doc
+      }
       const blank = function (why) {
         fr.dataset.repsrc = ''
         fr.dataset.repside = ''
@@ -2700,7 +2792,11 @@ const B = window.__BOARD__ || {}
         show(repSrcdoc({ body: '', faces: '', plates: [], region: null, ring: null, ok: true,
           vw: vp.vw, vh: vp.vh, note: why }))
       }
-      const paint = function (j) {
+      const paint = function (j, via, ms) {
+        const put = function (doc, standOn) {
+          if (via === 'fade' && ms >= 160 && !REDUCED) fadeIn(doc, standOn, ms)
+          else show(doc, standOn)
+        }
         // THE GENERATION TOKEN IS TAKEN FIRST, ON EVERY PATH (final review R1, 2026-09-04). It was
         // bumped only where a fetch was about to start, so stepping to a moment with NO replica
         // invalidated nothing in flight: moment 0's fetch resolved after moment 1's honest blank had
@@ -2741,7 +2837,7 @@ const B = window.__BOARD__ || {}
             const ring = repRect(got[0], 'data-ring-box')
             const stood = repStand({ whole: whole, region: region, scroll: sc, moment: sc }) ||
               { x: 0, y: 0, w: vp.vw, h: vp.vh }
-            show(repSrcdoc({
+            put(repSrcdoc({
               body: body,
               faces: got[1] || '',
               plates: whole ? [] : repPlates(got[2], region, vp.vw, vp.vh),
@@ -2804,7 +2900,7 @@ const B = window.__BOARD__ || {}
               scroll: repScroll(baseText),
               moment: repScroll(got[0])
             }) || { x: 0, y: 0, w: vp.vw, h: vp.vh }
-            show(repSrcdoc({
+            put(repSrcdoc({
               body: styles + baseRoot.outerHTML,
               faces: got[1] || '',
               // no shell plates: the base IS the shell, measured rather than blocked in
@@ -2830,7 +2926,10 @@ const B = window.__BOARD__ || {}
           }
         })
       }
-      for (const sh of shots) if (sh.rep) repFetch(sh.rep)      // prefetch the row, once
+      // prefetch the row, once — the BASE too (2026-09-07 evening): the first lead asks for it
+      // 700 ms before the film paints over it, and under the suite's load a cold fetch lost that
+      // race, so a whole cycle's lead showed the moment instead of its start state
+      for (const sh of shots) { if (sh.rep) repFetch(sh.rep); if (sh.base) repFetch(sh.base) }
       // THE BEAT'S OWN BASE, ALONE — the state a beat's FIRST moment approaches from (2026-09-07).
       // The Given as the run found it, body-rooted, one blob shared by every beat that opens on that
       // page (phase 8); painted whole, the way paintLone paints a body-rooted picture, so it stands
@@ -2840,12 +2939,12 @@ const B = window.__BOARD__ || {}
         const mine = ++seq
         const sh = shots[j]
         const base = sh && sh.base
-        if (!base) { paint(j); return }
+        if (!base) { paint(j, 'show', 0); return }
         Promise.all([repFetch(base), want.faces]).then(function (got) {
           if (mine !== seq || !fr.isConnected) return
           const text = got[0]
           const body = repBody(text)
-          if (!body) { paint(j); return }
+          if (!body) { paint(j, 'show', 0); return }
           const sc = repScroll(text)
           const whole = !repAttr(text, 'data-replica-path')
           const ring = repRect(text, 'data-ring-box')
@@ -2869,19 +2968,22 @@ const B = window.__BOARD__ || {}
       // `data-repmoment` says which moment the row is on and `data-repphase` which phase; `reppic`
       // which picture is painted (an index, or `base`); `repsrc` keeps naming the painted file.
       let picAt = null
-      fr._phase = function (j, ph) {
+      fr._phase = function (j, ph, ms) {
         fr.dataset.repmoment = String(j)
         fr.dataset.repphase = ph
-        const start = ph === 'approach'
-        const t = start ? j - 1 : j
-        if (start && t < 0) {
+        // lead: the start state, still · film: the moment, arriving over the film's own length ·
+        // rest: the moment, still (an instant show — the crossfade has usually already landed it)
+        const t = ph === 'lead' ? j - 1 : j
+        if (ph !== 'film' && backAim) settle()
+        if (t < 0) {
           if (picAt === 'base') return
           picAt = 'base'; paintBase(j); return
         }
         if (picAt === t) return
-        picAt = t; paint(t)
+        picAt = t
+        paint(t, ph === 'film' ? 'fade' : 'show', ms || 0)
       }
-      fr._step = function (j) { fr._phase(j, 'rest') }
+      fr._step = function (j) { fr._phase(j, 'rest', 0) }
       fr._aimScene = function (rect, card, animate) { box._aim(rect || null, card || null, animate) }
       fr._step(0)
       return fr
@@ -3114,11 +3216,12 @@ const B = window.__BOARD__ || {}
           // `rest` on every step. The Expected paints the start state or the moment from it, and both
           // chips drop or carry their value line from it — one source, so the two columns and their
           // captions can never be on different beats of the same moment.
-          const onPhase = function (j, ph) {
+          const onPhase = function (j, ph, ms) {
             rowEl.dataset.phase = ph
-            if (fc._phase) fc._phase(j, ph)
-            if (pc._chips && pc._chips._phase) pc._chips._phase(ph)
-            if (fc._chips && fc._chips._phase) fc._chips._phase(ph)
+            if (fc._phase) fc._phase(j, ph, ms || 0)
+            const chipPh = ph === 'rest' ? 'rest' : 'approach'
+            if (pc._chips && pc._chips._phase) pc._chips._phase(chipPh)
+            if (fc._chips && fc._chips._phase) fc._chips._phase(chipPh)
           }
           if (pc._stepper) {
             pc._stepper._onFrame = function (j) { showMoment(j, true) }
@@ -3127,7 +3230,8 @@ const B = window.__BOARD__ || {}
           const j0 = pc._stepper ? pc._stepper._cur() : 0
           showMoment(j0, false)
           // the first show() ran before this wiring existed, so its phase is asked for, not waited on
-          onPhase(j0, pc._stepper ? pc._stepper._phaseNow() : (pc._phaseNow ? pc._phaseNow() : 'rest'))
+          const src0 = pc._stepper || pc
+          onPhase(j0, src0._phaseNow ? src0._phaseNow() : 'rest', src0._filmMs ? src0._filmMs() : 0)
         }
         // the row's own strip and the ← → keys (targeting the SELECTED row) drive the walk; clicking
         // anywhere on the row SELECTS it (the human, 2026-09-02: "make clear which when/then is

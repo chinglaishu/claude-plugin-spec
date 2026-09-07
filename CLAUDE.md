@@ -386,7 +386,20 @@ change.
   spot from the taller line count (`chipSpot` in `chipLayer._paint`), so a side that wraps one
   line more no longer takes the other placement; every `.mtip` opens on hover or `:focus-visible`
   only, never a click's `:focus`; and `ZOOM · in | full` sits on the title row beside the play
-  controls (`zoomPicker` → the session's `setZoom`, which had lost its face with `.pczoom`).
+  controls (`zoomPicker` → the session's `setZoom`, which had lost its face with `.pczoom`). **And
+  the Expected MOVES WITH the film (0.49.2, the human's screen recording of 0.49.1: "impossible
+  to compare the expected and actual when it's not still … only one side keep moving and another
+  side is still").** The live layer says THREE words — `lead` · `film` (with the film's length at
+  the reader's speed) · `rest` — and the Expected cell answers `film` by fading THROUGH PAPER from
+  the start state to the moment over exactly that span (a second, hidden `.repfade` frame behind
+  the same camera; the front `.repframe` stays the cell's one picture and takes the handover at the
+  end — a walk mid-fade SETTLES it, never leaves a blend). `REST` is 2000 ms: the still is the only
+  state the two columns can be compared in, so it is the longest beat. The graft's context fade is
+  faint (`[data-ctx]` opacity .82) — at .4 the Expected's still looked like a different page from the
+  photograph at zoom full. The chip's tooltip opens only on a chip whose value CLAMPED (`.clamped`,
+  measured at place time) — everywhere else it repeated every word already on the picture. Still
+  open and said: the recording's clock trails the harness by ~300 ms, so a moment's lead frame is a
+  few keystrokes in.
   And a slice OPENS WHERE THE ACTION BEGINS: the harness
   marks the end of every wait it owns (`markIdle` — each capture, `reveal`'s hold, the post-check
   hold) and stamps each value with `open`; `beatSlices` opens the moment there instead of at the

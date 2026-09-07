@@ -2362,10 +2362,11 @@ test('The proof plays itself — semi-auto is the default, no dots/counter/toggl
       // THE LEAD: the film on show but held on its first frame — the pause — with the whole chip
       // already there
       await expect.poll(shot, { timeout: 15000, message: 'a playing moment opens on its lead: film held, the whole chip on' })
-        .toBe('film held · chip · value line · approach · row approach')
-      // THE APPROACH: the same chip, verbatim, the film running
+        .toBe('film held · chip · value line · approach · row lead')
+      // THE APPROACH: the same chip, verbatim, the film running — and the row told `film`, which is
+      // what the Expected's crossfade is timed to (2026-09-07 evening)
       await expect.poll(shot, { timeout: 15000, message: 'then the approach plays under the same chip' })
-        .toBe('film · chip · value line · approach · row approach')
+        .toBe('film · chip · value line · approach · row film')
       // THE REST: the film stood down, the moment's own still stands, the same chip over it
       await expect.poll(shot, { timeout: 15000, message: 'the film stood down and the moment’s own still stands, the same chip over it' })
         .toBe('still · chip · value line · rest · row rest')
@@ -2376,7 +2377,7 @@ test('The proof plays itself — semi-auto is the default, no dots/counter/toggl
       const rep = row.locator('.sbframe.sbrep')
       if (await rep.count()) {
         const pic = () => rep.evaluate((f: HTMLElement) => (f.dataset.repphase || '?') + ' · ' + (f.dataset.reppic || '?'))
-        await expect.poll(pic, { timeout: 15000, message: 'the Expected shows the start state while the approach runs' }).toBe('approach · base')
+        await expect.poll(pic, { timeout: 15000, message: 'the Expected shows the start state through the lead' }).toBe('lead · base')
         await expect.poll(pic, { timeout: 15000, message: '…and the moment’s own picture when it rests' }).toBe('rest · 0')
       }
     }
@@ -2419,7 +2420,7 @@ test('The proof plays itself — semi-auto is the default, no dots/counter/toggl
     // not would be exactly the drift a name cannot catch. (Not red at 0.48.4 — measured on demo/todo
     // R1, the srcdoc swapped 9ms behind each advance — so this is a REGRESSION PIN on the seam the
     // human's report pointed at, kept honest rather than claimed as a fix.)
-    const repDoc = () => row.locator('.sbframe iframe').evaluate((f: HTMLIFrameElement) => {
+    const repDoc = () => row.locator('.sbframe iframe.repframe').evaluate((f: HTMLIFrameElement) => {
       const d = f.contentDocument
       return d && d.body ? d.body.innerHTML.length + '|' + (d.body.textContent || '').replace(/\s+/g, ' ').slice(0, 120) : ''
     })
@@ -2745,23 +2746,38 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     expect(await aChip.getAttribute('title'), 'no native title beside the styled tooltip').toBeNull()
     const tip = aChip.locator('.mtip')
     await expect(tip).toBeHidden()
+    // THE TOOLTIP ONLY WHERE IT ADDS A WORD (the human, 2026-09-07: "avoid having too much
+    // tooltip/pop over"). This chip shows its whole value (asserted just above), so a hover opens
+    // NOTHING — the tooltip would repeat every word already on the picture. R20's Then moved with
+    // the ruling; this leg moved with R20 (rule 4: it used to demand the tooltip on every hover).
     await aChip.hover()
-    await expect(tip, 'hovering a chip shows its whole text').toBeVisible()
-    // …ONE LINE, THE WHOLE TEXT IN THE TOOLTIP: what the ellipsis cuts off is readable on hover
+    await expect(tip, 'a chip that shows its whole value opens no tooltip').toBeHidden()
+    // (a state claim, not an absence: the tooltip ELEMENT is always in the chip — display:none — and
+    // innerText of an unrendered element falls back to its text, so MISSING would read the words)
+    await hudCheck('No tooltip where the chip already shows the whole value', 'hidden',
+      (await tip.evaluate(el => getComputedStyle(el).display)) === 'none' ? 'hidden' : 'shown')
+    // …AND WHERE A VALUE CLAMPS, the tooltip is the only way to read it, on hover and from the
+    // keyboard alike. The clamp is forced in-page (a one-line cap on the value) and the chip's
+    // placement re-run, which is where the reader measures it.
+    await aChip.evaluate((el: HTMLElement) => {
+      const v = el.querySelector('.pcv') as HTMLElement; v.style.maxHeight = '0.6em'   // under one line: even a one-line value now clamps
+      const box = el.closest('.pcbox') as any; for (const f of (box._views || [])) f(box._view, 0)
+    })
+    await expect(aChip, 'the reader measured the clamp').toHaveClass(/\bclamped\b/)
+    await aChip.hover()
+    await expect(tip, 'hovering a CLAMPED chip shows its whole text').toBeVisible()
     await proveVisible(tip, plain(wrong), 'The whole value, in the hover tooltip',
       { soft: true, match: (shown: string) => plain(shown).includes(plain(wrong)) })
     await row.locator('.sbtext').hover()
     await expect(tip).toBeHidden()
-    // …AND A KEYBOARD REACHES IT TOO (the review's I1). The value is one ellipsised line, so the
-    // tooltip is the ONLY way to read the whole of it; a chip a keyboard cannot focus hides it from
-    // half the readers. It is a real button, so it takes focus and its aria-label is announced.
+    // …AND A KEYBOARD REACHES IT TOO (the review's I1): a real button, so it takes focus and its
+    // aria-label is announced. KEYBOARD focus, not a click's (the human, 2026-09-07: "don't allow to
+    // have multi tooltip at once"): the tooltip opens on :focus-visible, so a mouse click never pins
+    // one open while the pointer opens another. A key press after focusing makes the focus visible.
     expect(await aChip.evaluate(el => el.tagName.toLowerCase()), 'the chip is a real control').toBe('button')
-    // KEYBOARD focus, not a click's (2026-09-07, the human: "don't allow to have multi tooltip at
-    // once"): the tooltip opens on :focus-visible, so a mouse click no longer pins one open while
-    // the pointer opens another. A key press after focusing is what makes the focus visible.
     await aChip.focus()
     await page.keyboard.press('Shift')
-    await expect(tip, 'focusing a chip from the keyboard shows its whole text').toBeVisible()
+    await expect(tip, 'focusing a clamped chip from the keyboard shows its whole text').toBeVisible()
     expect(plain(await aChip.getAttribute('aria-label') || ''), 'and it is announced with both parts')
       .toContain(plain(wrong))
     await row.locator('.sbtext').hover()

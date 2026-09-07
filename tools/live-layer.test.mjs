@@ -16,10 +16,11 @@
 // a testsrc VP8 clip), and reads the phases back exactly as the row's wiring would.
 //
 // The contract it pins:
-//   • show(i) opens the moment on its LEAD: the row is told `approach` at once (it is what moves the
-//     Expected to the start state and drops the chips' value line), the stage wears `.approach`, and
-//     the film is on show but NOT yet playing — the pause the human asked for;
-//   • the approach then plays to the end of its slice and STANDS DOWN: the row is told `rest`, the
+//   • show(i) opens the moment on its LEAD: the row is told `lead` at once (it is what moves the
+//     Expected to the start state), the stage wears `.approach`, and the film is on show but NOT
+//     yet playing — the pause the human asked for;
+//   • the film then plays — the row is told `film` with its length, which the Expected's
+//     crossfade is timed to — to the end of its slice and STANDS DOWN: the row is told `rest`, the
 //     stage drops `.approach`, the video is off and paused — the moment's own still stands;
 //   • in SEMI-AUTO the moment replays after the rest (approach again); in STEP a switch stops
 //     everything where it is and the row is told `rest`.
@@ -66,7 +67,7 @@ const build = (clip) => `(() => {
   const stage = document.createElement('div'); stage.className = 'fsteps'
   window.__stage = stage
   const shots = [{ slice: { from: 200, to: 1200 } }, { slice: { from: 1400, to: 2400 } }, { slice: null }]
-  window.__layer = window.__liveLayer(stage, ${JSON.stringify(clip)}, shots, function (i, p) { window.__log.push(i + ':' + p) })
+  window.__layer = window.__liveLayer(stage, ${JSON.stringify(clip)}, shots, function (i, p, ms) { window.__log.push(i + ':' + p); if (p === 'film') window.__ms = ms })
   window.__layer.show(0)
   window.__t0 = performance.now()
   const snap = () => ({ log: window.__log.slice(), approach: stage.classList.contains('approach'), first: window.__log[0] || null })
@@ -78,7 +79,7 @@ const build = (clip) => `(() => {
 test('show() opens on the LEAD at once — even on a stage that is not in the document yet', async () => {
   await withPage(async (page) => {
     const before = await page.evaluate(build(CLIP))
-    assert.equal(before.first, '0:approach', 'the row is told the approach the instant the moment shows')
+    assert.equal(before.first, '0:lead', 'the row is told the lead the instant the moment shows')
     assert.equal(before.approach, true, 'the phase is on the stage itself, not on a box it cannot find')
     // …and the film is on show but held: the lead is a pause, not a play
     const held = await page.evaluate(() => {
@@ -111,9 +112,13 @@ test('the approach plays to the end of its slice and STANDS DOWN: rest, no film,
 test('SEMI-AUTO replays the approach after the rest; a switch to STEP stops it dead and says rest', async () => {
   await withPage(async (page) => {
     await page.evaluate(build(CLIP))
-    await page.waitForFunction(() => window.__log.filter(x => x === '0:approach').length >= 2, null, { timeout: 12000 })
+    await page.waitForFunction(() => window.__log.filter(x => x === '0:lead').length >= 2, null, { timeout: 12000 })
     const log = await page.evaluate(() => window.__log.slice())
-    assert.deepEqual(log.slice(0, 3), ['0:approach', '0:rest', '0:approach'], 'approach → rest → approach again')
+    assert.deepEqual(log.slice(0, 4), ['0:lead', '0:film', '0:rest', '0:lead'], 'lead → film → rest → lead again')
+    // …and the film word carries the film's own length at the reader's speed — what the Expected's
+    // crossfade is timed to (a 1000 ms slice at 1×)
+    const ms = await page.evaluate(() => window.__ms)
+    assert.ok(ms >= 900 && ms <= 1100, 'the film reported its length: ' + ms)
     await page.evaluate(() => window.__setMode('step'))
     const still = await page.evaluate(() => {
       const v = window.__stage.querySelector('video')
