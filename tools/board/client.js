@@ -1489,10 +1489,14 @@ const B = window.__BOARD__ || {}
   // fetched ONCE per path, for the life of the page: the path carries the harvest's content hash, so
   // a re-harvest is a different key and a re-opened reader never re-downloads what it already has
   const REP_TEXT = new Map()
+  // …and the text once it has ARRIVED, for a reader that cannot wait (the Expected performing a
+  // film needs the moment's markup synchronously at the film's first frame; a row prefetches it)
+  const REP_DONE = new Map()
   function repFetch (path) {
     if (!path) return Promise.resolve('')
     if (!REP_TEXT.has(path)) {
-      REP_TEXT.set(path, fetch(path).then(function (r) { return r.ok ? r.text() : '' }).catch(function () { return '' }))
+      REP_TEXT.set(path, fetch(path).then(function (r) { return r.ok ? r.text() : '' }).catch(function () { return '' })
+        .then(function (t) { REP_DONE.set(path, t); return t }))
     }
     return REP_TEXT.get(path)
   }
@@ -1746,6 +1750,77 @@ const B = window.__BOARD__ || {}
   //
   // sliceOf(shot, video) → { from, to } in SECONDS for a <video>, or null. Lifted verbatim by
   // tools/slice.test.mjs, so the rule the board runs is the rule the test checks.
+  // ── THE EXPECTED PERFORMS THE WHEN (2026-09-07 evening; the human, on R1's first moment: "why i
+  // still only see the actual moving/actioning on the input box for actual, but it's still in the
+  // expected?"). A page-wide fade is not what a person watching the Actual TYPE expects to see on
+  // the other side. The moment's replica already carries the answer — the ringed element with the
+  // expected value in it — and the start page has the same element, empty. So while the film runs
+  // the Expected's ringed element is TYPED INTO, character by character at the harness's own pace
+  // (55 ms a key, the BOARD_TYPE_DELAY_MS default, rated by the reader's speed), from the start
+  // page's text to the moment's; a clearing is one cut at the film's midpoint (the app clears in one
+  // frame); text that does not change — a button that only enabled, a box that stayed empty — is
+  // left to the fade through paper. Nothing is invented: the letters are the requirement's own, the
+  // element is the one the capture rang, found in the start page by the same path.
+  //
+  // repPerform(frontDoc, momentText, ms, speed) → { ok, why } | { ok: true, cancel }. Pure over two
+  // documents, lifted by tools/expected-performs.test.mjs and run in a real browser.
+  var TYPE_MS = 55
+  function repPerform (doc, momentText, ms, speed, opts) {
+    var o = opts || {}
+    var typeMs = o.typeMs != null ? o.typeMs : TYPE_MS
+    if (!doc || !momentText || !(ms > 0)) return { ok: false, why: 'nothing to perform' }
+    var parser = new DOMParser()
+    var m = parser.parseFromString(momentText, 'text/html')
+    var mroot = m.querySelector('.rep')
+    var ringed = mroot && mroot.querySelector('[data-ring="1"]')
+    if (!mroot || !ringed) return { ok: false, why: 'the moment rings nothing' }
+    if (ringed.children.length) return { ok: false, why: 'the ringed element is not a leaf' }
+    // the ringed element's path: body → scene root (data-replica-path), then root → element
+    var outer = String(mroot.getAttribute('data-replica-path') || '').split('/').filter(Boolean).map(Number)
+    var inner = []
+    for (var n = ringed; n && n !== mroot; n = n.parentElement) {
+      inner.unshift(Array.prototype.indexOf.call(n.parentElement.children, n))
+    }
+    var wrapper = doc.getElementById && doc.getElementById('sbstand')
+    var base = wrapper && wrapper.querySelector('.rep')
+    if (!base) return { ok: false, why: 'no start page' }
+    var el = base
+    var path = outer.concat(inner)
+    for (var i = 0; i < path.length && el; i++) el = el.children[path[i]]
+    if (!el) return { ok: false, why: 'the start page has no element at the ringed path' }
+    if (el.children.length) return { ok: false, why: 'the start element is not a leaf' }
+    var startPh = el.hasAttribute('data-ph')
+    var from = startPh ? '' : String(el.textContent || '')
+    var targetPh = ringed.hasAttribute('data-ph')
+    var to = targetPh ? '' : String(ringed.textContent || '')
+    if (from === to) return { ok: false, why: 'the text does not change' }
+    var timers = []
+    var cancel = function () { for (var k = 0; k < timers.length; k++) clearTimeout(timers[k]) }
+    var sp = (typeof speed === 'number' && speed > 0) ? speed : 1
+    if (to === '') {
+      // a CLEARING is one cut, at the film's midpoint — the app clears in one frame
+      timers.push(setTimeout(function () {
+        el.textContent = String(ringed.textContent || '')
+        if (targetPh) el.setAttribute('data-ph', '1')
+      }, Math.round(ms / 2)))
+      return { ok: true, cancel: cancel, kind: 'clear' }
+    }
+    if (to.indexOf(from) !== 0 && from.indexOf(to) !== 0) return { ok: false, why: 'the texts are unrelated' }
+    var typing = to.length > from.length
+    var count = Math.abs(to.length - from.length)
+    // the harness's pace, rated by the reader's speed — but never past the film's own end
+    var step = Math.max(8, Math.min(typeMs / sp, (ms * 0.85) / count))   // the film's own pace at any speed; 8 ms is a frame's floor
+    if (startPh) { el.removeAttribute('data-ph'); el.textContent = '' }
+    for (var c = 1; c <= count; c++) {
+      (function (c) {
+        timers.push(setTimeout(function () {
+          el.textContent = typing ? to.slice(0, from.length + c) : from.slice(0, from.length - c)
+        }, Math.round(c * step)))
+      })(c)
+    }
+    return { ok: true, cancel: cancel, kind: typing ? 'type' : 'delete', step: step, count: count }
+  }
+
   function sliceOf (shot, video) {
     if (!video || !shot) return null
     const s = shot.slice
@@ -2968,18 +3043,34 @@ const B = window.__BOARD__ || {}
       // `data-repmoment` says which moment the row is on and `data-repphase` which phase; `reppic`
       // which picture is painted (an index, or `base`); `repsrc` keeps naming the painted file.
       let picAt = null
+      let performing = null                  // the typing under way in the front frame, if any
+      const stopPerforming = function () { if (performing) { performing.cancel(); performing = null } }
       fr._phase = function (j, ph, ms) {
         fr.dataset.repmoment = String(j)
         fr.dataset.repphase = ph
-        // lead: the start state, still · film: the moment, arriving over the film's own length ·
-        // rest: the moment, still (an instant show — the crossfade has usually already landed it)
+        // lead: the start state, still · film: the moment, arriving over the film's own length —
+        // PERFORMED on the ringed element where the text changes (repPerform), faded through paper
+        // where it does not · rest: the moment, still (an instant show)
         const t = ph === 'lead' ? j - 1 : j
-        if (ph !== 'film' && backAim) settle()
+        if (ph !== 'film') { stopPerforming(); if (backAim) settle() }
         if (t < 0) {
           if (picAt === 'base') return
           picAt = 'base'; paintBase(j); return
         }
         if (picAt === t) return
+        if (ph === 'film') {
+          // REDUCED MOTION holds the start page through the film and cuts at rest — nothing plays
+          if (REDUCED) return
+          const sh = shots[j]
+          let fdoc = null
+          try { fdoc = ifr.contentDocument } catch (e) { fdoc = null }
+          const text = sh && sh.rep ? REP_DONE.get(sh.rep) : null   // prefetched with the row
+          if (fdoc && text) {
+            const h = repPerform(fdoc, text, ms || 0, PLAY_SPD)
+            fr.dataset.repperform = h.ok ? h.kind : ('no: ' + h.why)
+            if (h.ok) { performing = h; return }         // the moment lands at rest, over this
+          } else fr.dataset.repperform = fdoc ? 'no: the moment is still loading' : 'no: no page yet'
+        }
         picAt = t
         paint(t, ph === 'film' ? 'fade' : 'show', ms || 0)
       }

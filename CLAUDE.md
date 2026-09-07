@@ -406,7 +406,16 @@ change.
   `tools/reporter-steps.test.mjs` pins the rule) the residual is 25–33 ms, one frame. The "lead
   frame five keystrokes in" this note used to report was an ARTEFACT: an element screenshot of the
   row takes ~300 ms and lands in the film — read the reader's frame with `drawImage` to a canvas
-  and `toDataURL`, never a row screenshot, when the question is which frame is presented.
+  and `toDataURL`, never a row screenshot, when the question is which frame is presented. **AND THE EXPECTED PERFORMS THE WHEN**
+  (0.49.4; the human, on R1's first moment: "why i still only see the actual moving/actioning on
+  the input box for actual, but it's still in the expected?"): told `film`, the Expected cell asks
+  `repPerform` (client.js, lifted by tools/expected-performs.test.mjs) to TYPE the moment's text
+  into the ringed element of the START page — found by the moment's own `data-replica-path` plus
+  the ringed element's child path, so it is the element the capture rang, never a guess — one
+  character at a time at the harness's pace (55 ms a key, rated by the speed, never past the film);
+  a clearing is one cut at the film's midpoint; text that does not change (a button that only
+  enabled, a box that stayed empty) or texts that are unrelated fall back to the fade through
+  paper. `data-repperform` says which. Reduced motion holds the start page and cuts at rest.
   And a slice OPENS WHERE THE ACTION BEGINS: the harness
   marks the end of every wait it owns (`markIdle` — each capture, `reveal`'s hold, the post-check
   hold) and stamps each value with `open`; `beatSlices` opens the moment there instead of at the
