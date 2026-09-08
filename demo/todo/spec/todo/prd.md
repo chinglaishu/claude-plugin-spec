@@ -24,6 +24,8 @@ so every run starts from the same board.
 Requirement ids are stable forever — later passes append, never renumber.
 -->
 
+### ① The main thing's life
+
 ### 1 · Tasks — add and edit
 
 ## R1 — Adding a task puts it in the list
@@ -69,6 +71,38 @@ same row, Escape cancels. Saving a real change records an "edited" time, replaci
 <!-- Proven by renaming a task on screen, reading the new title back off its row, and confirming the
      meta line flipped from "added" to "edited just now". -->
 
+## Q1 — Adding a task can carry a due date
+
+- **Source** code: todo.html — the Add form has a date field (`#nd`) and stores it on the new task
+- **Ask** is this a requirement? Neither the doc nor R1 mentions adding a date, yet R7's chips depend on one.
+
+## Q2 — A container collapses and expands, and the fold survives a reload
+
+- **Source** code: todo.html `fold()` on the ring or caret; the open/closed state is saved
+- **Ask** is this a requirement? R8's "everything survives a reload" never names the open state.
+
+## Q3 — Deleting a sub-task re-flows its parent
+
+- **Source** code: todo.html `delSub()` — deleting the last open sub-task completes the container by itself
+- **Ask** is this a requirement? A derived roll-up consequence (bucket ②) no rule owns.
+
+## Q4 — Enter adds a task, not only the Add button
+
+- **Source** code + doc: the Add box adds on Enter (the placeholder even says "press Enter")
+- **Ask** is this a requirement? R1 films only the Add button; no beat films Enter.
+
+## Q5 — Escape cancels an in-place edit
+
+- **Source** code + doc + R2's prose: Escape leaves the row's old text in place
+- **Ask** is this a requirement? R2's Then films only the Enter save; no beat films the cancel.
+
+## Q6 — An empty or unchanged edit keeps the title without an "edited" stamp
+
+- **Source** code: an edit that saves no real change keeps the title and does NOT stamp "edited"
+- **Ask** is this a requirement? R2's boundary; no beat films it.
+
+### ② Every derived number
+
 ### 2 · Containers and roll-up
 
 ## R3 — A task with sub-tasks is a container with a derived progress ring
@@ -105,7 +139,7 @@ container by hand.
 - **Given** seven open leaves — three open sub-tasks in a container plus four childless tasks — "To do" reads 7
 - **When** you tick one sub-task
 - **Then** To do reads 6 — down by exactly one
-- **When** you tick the container's last two open sub-tasks
+- **When** you tick the container's last two open sub-tasks {boundary}
 - **Then** To do reads 4 — down by two, not three: the container is never a unit of work
 
 The header count is the real amount of work left: open sub-tasks, plus open tasks that have no
@@ -116,12 +150,14 @@ one drops the count by its open-leaf count, not by one.
      drops it by exactly one; completing a container of two open sub-tasks drops it by exactly two,
      not three (the container is not a unit). The single most drift-prone rule here. -->
 
+### ③ Every view & chip
+
 ### 3 · Views and dates — derived chips
 
 ## R6 — Smart views filter correctly, and the sidebar counts agree
 
 - **Given** the seeded tasks, some done, some due today
-- **When** you switch to All, Active, Today or Completed
+- **When** you switch to All, Active, Today or Completed {happy} {absence}
 - **Then** only that view's tasks show — no done task in Active or Today, nothing still open in Completed — and its sidebar badge equals the task rows on screen
 
 <!-- THEN AMENDED 2026-09-06 (rule 6, the reason attached — the human's method ruling, "say absences
@@ -153,6 +189,18 @@ chip; a task due later shows its date; a done task wears no date chip.
 <!-- Proven against the frozen `?now=` clock: the seeded past-due task reads "overdue" and the
      due-today task reads "today", both read off the visible chips. -->
 
+## Q7 — Today includes overdue tasks
+
+- **Source** code + doc: Today shows tasks due on or before today (`t.due <= TODAY`)
+- **Ask** is this a requirement? R6's Then names only "due today"; the overdue-in-Today rule is unfilmed.
+
+## Q8 — A done task wears no date chip
+
+- **Source** code + doc + R7's prose: a completed task shows neither an overdue nor a today chip
+- **Ask** is this a requirement? R7's Then claims no absence; nothing films "no chip when done".
+
+### ④ Survival
+
 ### 4 · Persistence
 
 ## R8 — Everything survives a reload
@@ -167,12 +215,19 @@ completed timestamp all come back after the page reloads — nothing lived only 
 <!-- Proven by reloading the real page after the edits and completions above, then reading the edited
      title, the container's rolled-up state, and a completed timestamp back off the fresh screen. -->
 
+## Q9 — The current view and each container's open state survive a reload
+
+- **Source** code: todo.html saves the selected view and each container's open/closed state
+- **Ask** is this a requirement? R8's "everything" is silent on the view and the fold state.
+
+### ⑤ The mistake path
+
 ### 5 · A deliberately failing requirement (a demonstration)
 
 ## R9 — A deleted task is reversible: the count holds until you confirm
 
 - **Given** the seeded list, with "To do" reading 5
-- **When** you delete an open task
+- **When** you delete an open task {mistake}
 - **Then** the delete is a soft archive — an Undo appears and "To do" still reads 5 until the undo window passes; nothing is lost on a mis-click
 
 Tsumiki deletes **immediately and permanently**: there is no Undo, and "To do" drops the moment a
