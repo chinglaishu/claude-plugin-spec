@@ -70,6 +70,37 @@
   .btn.ghost{background:transparent;color:var(--ink2);border-color:var(--line2)}
   .resolve .rk{font:10px var(--mono);color:var(--ink4)}
 
+  /* the shared stepper control (auto/semi-auto/step + speed + moment strip) */
+  .player{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:9px 12px;margin-bottom:14px;
+    border:1px solid var(--line2);border-radius:var(--r);background:var(--paper2)}
+  .seg{display:inline-flex;border:1px solid var(--line2);border-radius:6px;overflow:hidden;background:#fbf9f4}
+  .seg button{font:var(--t-xs) var(--mono);border:0;background:transparent;color:var(--ink2);padding:5px 12px;cursor:default;border-right:1px solid var(--line2);display:flex;align-items:center;gap:5px}
+  .seg button:last-child{border-right:0}
+  .seg button.on{background:var(--ink);color:var(--paper)}
+  .player .lbl{font:10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink4)}
+  .player .spd{font:var(--t-xs) var(--mono);border:1px solid var(--line2);border-radius:6px;padding:4px 9px;background:#fbf9f4;color:var(--ink2)}
+  .strip{display:inline-flex;align-items:center;gap:8px;font:var(--t-xs) var(--mono);color:var(--ink3)}
+  .strip .seg2{display:flex;gap:3px}
+  .strip .m{width:22px;height:5px;border-radius:3px;background:var(--line2)} .strip .m.on{background:var(--indigo)}
+
+  /* the three-mode explainer */
+  .modes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+  @media(max-width:720px){.modes{grid-template-columns:1fr}}
+  .mode{border:1px solid var(--line);border-radius:var(--r);background:#fbf9f4;padding:0;overflow:hidden}
+  .mode .mh{display:flex;align-items:center;gap:7px;padding:9px 11px;border-bottom:1px solid var(--hair);font:var(--t-sm) var(--mono);color:var(--ink)}
+  .mode .mh .dot{width:9px;height:9px;border-radius:50%}
+  .mode.auto .mh .dot{background:var(--koke)} .mode.semi .mh .dot{background:var(--indigo)} .mode.step .mh .dot{background:var(--ink3)}
+  .mode .mb{padding:11px;font-size:var(--t-sm);color:var(--ink2);min-height:58px}
+  .mode .mb b{color:var(--ink)}
+  .mode .anim{height:6px;background:var(--line);border-radius:3px;margin:10px 11px;overflow:hidden;position:relative}
+  .mode .anim i{position:absolute;left:0;top:0;bottom:0;background:var(--indigo);border-radius:3px}
+  .mode.auto .anim i{width:40%;animation:sweep 2.2s linear infinite}
+  .mode.semi .anim i{width:40%;animation:loop 1.6s ease-in-out infinite}
+  .mode.step .anim i{width:40%;left:30%}
+  @keyframes sweep{0%{left:-40%}100%{left:100%}}
+  @keyframes loop{0%,100%{left:0}50%{left:60%}}
+  .mode .foot{font:10px var(--mono);color:var(--ink4);padding:0 11px 10px}
+
   ul{margin:8px 0;padding-left:20px;color:var(--ink2)} li{margin:5px 0;max-width:72ch}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
   @media(max-width:720px){.grid{grid-template-columns:1fr}}
@@ -105,6 +136,19 @@
   <div class="finding">
     <div class="ftitle">How wide is the requirement card's canvas?</div>
     <div class="fq">One fact — the card's rendered width — stated three incompatible ways across the spec, the code, and the running app.</div>
+    <div class="player">
+      <span class="lbl">Play</span>
+      <div class="seg">
+        <button>▶ auto</button>
+        <button class="on">↻ semi-auto</button>
+        <button>❙❙ step</button>
+      </div>
+      <span class="lbl">Speed</span>
+      <select class="spd"><option>1×</option></select>
+      <span class="strip">moment ‹ <span class="seg2"><span class="m on"></span><span class="m"></span></span> 1 / 2 ›</span>
+      <span style="flex:1"></span>
+      <span class="lbl" style="color:var(--ink3)">one stepper · both picture sides + the Actual move together</span>
+    </div>
     <div class="sides">
 
       <div class="side">
@@ -170,8 +214,29 @@
 </div>
 <p style="margin-top:12px"><em>One thing to keep straight:</em> a finding is <em>one fact stated incompatibly</em>. Three docs describing three <em>different</em> facts are three findings, not three sides of one. Three docs giving three answers to the <em>same</em> question (how wide is the canvas?) are three sides of one finding. The scan (change 2) groups by the fact, so this is a scan-time call — and, like everything it writes, "leave it out if unsure".</p>
 
-<h3>The three play modes — inherited, for free</h3>
-<p>A picture side <em>is</em> Part A's reader: the base with a claim applied, on the same stepper. So <code>auto</code> · <code>semi-auto</code> · <code>step</code> carry over with zero new code — the mode picker drives every picture side and the Actual recording together, exactly as it drives the Focus reader today. A single-moment claim (a width, a count) has one still, so the modes are moot there; a claim that spans several moments plays through them under whichever mode is set. Nothing new is designed here — reusing the stepper is the whole point of doing A before B.</p>
+<h3>The three play modes — the same control, on the picture sides</h3>
+<p>The picture sides <em>are</em> Part A's reader, so the mode picker in the mock above is the <em>exact</em> one the Focus reader already ships — <code>auto</code> · <code>semi-auto</code> · <code>step</code>, and one speed. It drives every picture side and the Actual recording off <em>one</em> stepper, so the sides can never drift onto different moments. Zero new code; this is why A came before B.</p>
+<div class="modes">
+  <div class="mode auto">
+    <div class="mh"><span class="dot"></span>▶ auto</div>
+    <div class="anim"><i></i></div>
+    <div class="mb">Plays each moment's slice once, then <b>advances</b> the row and loops the finding. Hands-free.</div>
+    <div class="foot">the only mode on a timer</div>
+  </div>
+  <div class="mode semi">
+    <div class="mh"><span class="dot"></span>↻ semi-auto <span style="color:var(--ink4);font-size:10px">· default</span></div>
+    <div class="anim"><i></i></div>
+    <div class="mb"><b>Loops the moment on show</b> and waits for you — the same moment on the base, every claim side, and the Actual, side by side.</div>
+    <div class="foot">you advance</div>
+  </div>
+  <div class="mode step">
+    <div class="mh"><span class="dot"></span>❙❙ step</div>
+    <div class="anim"><i></i></div>
+    <div class="mb"><b>Totally still</b> — the moment's photograph held. You step ‹ › by hand to compare frame for frame.</div>
+    <div class="foot">nothing moves until you move it</div>
+  </div>
+</div>
+<p>A single-moment claim (a width, a count — like the mock's <code>720px</code>) is one still, so the modes are moot there; a claim spanning several moments plays through them under whichever is set. Same rules, same code, same three modes as everywhere else on the board.</p>
 
 <h2><span class="n">6.1–6.4</span>The four changes, in order</h2>
 
