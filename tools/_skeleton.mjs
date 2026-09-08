@@ -35,6 +35,10 @@ export const FILES = [
   // scaffolded project needs it or the vendored spec-store cannot load at all (update.test.mjs's
   // every-relative-import-is-vendored guard is what catches this class of miss).
   'tools/behavior.mjs',
+  // the requirement framework's card layer — the fixed-five buckets, slot/gap/state derivation and
+  // the screen counter (the human 2026-09-07) — imported by tools/build-board.mjs, so a vendored
+  // board cannot render without it (the same every-relative-import-is-vendored guard catches it).
+  'tools/cards.mjs',
   // pure kind/chapter derivation for the Flow view (board R13) — imported by serve-board.mjs, which
   // attaches chapters to every /api/runs record, so a scaffolded project's server cannot load
   // without it (the same guard-caught class of miss as behavior.mjs above).

@@ -9,12 +9,13 @@ import { fileURLToPath } from 'node:url'
 import { readFileSync, existsSync } from 'node:fs'
 import {
   ROOT, SPEC, esc, designCss, allScreens, sortedAreas, writeText, shotHash, readConfig, readRuns, ciGate,
-  resolveRel, readSrcSync
+  resolveRel, readSrcSync, readConflicts
 } from './spec-store.mjs'
 import { journey } from './journey.mjs'
 import { stripBehaviorLead } from './behavior.mjs'
 // pure: the flow composer's library derivation (Task 5) — fed to the client through the JSON island
 import { deriveLibrary } from './compose.mjs'
+import { BUCKETS, bucketGroups, filledSlots, cardGaps, cardState, conflictReqIds, screenCounter, NEEDED_SLOTS } from './cards.mjs'
 // pure: a test's unit/flow kind off its qualified tag set (the record side of the kind union)
 import { deriveKind } from './flow.mjs'
 // pure: one layout skeleton's ringed box — the AIM a scene's camera takes (the human, 2026-08-31)
@@ -243,10 +244,90 @@ export const cardRows = (s, cap = 5) => {
   if (shown < total) rows.push({ kind: 'more', n: total - shown })
   return rows
 }
+// BUCKETS (the requirement framework, the human 2026-09-07): the home card / List show the five
+// FIXED buckets in order, ALWAYS all five — an empty one is a visible hole ({kind:'bucket', b.empty}).
+// A leading {kind:'unbucketed'} strip carries anything before the first bucket line; families nest as
+// {kind:'fam'} sub-headers inside a bucket. Pure, unit-tested (tools/board-buckets.test.mjs). Unlike
+// cardRows there is no 5-cap: every bucket header must render so a hole is visible.
+export const bucketCardRows = s => {
+  const g = bucketGroups(s)
+  const rows = []
+  const emit = grp => {
+    for (const r of grp.loose) rows.push({ kind: 'req', r })
+    for (const fg of grp.families) { rows.push({ kind: 'fam', f: fg.family }); for (const r of fg.reqs) rows.push({ kind: 'req', r }) }
+  }
+  if (g.unbucketed.has) { rows.push({ kind: 'unbucketed' }); emit(g.unbucketed) }
+  for (const b of g.buckets) { rows.push({ kind: 'bucket', b }); emit(b) }
+  return rows
+}
 // A family header row — the reference catalogue's `.grp` shape (mono uppercase eyebrow: the number
 // and name bold, the gloss after the em-dash muted, a hair rule beneath), carried by the row's class.
 const famRow = (f, tag = 'li') =>
   `<${tag} class="fam"><span class="fnum">${esc(f.n == null ? '' : f.n + ' · ')}</span><b class="fname">${esc(f.name)}</b>${f.gloss ? `<span class="fgloss"> — ${esc(f.gloss)}</span>` : ''}</${tag}>`
+
+// ── the requirement framework's card anatomy (the human 2026-09-07) ─────────────────────────────
+// A card's derived STATE badge — agreed · conflict · gap · mismatch · question. Hue never alone: each
+// carries a mark. GAP and QUESTION render in MUTED ink + a mark, NOT yamabuki: assigning yamabuki (a
+// hue that already means in-flight/not-reached) to a new state is the HUMAN's sign-off, still pending.
+const STATE_MARK = { agreed: '✓', conflict: '⚑', gap: '△', mismatch: '✗', question: '?' }
+const stateBadge = st => `<span class="badge b-${st}"><span class="bm">${STATE_MARK[st] || '·'}</span>${st}</span>`
+// DOC · CODE · SPEC · PROVEN. SPEC is implicit (the card exists). PROVEN is MEASURED (status passed).
+// DOC/CODE are AUTHORED (the **Sources** line) — filled ink, but the `authored` class keeps them from
+// ever reading as the koke green a real proof earns (the human: an authored stamp is never a measured
+// green). A conflict side reddens the DOC/CODE stamps.
+const stampStrip = (r, isConflict) => {
+  const cell = (label, filled, cls) => `<span class="stamp ${cls}${filled ? ' on' : ' off'}">${label}</span>`
+  const authored = 'authored' + (isConflict ? ' conf' : '')
+  return `<span class="stamps">${
+    cell('DOC', !!r.sources?.doc, authored)}${
+    cell('CODE', !!r.sources?.code, authored)}${
+    cell('SPEC', true, 'authored')}${
+    cell('PROVEN', r.status === 'passed', 'measured')}</span>`
+}
+// The four example slots as chips: full (koke) when a beat fills it, `na` when declared Not needed
+// (its reason in the title), gap (MUTED + mark, pending the yamabuki sign-off) when a needed slot is
+// empty. Question cards have no slots.
+const slotChips = r => r.kind === 'question' ? '' : `<span class="slots">${NEEDED_SLOTS.map(sname => {
+  const na = r.notNeeded?.[sname]
+  const cls = na ? 'na' : filledSlots(r).includes(sname) ? 'full' : 'gap'
+  return `<span class="slot ${cls}" title="${esc(na ? sname + ' — not needed: ' + na : sname + (cls === 'gap' ? ' — no beat fills this slot' : ''))}"><span class="sk">${sname}</span></span>`
+}).join('')}</span>`
+// A bucket's worst state, for the home-card header mark: conflict beats mismatch beats agreed; a gap
+// (an unfilled needed slot on any card) shows △ only when nothing worse is present.
+const bucketWorst = (reqs, conflictIds) => {
+  const rules = reqs.filter(r => r.kind !== 'question')
+  const states = rules.map(r => cardState(r, conflictIds))
+  if (states.includes('conflict')) return 'conflict'
+  if (states.includes('mismatch')) return 'mismatch'
+  if (rules.some(r => cardGaps(r).length)) return 'gap'
+  return rules.length ? 'agreed' : 'agreed'
+}
+// A bucket header row on the home card / List: the fixed key + tool-owned name, its gloss, its card
+// count and worst-state mark; an EMPTY bucket reads "— nothing here yet" in muted ink (a visible hole).
+const bucketHeadRow = (b, conflictIds, tag = 'li') => {
+  const reqs = [...b.loose, ...b.families.flatMap(fg => fg.reqs)]
+  const n = reqs.length
+  const worst = bucketWorst(reqs, conflictIds)
+  return `<${tag} class="bkt${b.empty ? ' empty' : ''}" data-bkt="${esc(b.bucket.key)}">` +
+    `<span class="bkkey">${esc(b.bucket.key)}</span><b class="bkname">${esc(b.bucket.name)}</b>` +
+    `<span class="bkgloss">${esc(b.bucket.gloss)}</span>` +
+    (b.empty
+      ? '<span class="bkempty">— nothing here yet</span>'
+      : `<span class="bkcount">${n}</span><span class="bkmk b-${worst}">${STATE_MARK[worst]}</span>`) +
+    `</${tag}>`
+}
+// The screen head's counter (the framework, the human 2026-09-07): conflicts · gaps · mismatches ·
+// agreed, each linking into its work. A zero reads muted; conflict/mismatch reuse the bengara family,
+// gap the muted-ink pending the yamabuki sign-off, agreed the koke green. Hue never alone (a mark each).
+const counterBar = (s, open) => {
+  const c = screenCounter(s, open)
+  const cell = (key, n, mark) => `<span class="cnt cnt-${key}${n ? '' : ' zero'}"><span class="cm">${mark}</span>${n} ${key}</span>`
+  return `<div class="counter" data-counter>${
+    cell('conflicts', c.conflicts, STATE_MARK.conflict)}${
+    cell('gaps', c.gaps, STATE_MARK.gap)}${
+    cell('mismatches', c.mismatches, STATE_MARK.mismatch)}${
+    cell('agreed', c.agreed, STATE_MARK.agreed)}</div>`
+}
 // WHAT GATES CI (the human, 2026-08-30: "user need to be clear that they can add tests for CI check,
 // and what tests are added"). A screen whose whole test.spec.ts runs in the CI gate wears one small
 // chip on its home card — the same .kchip pattern the unit/flow counts already use, no new hue and
@@ -256,9 +337,9 @@ const famRow = (f, tag = 'li') =>
 const ciChip = inCi => inCi
   ? '<span class="kchip ci" title="this screen\'s test.spec.ts runs in the CI gate — chosen in spec/_ci.json"><span class="km">CI</span> gate</span>'
   : ''
-const card = (s, i, runs, inCi = false) => {
-  const M = s.reqs.length
-  const proven = s.reqs.filter(r => r.state === 'proven').length
+const card = (s, i, runs, inCi = false, conflictIds = new Set()) => {
+  const M = s.reqs.filter(r => r.kind !== 'question').length
+  const proven = s.reqs.filter(r => r.state === 'proven' && r.kind !== 'question').length
   const done = M > 0 && proven === M
   const q = (s.title + ' ' + s.route + ' ' + s.reqs.map(r => r.title).join(' ')).toLowerCase()
   const kc = screenKinds(s)
@@ -269,9 +350,17 @@ const card = (s, i, runs, inCi = false) => {
   const still = latestStill(s, runs)
   // the evidence fallback is served off the same allowlisted spec/** path; hashed like screen.png
   const stillSrc = still && (still.hash ? `${still.src}?h=${still.hash}` : evSrc(still.src))
-  const rows = cardRows(s).map(x => x.kind === 'fam' ? famRow(x.f)
-    : x.kind === 'more' ? `<li class="more">… ${x.n} more</li>`
-      : `<li><span class="id">${esc(x.r.id)}</span><span class="mk ${esc(x.r.status)}">${CARD_MARK[x.r.status] || CARD_MARK.untested}</span><span class="rtl">${esc(x.r.title)}</span></li>`).join('')
+  // The home card shows the FIVE FIXED buckets in order (the human 2026-09-07): a bucket header with
+  // its count + worst-state mark, its requirement titles under it, an empty one a visible hole. A
+  // question card wears a `?` mark. Families nest as sub-headers; a leading strip holds unbucketed reqs.
+  const reqLi = r => r.kind === 'question'
+    ? `<li class="qcard"><span class="id">${esc(r.id)}</span><span class="mk question">?</span><span class="rtl">${esc(r.title)}</span></li>`
+    : `<li><span class="id">${esc(r.id)}</span><span class="mk ${esc(r.status)}">${CARD_MARK[r.status] || CARD_MARK.untested}</span><span class="rtl">${esc(r.title)}</span></li>`
+  const rows = bucketCardRows(s).map(x =>
+    x.kind === 'bucket' ? bucketHeadRow(x.b, conflictIds)
+      : x.kind === 'unbucketed' ? '<li class="unbkt">not yet bucketed</li>'
+        : x.kind === 'fam' ? famRow(x.f).replace('class="fam"', 'class="fam subfam"')
+          : reqLi(x.r)).join('')
   return `
 <div class="card" data-screen="${esc(s.name)}" data-i="${i}" data-q="${esc(q)}">
   <div class="cmain">
@@ -643,7 +732,7 @@ const reqRow = (r, s) => {
   // data-fam: the requirement's family NAME (board R17) — the Focus counter reads `<family> · n of N`
   // off the baked row; absent on a screen with no families, so the counter reads as before
   const fam = (s.families || []).find(f => f.ids.includes(r.id))
-  return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}" data-beats="${beats}"${fam ? ` data-fam="${esc(fam.name)}" data-famn="${esc(fam.n == null ? '' : fam.n)}"` : ''}${evAttrs(s, r)}>
+  return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}" data-beats="${beats}"${r.bucket ? ` data-bkt="${esc(r.bucket)}"` : ''}${r.kind === 'question' ? ' data-kind="question"' : ''}${fam ? ` data-fam="${esc(fam.name)}" data-famn="${esc(fam.n == null ? '' : fam.n)}"` : ''}${evAttrs(s, r)}>
     <div class="h">${reqChip(r.status)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
     <div class="body">${renderBehavior(r.behavior)}${renderBody(prose)}${covers}</div>
   </div>`
@@ -715,20 +804,39 @@ const gapStrip = s => {
 // kindByTitle: screen + test title → unit | flow, derived from the SOURCE plans (a test with
 // flowStep beats is a flow; a checkReq-only test is a unit) — the same derivation flow.mjs makes at
 // run time, available at build time so a never-run test still shows its kind.
-const listPane = (s, kindOf) => `<div class="gridview" hidden>
+// A question card row in the List — a behaviour one source has that no requirement owns yet, asking
+// the human its one question (the framework, the human 2026-09-07). It is NOT a coverage target: no
+// state chip, no proof line, just its `?` mark, its title and its ask.
+const qcardRow = r => {
+  const ask = (r.body.match(/^\s*-\s*\*\*Ask\*\*\s+(.+)$/m) || [])[1] || 'is this a requirement?'
+  return `<div class="lst-card qcard" data-r="${esc(r.id)}" data-kind="question">
+    <button class="lst-head" type="button">
+      <span class="chev">›</span><span class="lid">${esc(r.id)}</span><span class="lttl">${esc(r.title)}</span>
+      ${stateBadge('question')}<span class="qask">${esc(ask)}</span>
+    </button>
+    <div class="lst-body" hidden></div>
+  </div>`
+}
+const listPane = (s, kindOf, conflictIds = new Set()) => `<div class="gridview" hidden>
   ${gapStrip(s)}
-  ${familyGroups(s).flatMap(g => [...(g.family ? [g.family] : []), ...g.reqs]).map(r => {
-    if (r.ids) return famRow(r, 'div').replace('class="fam"', 'class="lst-fam"')   // a family header row
+  ${bucketCardRows(s).map(x => {
+    if (x.kind === 'bucket') return bucketHeadRow(x.b, conflictIds, 'div')
+    if (x.kind === 'unbucketed') return '<div class="lst-unbkt">not yet bucketed</div>'
+    if (x.kind === 'fam') return famRow(x.f, 'div').replace('class="fam"', 'class="lst-fam"')   // a family header row
+    const r = x.r
+    if (r.kind === 'question') return qcardRow(r)
     const [, , label] = GRID_CHIP[r.status] || GRID_CHIP.untested
     const beats = r.behavior ? r.behavior.beats.length : 0
     const cur = pickProofTest(r)
     const kind = cur ? kindOf(cur.screen || s.name, cur.title) : ''
-    return `<div class="lst-card" data-r="${esc(r.id)}" data-status="${esc(r.status)}">
+    const isConflict = conflictIds.has(r.id)
+    return `<div class="lst-card" data-r="${esc(r.id)}" data-status="${esc(r.status)}" data-cardstate="${cardState(r, conflictIds)}">
       <button class="lst-head" type="button">
         <span class="chev">›</span><span class="lid">${esc(r.id)}</span><span class="lttl">${esc(r.title)}</span>
         ${beats > 1 ? `<span class="lbeats">${beats} beats</span>` : ''}
         <span class="lpf ${esc(r.status)}">${label}${kind ? `<span class="lkind"> · ${esc(kind)}</span>` : ''}</span>
       </button>
+      <div class="lst-anat">${stampStrip(r, isConflict)}${slotChips(r)}${stateBadge(cardState(r, conflictIds))}</div>
       <div class="lst-body" hidden></div>
     </div>`
   }).join('')}
@@ -1808,6 +1916,10 @@ export function build () {
   // resolver, that .github/workflows/e2e.yml runs
   const ci = ciGate()
   const inCi = new Set(ci.screens)
+  // OPEN conflicts, read once for the whole build (the framework, the human 2026-09-07): a rule card's
+  // conflict state is derived from the Conflicts page's open findings naming it as a side (cards.mjs).
+  const openConflicts = (() => { try { return readConflicts().open } catch { return [] } })()
+  const conflictIdsFor = name => conflictReqIds(openConflicts, name)
   const groups = areas.map(a => {
     const inArea = screens.map((s, i) => ({ s, i })).filter(x => x.s.area === a)
     return `
@@ -1817,7 +1929,7 @@ export function build () {
     <h2>${esc(a)}</h2>
     <span class="gc">${inArea.length} screen${inArea.length === 1 ? '' : 's'}</span>
   </div>
-  <div class="cards">${inArea.map(x => card(x.s, x.i, runs, inCi.has(x.s.name))).join('')}</div>
+  <div class="cards">${inArea.map(x => card(x.s, x.i, runs, inCi.has(x.s.name), conflictIdsFor(x.s.name))).join('')}</div>
 </section>`
   }).join('')
 
@@ -1831,6 +1943,7 @@ export function build () {
 <section class="dt" data-i="${i}" data-screen="${esc(s.name)}" hidden>
   <div class="dth dbarhook">
     <div class="dname"><h2>${esc(s.title)}</h2><span class="dsub">${esc(s.area)} · ${esc(s.route)}</span></div>
+    ${counterBar(s, openConflicts)}
     <span class="grow"></span>
     ${runAll(s.name)}
     <div class="viewseg" role="tablist" aria-label="View">
@@ -1845,7 +1958,7 @@ export function build () {
       ${reqPane(s)}
       ${testPane(s)}
     </div>
-    ${listPane(s, kindOf)}
+    ${listPane(s, kindOf, conflictIdsFor(s.name))}
     <div class="flowview" hidden></div>
     <div class="composeview" hidden></div>
   </div>
@@ -2031,6 +2144,78 @@ export function build () {
   .rl li.fam + li { border-top:0; }
   .rl li.fam .fname { color:var(--ink); font-weight:600; }
   .rl li.fam .fgloss { color:var(--ink-3); }
+  /* ── the requirement framework's five FIXED buckets (the human 2026-09-07) ──────────────────────
+     A BUCKET header row leads a section of the home card / List: the fixed key + tool-owned name, its
+     gloss, its card count and its worst-state mark. An EMPTY bucket is a visible HOLE — "nothing here
+     yet" in muted ink (--ink-3 6.42:1 on card, AA). A family (.subfam) nests one indent inside. */
+  .rl li.bkt { display:flex; align-items:baseline; gap:6px; border-top:0; border-bottom:1px solid var(--hair-2);
+    margin-top:var(--s3); padding:6px 0 4px; font-size:var(--t-xs); color:var(--ink); white-space:nowrap;
+    overflow:hidden; }
+  .rl li.bkt:first-child { margin-top:0; }
+  .rl li.bkt + li { border-top:0; }
+  .rl li.bkt .bkkey { font-size:var(--t-md); color:var(--ink-2); flex:none; }
+  .rl li.bkt .bkname { font-weight:600; color:var(--ink); }
+  .rl li.bkt .bkgloss { color:var(--ink-4); font-size:var(--t-micro); overflow:hidden; text-overflow:ellipsis; flex:1; }
+  .rl li.bkt .bkcount { font:var(--t-micro) var(--mono); color:var(--ink-3); flex:none; }
+  .rl li.bkt .bkmk { flex:none; width:14px; text-align:center; }
+  .rl li.bkt.empty { color:var(--ink-4); }
+  .rl li.bkt.empty .bkname { color:var(--ink-3); font-weight:500; }
+  .rl li.bkt .bkempty { color:var(--ink-4); font-style:italic; font-size:var(--t-micro); }
+  .rl li.fam.subfam { margin-left:var(--s3); }
+  .rl li.unbkt { display:block; border-top:0; color:var(--bengara); font-size:var(--t-micro);
+    font-style:italic; padding:2px 0; }
+  .rl li.qcard .mk.question { color:var(--ink-3); }
+  /* the worst-state mark hues (bucket header + counter). agreed=koke, conflict/mismatch=bengara,
+     gap/question=muted ink (NOT yamabuki — that reassignment is the human's sign-off, still pending).
+     Hue never alone: the GLYPH differs (✓ ⚑ ✗ △ ?). */
+  .b-agreed { color:var(--koke); } .b-conflict, .b-mismatch { color:var(--bengara); }
+  .b-gap, .b-question { color:var(--ink-3); }
+  /* ── the screen head's counter: conflicts · gaps · mismatches · agreed ─────────────────────────── */
+  .counter { display:flex; gap:var(--s2); align-items:center; flex-wrap:wrap; margin-left:var(--s4); }
+  .cnt { display:inline-flex; align-items:center; gap:5px; font-size:var(--t-xs); border-radius:999px;
+    padding:2px 10px; box-shadow:inset 0 0 0 1px var(--hair-2); color:var(--ink-2); background:var(--paper); }
+  .cnt .cm { font-size:var(--t-sm); }
+  .cnt-conflicts:not(.zero), .cnt-mismatches:not(.zero) { color:var(--bengara); background:var(--bengara-tint);
+    box-shadow:inset 0 0 0 1px var(--bengara-line); }
+  .cnt-agreed:not(.zero) { color:var(--koke); background:var(--koke-tint); box-shadow:inset 0 0 0 1px var(--koke-line); }
+  .cnt-gaps:not(.zero) { color:var(--ink-3); background:var(--wash); box-shadow:inset 0 0 0 1px var(--hair-2); }
+  .cnt.zero { color:var(--ink-4); background:transparent; }
+  /* ── a rule card's stamp strip: DOC · CODE · SPEC · PROVEN ─────────────────────────────────────
+     PROVEN is MEASURED (koke green) — the only green a stamp earns. DOC/CODE/SPEC are AUTHORED: filled
+     in neutral INK, never koke, so an authored stamp can never read as a measured proof. A conflict
+     side reddens DOC/CODE. An absent stamp is dashed and muted. */
+  .stamps { display:inline-flex; gap:4px; }
+  .stamp { font:var(--t-micro) var(--mono); letter-spacing:.03em; padding:1px 6px; border-radius:var(--r-sm);
+    box-shadow:inset 0 0 0 1px var(--hair-2); color:var(--ink-4); background:var(--paper); }
+  .stamp.off { border-style:dashed; box-shadow:none; border:1px dashed var(--hair-2); color:var(--ink-4); opacity:.7; }
+  .stamp.authored.on { color:var(--ink); background:var(--wash); box-shadow:inset 0 0 0 1px var(--line2); font-weight:600; }
+  .stamp.measured.on { color:var(--koke); background:var(--koke-tint); box-shadow:inset 0 0 0 1px var(--koke-line); font-weight:600; }
+  .stamp.authored.conf.on, .stamp.authored.conf.off { color:var(--bengara); background:var(--bengara-tint);
+    box-shadow:inset 0 0 0 1px var(--bengara-line); border:0; opacity:1; }
+  /* ── the four example slots: happy · boundary · absence · mistake ──────────────────────────────
+     full=koke (a beat fills it), na=declared Not needed (muted), gap=a needed slot nobody filled —
+     muted ink + dashed (NOT yamabuki, pending sign-off). */
+  .slots { display:inline-flex; gap:4px; }
+  .slot { font-size:var(--t-micro); padding:1px 7px; border-radius:var(--r-sm); box-shadow:inset 0 0 0 1px var(--hair-2);
+    color:var(--ink-4); background:var(--paper); }
+  .slot .sk { text-transform:lowercase; }
+  .slot.full { color:var(--koke); background:var(--koke-tint); box-shadow:inset 0 0 0 1px var(--koke-line); }
+  .slot.gap { color:var(--ink-3); background:transparent; border:1px dashed var(--line2); box-shadow:none; }
+  .slot.na { color:var(--ink-4); background:var(--wash); box-shadow:none; text-decoration:line-through; }
+  /* ── the derived state badge: agreed · conflict · gap · mismatch · question ────────────────────── */
+  .badge { display:inline-flex; align-items:center; gap:4px; font-size:var(--t-xs); border-radius:999px;
+    padding:1px 9px; box-shadow:inset 0 0 0 1px var(--hair-2); color:var(--ink-2); background:var(--paper); text-transform:capitalize; }
+  .badge .bm { font-size:var(--t-sm); }
+  .badge.b-agreed { color:var(--koke); background:var(--koke-tint); box-shadow:inset 0 0 0 1px var(--koke-line); }
+  .badge.b-conflict { color:var(--bengara); background:var(--bengara-tint); box-shadow:inset 0 0 0 1px var(--bengara-line); }
+  .badge.b-mismatch { color:var(--paper); background:var(--bengara); box-shadow:none; }
+  .badge.b-gap, .badge.b-question { color:var(--ink-3); background:var(--wash); box-shadow:inset 0 0 0 1px var(--hair-2); }
+  /* ── the List's per-card anatomy strip (stamps · slots · badge) and a question card ────────────── */
+  .lst-anat { display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; padding:0 var(--s4) var(--s3);
+    border-top:0; }
+  .lst-card.qcard .lst-head { color:var(--ink-2); }
+  .lst-card.qcard .qask { color:var(--ink-3); font-size:var(--t-xs); font-style:italic; }
+  .lst-unbkt { color:var(--bengara); font-size:var(--t-micro); font-style:italic; padding:2px var(--s1); }
   #home .card .cright { display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
   #home .card .metrics { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
   #home .card .pcount { border-radius:999px; padding:2px 10px; }
