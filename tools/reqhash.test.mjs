@@ -186,3 +186,14 @@ test('ADDING A DATED NOTE changes NOTHING — a provenance edit never flips Chan
   const withNote = withoutNote + '\n\n*Amended 2026-08-19 (the human): note appended, meaning untouched.*'
   assert.equal(reqHash(meaningText(withNote)), reqHash(meaningText(withoutNote)))
 })
+
+test('meaningText ignores trailing slot tags — classifying a beat is metadata, not a meaning change', () => {
+  // A slot tag ({happy} …) files a beat under an example slot; it does not change what the beat MEANS,
+  // so it must not flip a proven requirement to Changed (the human's framework, 2026-09-07).
+  const plain = '- **Given** g\n- **When** you press Add\n- **Then** a row appears'
+  const tagged = '- **Given** g\n- **When** you press Add {happy}\n- **Then** a row appears'
+  assert.equal(reqHash(meaningText(tagged)), reqHash(meaningText(plain)))
+  // a curly phrase that is NOT a trailing slot tag is ordinary meaning and stays hashed
+  const curly = '- **Given** g\n- **When** you set {n} to 3\n- **Then** it reads 3'
+  assert.notEqual(reqHash(meaningText(curly)), reqHash(meaningText(plain)))
+})

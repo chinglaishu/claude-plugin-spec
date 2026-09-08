@@ -9,6 +9,22 @@
 // partial→null).
 const LINE = /^\s*-\s*\*\*(Given|When|Then)\*\*\s+(.+?)\s*$/gm
 
+// Example SLOTS (the requirement framework, the human 2026-09-07): one or more of these tokens at
+// the END of a When line file that beat under a slot. They are NOT part of the sentence the board
+// prints, so parseBehavior strips them (stripSlotTags) and carries the tags on the beat instead; an
+// untagged beat carries no tag here (cards.mjs defaults it to happy). Any other {curly} phrase, or a
+// tag that is not trailing, is ordinary prose and left alone.
+export const SLOTS = ['happy', 'boundary', 'absence', 'mistake']
+const TRAILING_TAGS = /(?:\s*\{(?:happy|boundary|absence|mistake)\})+\s*$/
+export function stripSlotTags (text) {
+  return String(text || '').replace(TRAILING_TAGS, '').trimEnd()
+}
+const TAG = /\{(happy|boundary|absence|mistake)\}/g
+function slotsOf (whenText) {
+  const m = String(whenText).match(TRAILING_TAGS)
+  return m ? [...m[0].matchAll(TAG)].map(x => x[1]) : []
+}
+
 export function parseBehavior (body) {
   const seq = [...String(body || '').matchAll(LINE)].map(m => ({ label: m[1], text: m[2].trim() }))
   if (!seq.length || seq[0].label !== 'Given') return null
@@ -17,7 +33,7 @@ export function parseBehavior (body) {
   const beats = []
   for (let i = 0; i < rest.length; i += 2) {
     if (rest[i].label !== 'When' || rest[i + 1].label !== 'Then') return null
-    beats.push({ when: rest[i].text, then: rest[i + 1].text })
+    beats.push({ when: stripSlotTags(rest[i].text), then: rest[i + 1].text, slots: slotsOf(rest[i].text) })
   }
   return { given: seq[0].text, beats }
 }

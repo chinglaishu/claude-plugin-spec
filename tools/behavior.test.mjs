@@ -16,7 +16,8 @@ test('parses a Given/When/Then triple from a requirement body as a 1-beat chain'
     given: 'edit mode · value ≠ house view',
     beats: [{
       when: 'edit the value',
-      then: 'the cell marks an override; the HV base is kept'
+      then: 'the cell marks an override; the HV base is kept',
+      slots: []
     }]
   })
 })
@@ -31,7 +32,7 @@ test('returns null when only some of the three labels are present', () => {
 
 test('is tolerant of extra spaces and a trailing period on the label', () => {
   const body = '-   **Given**  a\n- **When** b\n- **Then** c'
-  assert.deepEqual(parseBehavior(body), { given: 'a', beats: [{ when: 'b', then: 'c' }] })
+  assert.deepEqual(parseBehavior(body), { given: 'a', beats: [{ when: 'b', then: 'c', slots: [] }] })
 })
 
 // stripBehaviorLead is parseBehavior's complement: renderBehavior draws the triple as the shape, so
@@ -76,8 +77,8 @@ test('parses Given + two When→Then beats in document order', () => {
   assert.deepEqual(parseBehavior(body), {
     given: 'an operation-cost table in edit mode',
     beats: [
-      { when: 'the value is edited', then: 'the cell marks an override' },
-      { when: 'Reset is pressed', then: 'the override clears back to the house view' }
+      { when: 'the value is edited', then: 'the cell marks an override', slots: [] },
+      { when: 'Reset is pressed', then: 'the override clears back to the house view', slots: [] }
     ]
   })
 })

@@ -33,9 +33,17 @@ export function stripNotes (body) {
   return kept.join('\n\n')
 }
 
-// The proof/Changed scope: whole body, notes out, whitespace-normalized.
+// A beat's example-slot tags ({happy} {boundary} {absence} {mistake} trailing a When line) CLASSIFY
+// the beat; they are not part of what it MEANS (the human's framework, 2026-09-07), so the meaning
+// hash must ignore them — else tagging a proven beat would flip it to Changed on a pure metadata
+// edit. Inlined here (crypto-only invariant) rather than importing behavior.mjs; a non-trailing
+// {curly} phrase is ordinary meaning and left alone.
+const TRAILING_SLOT_TAGS = /(?:[ \t]*\{(?:happy|boundary|absence|mistake)\})+(?=[ \t]*(?:\n|$))/g
+export const stripSlotMeta = body => String(body ?? '').replace(TRAILING_SLOT_TAGS, '')
+
+// The proof/Changed scope: whole body, slot tags out, notes out, whitespace-normalized.
 export function meaningText (body) {
-  return normalize(stripNotes(body))
+  return normalize(stripNotes(stripSlotMeta(body)))
 }
 
 // The picture-pin scope: the parsed block (or null → ''). Takes the parsed object, never the raw

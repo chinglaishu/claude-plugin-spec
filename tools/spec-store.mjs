@@ -203,6 +203,36 @@ export const inlineDesign = html =>
 // body and moved its meaning hash (9 requirements read Changed on a pure re-grouping). A family
 // carries no state: `families` is structure only — {n, name, gloss, heading, ids}, in prd order —
 // and each requirement carries its family's `n` (null before the first heading, or with none).
+// BUCKETS (the requirement framework, the human 2026-09-07): a `###` line whose first non-space char
+// is one of these is a BUCKET line — the tool owns the name (tools/cards.mjs), trailing words are an
+// optional gloss. Any other `###` is a FAMILY line and belongs to the bucket above it. Additive: a
+// prd with no bucket lines parses byte-for-byte as before (tools/prd-families.test.mjs proves it).
+const BUCKET_KEYS = ['①', '②', '③', '④', '⑤']
+
+// The slots a requirement's beats fill: each beat's explicit {tag}s, an untagged beat filling 'happy'.
+function slotsFilled (body) {
+  const b = parseBehavior(body)
+  if (!b) return []
+  const filled = new Set()
+  for (const beat of b.beats) (beat.slots.length ? beat.slots : ['happy']).forEach(s => filled.add(s))
+  return [...filled]
+}
+// Authored DOC/CODE stamps from a `- **Sources** doc: … — code: …` line. Either half may be absent.
+function parseSources (body) {
+  const m = body.match(/^\s*-\s*\*\*Sources\*\*\s+(.+)$/m)
+  if (!m) return null
+  const line = m[1]
+  const doc = line.match(/doc:\s*(.*?)(?:\s+—\s+code:|$)/)
+  const code = line.match(/code:\s*(.+)$/)
+  return { doc: doc ? doc[1].trim() : null, code: code ? code[1].trim() : null }
+}
+// A slot filled ON PURPOSE: `- **Not needed** <slot> — <reason>`.
+function parseNotNeeded (body) {
+  const out = {}
+  for (const nm of body.matchAll(/^\s*-\s*\*\*Not needed\*\*\s+(\w+)\s+—\s+(.+)$/gm)) out[nm[1]] = nm[2].trim()
+  return out
+}
+
 export function parsePrd (text) {
   const fm = {}
   let body = text
@@ -216,23 +246,42 @@ export function parsePrd (text) {
   }
   const reqs = []
   const families = []
+  const buckets = []
   let family = null
+  let bucket = null
   for (const chunk of body.split(/\n(?=##[#]? )/)) {
     const f = chunk.match(/^###\s+(.+)/)
     if (f) {
-      const heading = f[1].trim()
-      const m = heading.match(/^(?:(\S+)\s+·\s+)?(.*?)(?:\s+—\s+(.*))?$/)
-      family = { n: m?.[1] ?? null, name: (m?.[2] ?? heading).trim(), gloss: (m?.[3] ?? '').trim(), heading, ids: [] }
+      const line = f[1].trim()
+      const key = BUCKET_KEYS.find(k => line.startsWith(k))
+      if (key) {                                   // a BUCKET line: the tool owns the name, trailing words are a gloss
+        bucket = key
+        family = null                              // a new bucket opens with no family
+        buckets.push({ key, gloss: line.slice(key.length).trim() })
+        continue
+      }
+      const heading = line
+      const hm = heading.match(/^(?:(\S+)\s+·\s+)?(.*?)(?:\s+—\s+(.*))?$/)
+      family = { n: hm?.[1] ?? null, name: (hm?.[2] ?? heading).trim(), gloss: (hm?.[3] ?? '').trim(), heading, bucket, ids: [] }
       families.push(family)
       continue
     }
     const h = chunk.match(/^##\s+(.+)/)
     if (!h) continue
     const [, id, title] = h[1].match(/^(\S+)\s+—\s+(.*)$/) || [null, '', h[1]]
-    reqs.push({ id, title, body: chunk.replace(/^##.*\n/, '').trim(), family: family ? family.n ?? family.name : null })
+    const rbody = chunk.replace(/^##.*\n/, '').trim()
+    reqs.push({
+      id, title, body: rbody,
+      family: family ? family.n ?? family.name : null,
+      bucket,
+      kind: /^Q\d+$/.test(String(id)) ? 'question' : 'rule',
+      slots: { filled: slotsFilled(rbody) },
+      sources: parseSources(rbody),
+      notNeeded: parseNotNeeded(rbody)
+    })
     if (family) family.ids.push(id)
   }
-  return { fm, reqs, families }
+  return { fm, reqs, families, buckets }
 }
 
 // The board shows a test's steps read from its DEFINITION (board R10), so the full plan is visible
