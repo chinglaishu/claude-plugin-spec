@@ -5067,20 +5067,21 @@ test('The requirement framework — five buckets, question cards, derived state,
     const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
     await expect(dt.locator('.gridview')).toBeVisible()
     // the board's own R2 is named by an open Conflicts finding, so its card derives the CONFLICT state,
-    // outranking everything; a rule with no open finding and no failed proof derives AGREED
+    // outranking everything; a rule with no open finding and no failed proof derives AGREED. Asserted
+    // as the class AND the word the badge wears — either would fail if the derivation broke.
     await expect(dt.locator('.lst-card[data-r="R2"] .badge.b-conflict'),
       'R2, a conflict side, derives the conflict state').toHaveCount(1)
-    await proveVisible(dt.locator('.lst-card[data-r="R2"] .badge').first(), 'conflict',
-      'A card named by an open finding derives conflict — outranking all',
-      { soft: true, match: s => /conflict/.test(s) })
+    await expect(dt.locator('.lst-card[data-r="R2"] .badge'), 'and wears the word').toContainText(/conflict/i)
     await expect(dt.locator('.lst-card[data-r="R1"] .badge.b-agreed'),
       'R1, with no open finding, derives agreed').toHaveCount(1)
-    await proveVisible(dt.locator('.lst-card[data-r="R1"] .badge').first(), 'agreed',
-      'A card with no finding and no failed proof derives agreed',
-      { soft: true, match: s => /agreed/.test(s) })
-    // "never stored" is the ABSENCE of a status field — the state is a pure function of the tree at build
-    // time (tools/cards.mjs cardState), so there is nothing on the screen that carries it as a stored value
-    intentGap('a card\'s state is a pure function of the tree at build time (cardState), never a stored field — there is no persisted status anywhere for a claim to read; the derivation itself is proven in tools/cards.test.mjs')
+    await expect(dt.locator('.lst-card[data-r="R1"] .badge'), 'and wears the word').toContainText(/agreed/i)
+    // The badge IS shown — the Actual frame photographs it — but a proveVisible over the List badge
+    // composes a broken Expected (the badge's mark-glyph + text-transform do not survive the graft the
+    // way a plain stamp does — measured, board R26 mirror gap 2026-09-08), so the derived state is
+    // asserted STRUCTURALLY above (the class and the word) rather than as a grafted picture. And "never
+    // stored" is the ABSENCE of a status field: the state is a pure function of the tree at build time
+    // (tools/cards.mjs cardState), so there is nothing persisted for a claim to read.
+    intentGap('the card\'s derived state is the class + word the List badge wears (asserted structurally above); the List badge composes no faithful grafted Expected, so there is no Expected picture for a proveVisible claim, and "never stored" is the absence of a persisted status field — cardState is a pure function of the tree, proven in tools/cards.test.mjs')
   })
 
   // R27 — only PROVEN (a measured pass) is the koke green; an authored DOC/CODE/SPEC stamp never is
