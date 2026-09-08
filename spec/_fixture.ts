@@ -59,6 +59,19 @@ export function makeDocumentScreen (name: string) {
   return name
 }
 
+// A stub screen whose PRD BODY the caller writes — for exercising the requirement framework (buckets,
+// question cards, authored stamps) on a screen the board does not otherwise carry. Frontmatter is
+// supplied; `body` is everything after it. Rebuilds; the state guard removes the new dir after the run.
+export function makeScreenFromPrd (name: string, body: string) {
+  const dir = join(SPEC, name)
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'prd.md'),
+    `---\nscreen: ${name}\narea: Crawled\ntitle: ${name}\nroute: /${name}\n---\n\n` + body)
+  copyFileSync(join(SPEC, 'board', 'screen.png'), join(dir, 'screen.png'))
+  build()
+  return name
+}
+
 // Drop a wireframe onto an existing screen — the "add a wireframe to redesign" move that flips a
 // document-mode screen into design mode. Rebuilds so the board reflects the new mode.
 export function addWireframe (name: string) {

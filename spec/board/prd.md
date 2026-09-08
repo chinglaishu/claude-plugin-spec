@@ -689,6 +689,59 @@ reword or remove like any other.*
      precedent). Beat 2 pages to another requirement and asserts the same order, with nothing
      written to storage. -->
 
+### 6 · The requirement framework — every screen's five buckets
+
+## R24 — Every screen shows the five fixed buckets, in order; an empty one is a visible hole
+
+- **Given** any screen's requirements
+- **When** the home card and the List render them {happy}
+- **Then** the five buckets — ① The main thing's life · ② Every derived number · ③ Every view & chip · ④ Survival · ⑤ The mistake path — lead the requirements in that fixed order, each named by the tool, whatever order the prd wrote them in
+- **When** a screen leaves a bucket with no requirement {absence}
+- **Then** that bucket still renders, marked a visible hole, never silently absent
+
+The buckets are the tool's, not the author's — the same five on every screen, in one order, so a reader
+learns the shape once. An empty bucket is the honest hole the Example-Mapping method wants: "nothing here
+yet" is a question to answer, not an absence to overlook.
+
+*Drafted 2026-09-08 on the human's behalf as the board's own proof of the requirement framework (Part A);
+canon as written, theirs to reword or remove.*
+
+<!-- Proven by spec/board/test.spec.ts, "Every screen shows the five fixed buckets …": beat 1 reads the
+     home card and List of a bucketed screen and asserts the five .bkt keys in fixed ①..⑤ order; beat 2
+     stubs a screen missing a bucket and asserts that bucket renders as .bkt.empty, a visible hole. -->
+
+## R25 — A question card is shown but is never a coverage target
+
+- **Given** a `## Q<n>` question card — "is this a requirement?"
+- **When** the board renders it {happy}
+- **Then** it appears on the home card and in the List with a Question mark and its own ask, but is not counted among the screen's requirements and is not a Focus page
+- **When** the proof lint reads a test that tags a `Q` id {mistake}
+- **Then** the lint refuses it — a question is never a coverage target
+
+A question is a card you can see and decide on, not a claim the board pretends to prove. It rides the
+board so it is not lost, but it never buys a green and never inflates the count.
+
+*Drafted 2026-09-08 on the human's behalf (Part A); canon as written, theirs to reword or remove.*
+
+<!-- Proven by spec/board/test.spec.ts, "A question card is shown but is never a coverage target": beat 1
+     stubs a screen with a rule and a question, asserts the question renders (.qcard) yet the requirement
+     count and the Focus pager exclude it; beat 2 asserts tools/proof-integrity lint refuses checkReq('Q1'). -->
+
+## R27 — An authored stamp never renders as a measured green
+
+- **Given** a card's authored DOC / CODE / SPEC stamps and its measured PROVEN stamp
+- **When** the stamp strip renders {happy}
+- **Then** only PROVEN — a passing test — is drawn as the measured green; an authored stamp is drawn as a claim the human wrote, never as proof the run measured
+
+The green is earned, never asserted. A DOC or CODE stamp says "a human vouched for this"; only a passing
+test paints the state green, so no amount of authored confidence can read as measured proof.
+
+*Drafted 2026-09-08 on the human's behalf (Part A); canon as written, theirs to reword or remove.*
+
+<!-- Proven by spec/board/test.spec.ts, "An authored stamp never renders as a measured green": a stub screen
+     authors DOC/CODE stamps on an unproven rule; the beat asserts the PROVEN stamp is not the measured-green
+     class while the authored stamps carry the authored class, never the measured one. -->
+
 ### ② Every derived number
 
 ### 3 · Computed truth — state is derived, never stored
@@ -806,6 +859,24 @@ remove like any other.*
 <!-- Proven by spec/board/test.spec.ts, the CI-mark test — it reads the committed chooser
      independently, demands the marked set differ from the full set, then seeds a one-screen chooser
      → rebuild → the marks move; deletes the chooser → rebuild → every card wears the mark. -->
+
+## R26 — A card's state is derived, never stored — conflict, then mismatch, then agreed
+
+- **Given** a rule card and the open conflicts, failed proofs and unfilled slots around it
+- **When** its state is computed on every build {happy}
+- **Then** the badge reads conflict when an open finding names the card as a side, else mismatch when its proof failed or was not reached, else agreed — with gaps counted separately at the slot level, and nothing about the state written to disk
+
+The card carries no status field — its state is a pure function of the tree at build time, exactly like
+every other fact here. Conflict outranks mismatch outranks agreed because an unresolved disagreement about
+what a requirement MEANS is a deeper problem than a proof that has not caught up; gaps are a separate
+count, not a badge, because a missing test slot is a hole to fill, not a verdict on the requirement.
+
+*Drafted 2026-09-08 on the human's behalf (Part A), the precedence confirmed by the human 2026-09-08;
+canon as written, theirs to reword or remove.*
+
+<!-- Proven by spec/board/test.spec.ts, "A card's state is derived …": the board's own R2 is a conflict
+     side (an open Conflicts finding names it), so the beat asserts its card carries the conflict state and
+     an all-agreed rule carries agreed — read off the built board, never a stored field. -->
 
 ### ⑤ The mistake path
 

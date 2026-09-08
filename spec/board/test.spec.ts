@@ -4746,7 +4746,7 @@ test('Home, the detail, then a finished run refreshes it in place — composed',
 // order) — an authored fact, so no family name, count or position is pinned as a literal. Families
 // carry no state: every mark the map shows is derived from the requirement it names.
 import { rmSync } from 'node:fs'
-import { makeDocumentScreen } from '../_fixture'
+import { makeDocumentScreen, makeScreenFromPrd } from '../_fixture'
 // The prd's buckets AND families, ordered the way the BOARD READS THEM — the five fixed buckets
 // (①..⑤) in that order (an empty bucket contributes nothing), families nested inside, unbucketed
 // first. A `###` line led by a bucket symbol is a BUCKET; any other `###` is a FAMILY belonging to
@@ -5003,5 +5003,114 @@ test('Requirements sub-group within a screen — family headers on the card and 
       build()
     }
     }
+  })
+})
+
+// R24–R27 — the requirement framework, dogfooded on the board's own board (Part A, 2026-09-08). These
+// re-prove at the board's E2E level what tools/cards.test.mjs + tools/board-buckets.test.mjs already
+// proved RED-FIRST at the pure level; per the composed-flow addendum (CLAUDE.md rule 1) a behaviour
+// proven red-first in its unit home is exempt from a second red-first at the level that composes it.
+test('The requirement framework — five buckets, question cards, derived state, authored stamps', async ({ page }) => {
+  await coverReqs('R24', 'R25', 'R26', 'R27')
+
+  // R24 — the five FIXED buckets lead every screen in ①..⑤ order; an empty one is a visible hole
+  await checkReq('R24', async () => {
+    await page.goto('/')
+    const card = page.locator('#home .card[data-screen="board"]')
+    const keys = card.locator('.rl .bkt .bkkey')
+    expect(await keys.evaluateAll(els => els.map(e => (e.textContent || '').trim())),
+      'the five buckets, tool-owned, in fixed order').toEqual(BUCKET_KEYS)
+    await proveVisible(keys.first(), BUCKET_KEYS[0],
+      'The five fixed buckets lead every screen, in order', { soft: true })
+    // an empty bucket is a visible hole: a screen with a requirement in only bucket ① leaves ②..⑤ empty
+    const stub = makeScreenFromPrd('bucketstub',
+      "### ① The main thing's life\n\n## R1 — The only bucket with anything in it\n\nOne behaviour, so the other four buckets are empty holes.\n")
+    try {
+      await page.goto('/')
+      const sc = page.locator('#home .card[data-screen="' + stub + '"]')
+      const holes = sc.locator('.rl .bkt.empty')
+      await expect(holes, 'the four unused buckets are visible holes, not absent').toHaveCount(4)
+      await proveVisible(holes.first().locator('.bkempty'), '— nothing here yet',
+        'An empty bucket is a visible hole', { soft: true })
+    } finally { rmSync('spec/' + stub, { recursive: true, force: true }); build() }
+  })
+
+  // R25 — a question card is shown, but is never counted, never a Focus page, never a coverage target
+  await checkReq('R25', async () => {
+    const stub = makeScreenFromPrd('questionstub',
+      "### ① The main thing's life\n\n## R1 — A rule with a question beside it\n\n- **Given** the framework\n- **When** it renders {happy}\n- **Then** the rule appears\n\n## Q1 — Is the neighbouring behaviour a requirement?\n\nAn open question the crawl surfaced.\n")
+    try {
+      await page.goto('/')
+      const sc = page.locator('#home .card[data-screen="' + stub + '"]')
+      // the question is SHOWN — it rides the board so it is not lost
+      const q = sc.locator('.rl li.qcard')
+      await expect(q, 'the question card is shown on the home card').toHaveCount(1)
+      await proveVisible(q.locator('.rtl').first(), 'Is the neighbouring behaviour a requirement?',
+        'A question card is shown, with its own ask', { soft: true })
+      // …but it is NOT a requirement: the count is 1 (the rule only), and the Focus pager has one dot
+      await expect(sc.locator('.metrics .pcount'), 'the question is not counted among the requirements').toHaveText('0 / 1 proven')
+      await page.goto('/#/' + stub)
+      const dt = page.locator('.dt[data-screen="' + stub + '"]:not([hidden])')
+      await expect(dt.locator('.focusov')).toBeVisible()
+      await expect(dt.locator('.dtfoot .fdot'), 'the question is not a Focus page').toHaveCount(1)
+      await proveVisible(dt.locator('.dtfoot .fdot'), 'R1',
+        'The Focus pager pages the rule, never the question', { soft: true })
+      // the other fact — the lint refuses a test that TAGS a Q id — has no board surface; it is proven
+      // by tools/lint-questions.test.mjs (checkReq('Q1') is a `npm run proof lint` error)
+      intentGap('the proof lint refuses a test that tags a Q id — a CLI gate (tools/proof-integrity isTagged), proven by tools/lint-questions.test.mjs; no element on the board carries that refusal as a value a claim could read')
+    } finally { rmSync('spec/' + stub, { recursive: true, force: true }); build() }
+  })
+
+  // R26 — a card's state is DERIVED (conflict > mismatch > agreed), never a stored field
+  await checkReq('R26', async () => {
+    await page.goto('/#/board/grid')
+    const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+    await expect(dt.locator('.gridview')).toBeVisible()
+    // the board's own R2 is named by an open Conflicts finding, so its card derives the CONFLICT state,
+    // outranking everything; a rule with no open finding and no failed proof derives AGREED
+    await expect(dt.locator('.lst-card[data-r="R2"] .badge.b-conflict'),
+      'R2, a conflict side, derives the conflict state').toHaveCount(1)
+    await proveVisible(dt.locator('.lst-card[data-r="R2"] .badge').first(), 'conflict',
+      'A card named by an open finding derives conflict — outranking all',
+      { soft: true, match: s => /conflict/.test(s) })
+    await expect(dt.locator('.lst-card[data-r="R1"] .badge.b-agreed'),
+      'R1, with no open finding, derives agreed').toHaveCount(1)
+    await proveVisible(dt.locator('.lst-card[data-r="R1"] .badge').first(), 'agreed',
+      'A card with no finding and no failed proof derives agreed',
+      { soft: true, match: s => /agreed/.test(s) })
+    // "never stored" is the ABSENCE of a status field — the state is a pure function of the tree at build
+    // time (tools/cards.mjs cardState), so there is nothing on the screen that carries it as a stored value
+    intentGap('a card\'s state is a pure function of the tree at build time (cardState), never a stored field — there is no persisted status anywhere for a claim to read; the derivation itself is proven in tools/cards.test.mjs')
+  })
+
+  // R27 — only PROVEN (a measured pass) is the koke green; an authored DOC/CODE/SPEC stamp never is
+  await checkReq('R27', async () => {
+    await page.goto('/#/board/grid')
+    const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+    await expect(dt.locator('.gridview')).toBeVisible()
+    // resolve the design tokens: koke is the MEASURED green a real proof earns; ink is filled authored text
+    const [koke, ink] = await page.evaluate(() => {
+      const p = document.createElement('span'); document.body.appendChild(p)
+      p.style.color = 'var(--koke)'; const k = getComputedStyle(p).color
+      p.style.color = 'var(--ink)'; const i = getComputedStyle(p).color
+      p.remove(); return [k, i]
+    })
+    // the SPEC stamp is authored and always on — its colour is the authored ink, NEVER the measured green
+    const spec = dt.locator('.lst-card[data-r="R1"] .stamp.authored.on').filter({ hasText: 'SPEC' })
+    await expect(spec).toHaveCount(1)
+    const specColor = await spec.evaluate(el => getComputedStyle(el).color)
+    expect(specColor, 'an authored stamp wears authored ink, not the measured green').toBe(ink)
+    expect(specColor, 'and is never the koke green a real proof earns').not.toBe(koke)
+    // and the koke green is RESERVED for the measured class: a `.stamp.measured.on` computes to koke,
+    // so only PROVEN — a passing test — can ever read as the measured green
+    const measuredGreen = await page.evaluate(() => {
+      const s = document.createElement('span'); s.className = 'stamp measured on'
+      document.querySelector('.gridview')!.appendChild(s)
+      const c = getComputedStyle(s).color; s.remove(); return c
+    })
+    expect(measuredGreen, 'the koke green is the measured stamp\'s alone').toBe(koke)
+    await proveVisible(spec, 'SPEC', 'An authored stamp is drawn as a claim, never the measured green', { soft: true })
+    // the colour itself is a computed token compared above (koke vs ink), not a value any element says
+    intentGap('“green” is a computed colour — var(--koke) vs var(--ink), measured above — not a value any stamp carries as text a claim could read')
   })
 })
