@@ -4630,7 +4630,8 @@ ${detail}
   // Rename is atomic within a filesystem, so a reader sees either the whole old board or the whole
   // new one — the same guarantee the JSON writes have always had, for the same reason.
   writeText(join(ROOT, 'board.html'), html)
-  return { screens: screens.length, areas: areas.length, failing, reqs: screens.reduce((n, s) => n + s.reqs.length, 0) }
+  // count RULE cards only — a ## Q question card is not a requirement (the framework, 2026-09-07)
+  return { screens: screens.length, areas: areas.length, failing, reqs: screens.reduce((n, s) => n + s.reqs.filter(r => r.kind !== 'question').length, 0) }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

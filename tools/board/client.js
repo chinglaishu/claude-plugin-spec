@@ -3414,7 +3414,10 @@ const B = window.__BOARD__ || {}
   function buildFocus (dt, startId) {
     const scroll = dt.querySelector('.dtscroll')
     if (!scroll) return
-    const reqs = reqNodes(dt)
+    // A ## Q question card is not a requirement and has no proof to play, so the Focus reader (a beat
+    // player) and its jump-map skip it — questions live on the home card and in the List (the
+    // framework, the human 2026-09-07). The reqpane still bakes them, so the List's fold/borrow see them.
+    const reqs = reqNodes(dt).filter(function (n) { return n.getAttribute('data-kind') !== 'question' })
     if (!reqs.length) return
     let cur = Math.max(0, reqs.findIndex(function (n) { return n.getAttribute('data-r') === startId }))
     const ov = document.createElement('div'); ov.className = 'focusov'
