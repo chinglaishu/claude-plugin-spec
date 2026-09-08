@@ -62,6 +62,17 @@ stops early leaves the rest of the family honestly not-reached. Do not split a f
 shallow tests to make its header fill in — the jump-map (the Focus pager's dots, grouped under their
 family labels) shows each requirement's own mark, so a half-proven family reads exactly as half-proven.
 
+**Example slots — tag which kind of example each beat is** *(the requirement framework, the human
+2026-09-07)*. End a **When** line in the prd with one or more of `{happy}` · `{boundary}` · `{absence}`
+· `{mistake}`; an untagged When is `happy`. The board files each beat under its slot and shows the
+four slots on the rule card, so a needed slot no beat fills reads as a **gap** (yellow-pending) rather
+than hiding. The four are: **happy** (the promise kept), **boundary** (empty / max / no-change),
+**absence** (what must NOT appear — claimed with `proveVisible(locator, MISSING, …)`, which passes
+exactly while the thing is gone), **mistake** (the slip is safe: undo, cancel, refuse). When a slot
+genuinely does not apply, say so on purpose with a `- **Not needed** <slot> — <reason>` line rather
+than leaving it a silent gap. The tag is metadata — it never changes what the beat means (the board
+strips it from the sentence and from the meaning hash), so adding one never flips a proof to Changed.
+
 `checkReq` also **narrates the recording**: it paints a topbar into the page under test naming the
 requirement being proven (id + title from the PRD), turning red on a failing check — so the video
 explains itself. Two optional helpers put the *numbers* on that bar, from `'../_base'` too:

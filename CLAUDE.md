@@ -90,6 +90,28 @@ connects. Every requirement still needs a real assertion (rule 2), so neither ki
 green. A flow's *file* lives in the screen it **starts** on; a requirement lists every test that
 covers it wherever that file lives.
 
+## The requirement framework — five buckets, stamps, slots, question cards
+
+Every screen's requirements sit in **five FIXED buckets, in this order, always all five** (the human
+2026-09-07): **① The main thing's life · ② Every derived number · ③ Every view & chip · ④ Survival ·
+⑤ The mistake path**. A `### ` line led by ①②③④⑤ is a BUCKET line (the tool owns the name, trailing
+words are an optional gloss); any other `###` is a FAMILY line — now a **sub-group inside the bucket
+above it** (board R17, amended). An **empty bucket is a visible hole**, not an absence. A prd with no
+bucket lines still parses byte-for-byte and renders under a "not yet bucketed" strip plus the five
+empty buckets (`tools/prd-families.test.mjs` guards this). A **`## Q<n>`** is a **question card** —
+"is this a requirement?" — parsed like a requirement but **never a coverage target** (`checkReq('Q1')`
+is a `npm run proof lint` error); `Q` ids are never reused, like `R` ids. A **When** line may end with
+one or more **slot tags** `{happy}` `{boundary}` `{absence}` `{mistake}` (untagged = happy); a needed
+slot no beat fills is a **gap**, and a `- **Not needed** <slot> — <reason>` line fills one on purpose.
+A `- **Sources** doc: … — code: …` line writes **authored DOC/CODE stamps** — authored stamps NEVER
+render as a measured green (only PROVEN, a passing test, is green). Every card's state is **derived**
+(agreed → conflict → gap → mismatch), never stored: conflict from the Conflicts page's open findings
+naming the card as a side, mismatch from the failed/unproven proof, gap from an empty needed slot.
+**No new status field, no gate, no draft/guess flag** (init R3, board R8 stand). The pure grammar is
+`parsePrd`/`parseBehavior`; the fixed-five grouping, slot/gap/state derivation and the screen counter
+are `tools/cards.mjs` (pure, unit-tested). **Yellow (yamabuki) for gap/question awaits the human's
+sign-off** — until then gap and question render in muted ink + a distinct mark.
+
 ## Architecture
 
 ```
@@ -164,6 +186,11 @@ spec/_moment.mjs             ONE MOMENT, ONE INSTANT (2026-09-04): composes the 
 spec/_conflict-decisions.json  the human's adjudicated conflicts, keyed by content
 
 tools/coverage.mjs           pure: proves-steps + covers-tags → per-req pass/fail/not-reached, and proven/unproven
+tools/cards.mjs              pure: the requirement framework's card layer (the human 2026-09-07) — BUCKETS (the fixed five,
+                             tool-owned names), bucketGroups (the five in order, empty flagged, families nested, unbucketed
+                             surfaced), filledSlots/cardGaps (the four example slots), conflictReqIds (a card is a conflict
+                             side when an open finding names it), cardState (conflict > mismatch > agreed; questions their
+                             own), screenCounter. No stored state; unit-tested in tools/cards.test.mjs
 tools/store.mjs              THE STORE, async and driver-agnostic: openStore (the schema + every row), putBlob/getBlob/
                              removeBlob/listBlobs, referencedBlobs + gcBlobs. Address math is pure and lives beside it
                              (tools/store-address.mjs); the drivers are store-db-sqlite|pg and store-blob-fs|s3.

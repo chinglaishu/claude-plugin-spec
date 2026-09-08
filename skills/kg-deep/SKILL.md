@@ -87,6 +87,25 @@ promise**; the todolist demo's own nine fall out of them exactly:
 Bucket ② is where a board earns its keep — five of the todolist's nine read a value the app DERIVES,
 the kind that drifts silently when the code changes. A save/delete-only screen teaches nothing.
 
+**Write the five bucket lines, then the cards under them** (the human's framework, 2026-09-07). The
+five buckets are the FIXED grouping of every screen — write `### ① The main thing's life`,
+`### ② Every derived number`, `### ③ Every view & chip`, `### ④ Survival`, `### ⑤ The mistake path`
+in the prd, in that order, always all five, and file each `## R<n>` under its bucket. The tool owns
+the bucket names; trailing words after the symbol are an optional gloss. **An empty bucket is a
+visible hole** — leave it empty on purpose when the screen genuinely has nothing there, so the gap is
+seen rather than hidden. Today's author-named families (`### <n> · <family> — <gloss>`) become
+**sub-groups INSIDE a bucket** for a bucket that grows past ~5 cards.
+
+**Before drafting, capture what the DOC and the CODE each imply** (the framework's step 2.1). Read the
+docs and the code files the screen cites into candidate cards per bucket: what every source agrees on
+becomes a `## R` with a `- **Sources** doc: <path> · <ref> — code: <file> <fn>()` line (authored
+DOC/CODE stamps — they render as authored, never as a measured green); a behaviour **one source alone**
+has becomes a `## Q<n>` question card (`- **Ask** is this a requirement?`) in its bucket — a question,
+not a requirement, never a coverage target, resolved by the human rewriting it into an `## R` (a fresh
+id) or deleting it (`Q` ids are never reused); two sources that state a thing **incompatibly** become a
+finding for the Conflicts page (you only write the note — the Conflicts page consumes it). The drafted
+prd is still canon on write — nothing waits on a gate.
+
 **The include / exclude test**, applied to every candidate before it gets a card:
 
 - **A requirement earns its card only if deleting the feature would make its test fail.** Styling with
@@ -148,12 +167,13 @@ Six rules make the difference:
 Thens go red. That is the design — the seed is golden and frozen — but it makes **a seed change a
 requirement change**, to be treated with the same care (and the same stop-and-ask) as editing a Then.
 
-**Families (board R17).** Once a screen carries more than a handful of requirements, group them
-under `### <n> · <family> — <gloss>` lines placed *between* `## R<n>` sections: a heading opens a
-family that owns every requirement that follows it until the next heading, so move whole sections
-under their family rather than renumbering anything. `###` is therefore RESERVED for family lines: a
-`###` inside a requirement's body would open a family there, so use `####` or bold for sub-headings
-within a body. Families are structure, not meaning — a
+**Families are sub-groups INSIDE a bucket (board R17, amended 2026-09-07).** The five buckets above
+are the grouping; a family is a finer cut *within* one bucket for when it grows past ~5 cards. Group
+with `### <n> · <family> — <gloss>` lines placed *between* `## R<n>` sections, under the bucket line
+they belong to: a family heading owns every requirement that follows it until the next `###`, so move
+whole sections under their family rather than renumbering anything. `###` is RESERVED for bucket and
+family lines (a `###` led by ①②③④⑤ is a bucket; any other is a family): a `###` inside a requirement's
+body would open one there, so use `####` or bold for sub-headings within a body. Families are structure, not meaning — a
 requirement's id, text and proof are untouched by where it sits, a family carries no state of its own
 (its marks are its requirements' marks), and a prd with no headings renders exactly as before. Name a
 family by what the requirements *share* ("Containers and roll-up", "Persistence"), number them in
