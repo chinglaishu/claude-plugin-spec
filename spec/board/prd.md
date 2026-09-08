@@ -14,6 +14,8 @@ earlier four-column, wireframe-first board with two human gates
 was narrowed here across 2026-07-29/30 — the wireframe left the tool, and the last gate was removed as
 a rubber-stamp. The per-requirement "Narrowed …" notes below record each step.)*
 
+### ① The main thing's life
+
 ### 1 · The board's shape — one page, every screen
 
 ## R1 — One card per screen, not a row of cells
@@ -61,8 +63,13 @@ everything and stores nothing.*
 
 A `### <n> · <family> — <gloss>` line groups the requirements that follow it until the next heading; a screen with no headings renders exactly as today, and requirements before the first heading sit first under no family. A family carries no state of its own: its state is its requirements' states, derived and never stored. Families are structure, not meaning — a requirement's id, text and proof are untouched by where it sits.
 
+**The five buckets are the FIXED grouping of every screen** — ① The main thing's life · ② Every derived number · ③ Every view & chip · ④ Survival · ⑤ The mistake path — rendered in that order on every screen, always all five, an empty one visibly empty. A `### ` line led by ①②③④⑤ is a BUCKET line (the tool owns the name, trailing words an optional gloss); a `### <n> · <family>` line is now a **sub-group INSIDE the bucket above it**. Which bucket a requirement sits in is structure, like which family — its id, text and proof are untouched. The board reads its requirements in this bucket order everywhere: the home card, List, and the Focus reader / jump-map.
+
 *Added 2026-08-23 (the human): sub-grouping modelled on the dojostack overlay catalogue's families and jump-map.*
+*Amended 2026-09-07 (the human accepted the meaning — "yes, agree"; staff drafted the words and the bucket mapping, which the human approved 2026-09-08, rule 6): the five buckets become the FIXED grouping of every screen, and today's author-named families demote to sub-groups inside a bucket. An empty bucket is a visible hole, not an absence (Example Mapping's rule with no examples). The board's own families map ① shape · ③ reading/proof · ② computed truth · ⑤ refuses-to-own · ④ running — and render in fixed ①..⑤ order. The full design is docs/superpowers/specs/2026-09-07-requirement-framework-design.md.*
 *Amended 2026-08-25 (the human): the jump-map's dots carry each requirement's derived state by HUE alone — the shoulder ✓/✗/◈/○ glyph is dropped for a cleaner, one-row map — with the state's WORD one hover or keyboard-focus away in the dot's title. A human-approved exception to the design system's "hue never alone" for this dense navigation map; the row and card status chips keep their marks unchanged.*
+
+### ③ Every view & chip
 
 ### 2 · Reading a requirement and its proof — the two ends
 
@@ -682,6 +689,8 @@ reword or remove like any other.*
      precedent). Beat 2 pages to another requirement and asserts the same order, with nothing
      written to storage. -->
 
+### ② Every derived number
+
 ### 3 · Computed truth — state is derived, never stored
 
 ## R4 — Requirement state is computed and assertion-backed
@@ -798,6 +807,8 @@ remove like any other.*
      independently, demands the marked set differ from the full set, then seeds a one-screen chooser
      → rebuild → the marks move; deletes the chooser → rebuild → every card wears the mark. -->
 
+### ⑤ The mistake path
+
 ### 4 · What the board refuses to own
 
 ## R7 — specboard owns neither the wireframe nor the design
@@ -879,6 +890,8 @@ CLAUDE.md rule 1's addendum). The board still writes no requirement, ever.*
 *Amended 2026-08-19 (the human): **add a test** is reachable from the requirement ⋯ too, not only
 from a test's menu — otherwise an Untested requirement, the one that most needs a test, has no test
 menu to ask from. Opening it from a requirement pre-picks that requirement in the cover set.*
+
+### ④ Survival
 
 ### 5 · Running, and the guide
 

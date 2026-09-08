@@ -260,6 +260,11 @@ export const bucketCardRows = s => {
   for (const b of g.buckets) { rows.push({ kind: 'bucket', b }); emit(b) }
   return rows
 }
+// A screen's requirements in the ORDER THE BOARD READS THEM — bucket-render order (fixed ①..⑤, an
+// empty bucket contributes nothing, families nested), unbucketed first. The baked reqpane and thus
+// the Focus reader / jump-map read this order so they agree with the home card and List; a screen
+// with no bucket lines keeps prd order (everything is unbucketed). (the framework, the human 2026-09-07)
+export const orderedReqs = s => bucketCardRows(s).filter(x => x.kind === 'req').map(x => x.r)
 // A family header row — the reference catalogue's `.grp` shape (mono uppercase eyebrow: the number
 // and name bold, the gloss after the em-dash muted, a hair rule beneath), carried by the row's class.
 const famRow = (f, tag = 'li') =>
@@ -739,7 +744,7 @@ const reqRow = (r, s) => {
 }
 const reqPane = s => `<div class="pane reqpane">
   <h2>Requirements<span class="s">what the screen must do</span></h2>
-  ${s.reqs.length ? s.reqs.map(r => reqRow(r, s)).join('') : `<div class="empty">No requirements yet — write the first in <code>spec/${esc(s.name)}/prd.md</code>.</div>`}
+  ${s.reqs.length ? orderedReqs(s).map(r => reqRow(r, s)).join('') : `<div class="empty">No requirements yet — write the first in <code>spec/${esc(s.name)}/prd.md</code>.</div>`}
 </div>`
 
 // The LIST view (board R13, the frozen mockup — Grid became List, the human 2026-08-21; the router
@@ -2148,22 +2153,24 @@ export function build () {
      A BUCKET header row leads a section of the home card / List: the fixed key + tool-owned name, its
      gloss, its card count and its worst-state mark. An EMPTY bucket is a visible HOLE — "nothing here
      yet" in muted ink (--ink-3 6.42:1 on card, AA). A family (.subfam) nests one indent inside. */
-  .rl li.bkt { display:flex; align-items:baseline; gap:6px; border-top:0; border-bottom:1px solid var(--hair-2);
+  .rl li.bkt, .gridview > .bkt { display:flex; align-items:baseline; gap:6px; border-top:0; border-bottom:1px solid var(--hair-2);
     margin-top:var(--s3); padding:6px 0 4px; font-size:var(--t-xs); color:var(--ink); white-space:nowrap;
     overflow:hidden; }
-  .rl li.bkt:first-child { margin-top:0; }
+  .rl li.bkt:first-child, .gridview > .bkt:first-child { margin-top:0; }
   .rl li.bkt + li { border-top:0; }
-  .rl li.bkt .bkkey { font-size:var(--t-md); color:var(--ink-2); flex:none; }
-  .rl li.bkt .bkname { font-weight:600; color:var(--ink); }
-  .rl li.bkt .bkgloss { color:var(--ink-4); font-size:var(--t-micro); overflow:hidden; text-overflow:ellipsis; flex:1; }
-  .rl li.bkt .bkcount { font:var(--t-micro) var(--mono); color:var(--ink-3); flex:none; }
-  .rl li.bkt .bkmk { flex:none; width:14px; text-align:center; }
-  .rl li.bkt.empty { color:var(--ink-4); }
-  .rl li.bkt.empty .bkname { color:var(--ink-3); font-weight:500; }
-  .rl li.bkt .bkempty { color:var(--ink-4); font-style:italic; font-size:var(--t-micro); }
+  .gridview > .bkt { margin:var(--s4) var(--s1) 2px; }
+  .rl li.bkt .bkkey, .gridview > .bkt .bkkey { font-size:var(--t-md); color:var(--ink-2); flex:none; }
+  .rl li.bkt .bkname, .gridview > .bkt .bkname { font-weight:600; color:var(--ink); }
+  .rl li.bkt .bkgloss, .gridview > .bkt .bkgloss { color:var(--ink-4); font-size:var(--t-micro); overflow:hidden; text-overflow:ellipsis; flex:1; }
+  .rl li.bkt .bkcount, .gridview > .bkt .bkcount { font:var(--t-micro) var(--mono); color:var(--ink-3); flex:none; }
+  .rl li.bkt .bkmk, .gridview > .bkt .bkmk { flex:none; width:14px; text-align:center; }
+  .rl li.bkt.empty, .gridview > .bkt.empty { color:var(--ink-4); }
+  .rl li.bkt.empty .bkname, .gridview > .bkt.empty .bkname { color:var(--ink-3); font-weight:500; }
+  .rl li.bkt .bkempty, .gridview > .bkt .bkempty { color:var(--ink-4); font-style:italic; font-size:var(--t-micro); }
   .rl li.fam.subfam { margin-left:var(--s3); }
-  .rl li.unbkt { display:block; border-top:0; color:var(--bengara); font-size:var(--t-micro);
+  .rl li.unbkt, .gridview > .lst-unbkt { display:block; border-top:0; color:var(--bengara); font-size:var(--t-micro);
     font-style:italic; padding:2px 0; }
+  .gridview > .lst-unbkt { padding:2px var(--s1); }
   .rl li.qcard .mk.question { color:var(--ink-3); }
   /* the worst-state mark hues (bucket header + counter). agreed=koke, conflict/mismatch=bengara,
      gap/question=muted ink (NOT yamabuki — that reassignment is the human's sign-off, still pending).

@@ -61,7 +61,7 @@ export async function countHomeCards (page: Page, state: FlowState): Promise<voi
   await expect(cards).toHaveCount(state.screens)             // one per screen, not one per requirement
   const first = cards.first()
   await expect(first.locator('.nm')).not.toBeEmpty()        // the screen's name
-  await expect(first.locator('.rl li').first()).toBeVisible() // requirement TITLES on the card
+  await expect(first.locator('.rl li:not(.bkt):not(.unbkt)').first()).toBeVisible() // requirement TITLES on the card
   await expect(first.locator('.cshot')).toHaveCount(1)      // the latest recording's cover frame
   // the old PRD/draft/screen/E2E column strip is gone — the card is titles + cover, nothing else
   await expect(page.locator('.cell[data-col], .colhs')).toHaveCount(0)
@@ -84,11 +84,12 @@ export async function countHomeCards (page: Page, state: FlowState): Promise<voi
   expect(nmPx, 'the title wears the card-title scale (t-xl)').toBe(xlPx)
   // …every requirement row LEADS with its status mark (hue never alone: ✓ ◈ ✗ ◌ ○ by the five-word
   // vocabulary — the same marks the Focus chip and the List row wear)…
-  // (a `.fam` row is a FAMILY header — board R17, structure between the requirement rows, no mark
-  // by design — so the requirement rows are the li's that are neither the fold nor a header)
-  const rows = first.locator('.rl li:not(.more):not(.fam)')
-  await expect(rows.first().locator('.mk')).toHaveText(/^[✓◈✗◌○]$/)
-  expect(await first.locator('.rl li:not(.more):not(.fam) .mk').count()).toBe(await rows.count())
+  // (a `.fam` row is a FAMILY header and a `.bkt`/`.unbkt` a BUCKET header — board R17, structure
+  // between the requirement rows, no requirement mark by design — so the requirement rows are the
+  // li's that are none of the fold, a family header, or a bucket header)
+  const rows = first.locator('.rl li:not(.more):not(.fam):not(.bkt):not(.unbkt)')
+  await expect(rows.first().locator('.mk')).toHaveText(/^[✓◈✗◌○?]$/)
+  expect(await first.locator('.rl li:not(.more):not(.fam):not(.bkt):not(.unbkt) .mk').count()).toBe(await rows.count())
   // …the right column carries the proven-count pill AND the unit · flow kind chips (derived from the
   // folded tests: flowStep in the source ∪ a cross-screen tag in the record — the union)…
   await expect(first.locator('.metrics .pcount')).toHaveText(/^\d+ \/ \d+ proven$/)
@@ -112,7 +113,7 @@ export async function countHomeCards (page: Page, state: FlowState): Promise<voi
     'One card per screen, wearing its name', { soft: true })
   const req0 = firstReqTitle(scr)
   expect(req0, scr + ' has a requirement for its card to list').toBeTruthy()
-  await proveVisible(first.locator('.rl li:not(.more):not(.fam) .rtl').first(), req0,
+  await proveVisible(first.locator('.rl li:not(.more):not(.fam):not(.bkt):not(.unbkt) .rtl').first(), req0,
     'Its requirement titles, listed on the card', { soft: true })
   // …and the COVER's caption names the run the still was cut from — a run id the BUILDER chooses
   // (the newest record's commit when the manifest carries one, else the run id, tools/build-board

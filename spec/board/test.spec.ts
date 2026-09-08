@@ -4747,17 +4747,42 @@ test('Home, the detail, then a finished run refreshes it in place — composed',
 // carry no state: every mark the map shows is derived from the requirement it names.
 import { rmSync } from 'node:fs'
 import { makeDocumentScreen } from '../_fixture'
+// The prd's buckets AND families, ordered the way the BOARD READS THEM — the five fixed buckets
+// (①..⑤) in that order (an empty bucket contributes nothing), families nested inside, unbucketed
+// first. A `###` line led by a bucket symbol is a BUCKET; any other `###` is a FAMILY belonging to
+// the bucket above it (the requirement framework, the human 2026-09-07). `fams` and `ids` come back
+// in that render order so the order-pinned assertions below read the board's own order.
+const BUCKET_KEYS = ['①', '②', '③', '④', '⑤']
 const prdFamilies = (text: string) => {
-  const fams: Array<{ heading: string, n: string, name: string, ids: string[] }> = []
-  let cur: { heading: string, n: string, name: string, ids: string[] } | null = null
-  const loose: string[] = []
+  type Fam = { heading: string, n: string, name: string, ids: string[], bucket: string | null }
+  const fams: Fam[] = []
+  let cur: Fam | null = null
+  let bucket: string | null = null
+  const looseByBucket: Record<string, string[]> = {}
   for (const line of text.split('\n')) {
     const f = /^###\s+(.+)$/.exec(line)
-    if (f) { cur = { heading: f[1].trim(), n: (/^(\S+)\s+·\s+/.exec(f[1]) || ['', ''])[1], name: f[1].replace(/^\S+\s+·\s+/, '').replace(/\s+—.*$/, '').trim(), ids: [] }; fams.push(cur); continue }
+    if (f) {
+      const head = f[1].trim()
+      const key = BUCKET_KEYS.find(k => head.startsWith(k))
+      if (key) { bucket = key; cur = null; continue }        // a BUCKET line — not a family
+      cur = { heading: head, n: (/^(\S+)\s+·\s+/.exec(head) || ['', ''])[1], name: head.replace(/^\S+\s+·\s+/, '').replace(/\s+—.*$/, '').trim(), ids: [], bucket }
+      fams.push(cur); continue
+    }
     const r = /^##\s+(R\d+)\s+—/.exec(line)
-    if (r) (cur ? cur.ids : loose).push(r[1])
+    if (r) { if (cur) cur.ids.push(r[1]); else (looseByBucket[bucket ?? '_'] ||= []).push(r[1]) }
   }
-  return { fams, loose, ids: [...loose, ...fams.flatMap(f => f.ids)] }
+  // render order: unbucketed first, then each fixed bucket — its loose reqs, then its families in prd order
+  const order = [null, ...BUCKET_KEYS]
+  const renderedFams: Fam[] = []
+  const ids: string[] = []
+  const loose: string[] = []
+  for (const b of order) {
+    const bl = looseByBucket[b ?? '_'] || []
+    if (b === null) loose.push(...bl)
+    ids.push(...bl)
+    for (const fam of fams.filter(fm => fm.bucket === b)) { renderedFams.push(fam); ids.push(...fam.ids) }
+  }
+  return { fams: renderedFams, loose, ids }
 }
 // the pager dots carry state by HUE alone now (R17, the human 2026-08-25) — no shoulder glyph.
 // each derived state paints the whole dot: a strong-hue border + number over the state's tint fill
@@ -4781,26 +4806,33 @@ test('Requirements sub-group within a screen — family headers on the card and 
   // brace scope, so every `const` below is exactly as it was. No assertion changed.
   await checkReq('R17', async () => {
     {
+    // THE FIVE BUCKETS lead the card, in fixed ①..⑤ order (the framework, the human 2026-09-07) —
+    // each carrying its tool-owned name; the board covers all five, so none is an empty hole here.
+    const bkts = card.locator('.rl .bkt')
+    expect(await bkts.evaluateAll(els => els.map(e => e.querySelector('.bkkey')?.textContent || ''))).toEqual(BUCKET_KEYS)
+    await expect(bkts.first().locator('.bkname')).toHaveText("The main thing's life")
+    // families are SUB-GROUPS inside a bucket now, in the board's read (bucket) order
     const heads = card.locator('.rl .fam')
     await expect(heads.first()).toBeVisible()
     const shown = await heads.allTextContents()
-    expect(shown.map(s => s.trim()), 'card families read in prd order').toEqual(prd.fams.slice(0, shown.length).map(f => f.heading))
+    expect(shown.map(s => s.trim()), 'card families read in the board\'s bucket order').toEqual(prd.fams.map(f => f.heading))
     // the fact, CLAIMED on the card (the authored-intent lint, phase 6): the first family names
     // itself exactly as the prd writes it — the expected value is read from spec/board/prd.md, so
     // this is the FILE against the screen, never the screen against itself
     await proveVisible(heads.first(), prd.fams[0].heading,
       'The family every requirement under it sits in', { soft: true })
-    // walk the rows: under each header, exactly its ids in order — no family cut in half
+    // walk the rows: bucket header, then its family, then exactly that family's ids in order —
+    // no bucket empty on this screen, no family cut in half
     const seq = await card.locator('.rl > li').evaluateAll(els => els.map(e =>
-      e.classList.contains('fam') ? 'fam' : e.classList.contains('more') ? 'more' : (e.querySelector('.id')?.textContent || '')))
+      e.classList.contains('bkt') ? 'bkt' : e.classList.contains('unbkt') ? 'unbkt'
+        : e.classList.contains('fam') ? 'fam' : e.classList.contains('more') ? 'more' : (e.querySelector('.id')?.textContent || '')))
     const want: string[] = []
-    for (const f of prd.fams.slice(0, shown.length)) { want.push('fam'); want.push(...f.ids) }
-    const rows = seq.filter(x => x !== 'more')
-    expect(rows, 'every shown family carries all its requirements, in order').toEqual(want)
-    if (shown.length < prd.fams.length) {
-      const rest = prd.ids.length - rows.filter(x => x !== 'fam').length
-      await expect(card.locator('.rl .more')).toHaveText('… ' + rest + ' more')
+    let prevB: string | null = null
+    for (const f of prd.fams) {
+      if (f.bucket !== prevB) { want.push('bkt'); prevB = f.bucket }
+      want.push('fam'); want.push(...f.ids)
     }
+    expect(seq.filter(x => x !== 'more'), 'each bucket, its family, its requirements, in board order').toEqual(want)
     }
 
   // the LIST view: the same header rows over their rows
@@ -4808,14 +4840,21 @@ test('Requirements sub-group within a screen — family headers on the card and 
     await page.goto('/#/board/grid')
     const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
     await expect(dt.locator('.gridview')).toBeVisible()
+    // the five buckets lead the List too, in fixed order
+    expect(await dt.locator('.gridview > .bkt').evaluateAll(els => els.map(e => e.querySelector('.bkkey')?.textContent || ''))).toEqual(BUCKET_KEYS)
     await expect(dt.locator('.gridview .lst-fam')).toHaveText(prd.fams.map(f => f.heading))
     // …the SAME family, over the List's own rows — the second surface this Then names
     await proveVisible(dt.locator('.gridview .lst-fam').first(), prd.fams[0].heading,
       'The same family header, over the List rows', { soft: true })
-    const seq = await dt.locator('.gridview > .lst-fam, .gridview > .lst-card').evaluateAll(els => els.map(e =>
-      e.classList.contains('lst-fam') ? 'fam' : (e.getAttribute('data-r') || '')))
-    const want: string[] = [...prd.loose]
-    for (const f of prd.fams) { want.push('fam'); want.push(...f.ids) }
+    const seq = await dt.locator('.gridview > .bkt, .gridview > .lst-unbkt, .gridview > .lst-fam, .gridview > .lst-card').evaluateAll(els => els.map(e =>
+      e.classList.contains('bkt') ? 'bkt' : e.classList.contains('lst-unbkt') ? 'unbkt'
+        : e.classList.contains('lst-fam') ? 'fam' : (e.getAttribute('data-r') || '')))
+    const want: string[] = []
+    let prevB: string | null = null
+    for (const f of prd.fams) {
+      if (f.bucket !== prevB) { want.push('bkt'); prevB = f.bucket }
+      want.push('fam'); want.push(...f.ids)
+    }
     expect(seq).toEqual(want)
     }
 
@@ -4837,10 +4876,19 @@ test('Requirements sub-group within a screen — family headers on the card and 
     const groups = bar.locator('.fdots .ffam')
     await expect(groups).toHaveCount(prd.fams.length + (prd.loose.length ? 1 : 0))
     await expect(bar.locator('.ffam .ffl')).toHaveText(prd.fams.map(f => f.n + ' · ' + f.name))
+    // the FIVE BUCKETS also label the jump-map, in fixed order (the framework, the human 2026-09-07)
+    expect(await bar.locator('.fdots .fbkt .fbk').evaluateAll(els => els.map(e => e.textContent))).toEqual(BUCKET_KEYS)
     // …and the JUMP-MAP names each family, again from the prd's own words
     await proveVisible(bar.locator('.ffam .ffl').first(), prd.fams[0].n + ' · ' + prd.fams[0].name,
       'The jump-map, naming the family it groups', { soft: true })
-    await expect(bar.locator('.fdots .fdotfam'), 'one separator between each pair of families').toHaveCount(prd.fams.length - 1 + (prd.loose.length ? 1 : 0))
+    // separators sit between families WITHIN a bucket; a bucket boundary is marked by the .fbkt label
+    // itself, not a tick (the framework, 2026-09-07). So the count is the within-bucket family transitions.
+    const withinBucketSeps = (() => {
+      const byBucket: Record<string, number> = {}
+      for (const f of prd.fams) byBucket[f.bucket ?? '_'] = (byBucket[f.bucket ?? '_'] || 0) + 1
+      return Object.values(byBucket).reduce((n, c) => n + Math.max(0, c - 1), 0)
+    })()
+    await expect(bar.locator('.fdots .fdotfam'), 'one separator between families within a bucket').toHaveCount(withinBucketSeps)
     // every requirement is a dot, in prd order, under its family — no window, no ellipsis
     const dots = bar.locator('.fdot')
     await expect(dots).toHaveCount(prd.ids.length)
@@ -4919,8 +4967,9 @@ test('Requirements sub-group within a screen — family headers on the card and 
     await expect(page.locator('.reqmap')).toHaveCount(0)
     }
 
-  // a screen with NO families renders exactly as today — no header element anywhere, no map,
-  // the counter a bare `n of N`
+  // a screen with NO bucket lines renders its one requirement under a visible "not yet bucketed"
+  // strip PLUS the five EMPTY buckets — the honest hole that cues the walk (the framework, the human
+  // 2026-09-07). No family header, no jump-map, the counter a bare `n of N`.
     {
     const name = makeDocumentScreen('plainfolk')
     try {
@@ -4930,7 +4979,9 @@ test('Requirements sub-group within a screen — family headers on the card and 
         await page.goto('/')
         await expect(stubCard).toHaveCount(1)
       }).toPass({ timeout: 15000 })
-      await expect(stubCard.locator('.rl li')).toHaveCount(1)
+      await expect(stubCard.locator('.rl li:not(.bkt):not(.unbkt):not(.fam)'), 'its one requirement').toHaveCount(1)
+      await expect(stubCard.locator('.rl .unbkt'), 'the not-yet-bucketed strip').toHaveCount(1)
+      await expect(stubCard.locator('.rl .bkt.empty'), 'the five empty buckets, visible holes').toHaveCount(5)
       await expect(stubCard.locator('.rl .fam')).toHaveCount(0)
       const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
       await expect(async () => {
