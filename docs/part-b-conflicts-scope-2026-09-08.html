@@ -1,0 +1,225 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Part B — the Conflicts page (scope)</title>
+<style>
+  :root{
+    --paper:#f4f1ea; --paper2:#efeae0; --ink:#1c1b18; --ink2:#43403a; --ink3:#6e6b64; --ink4:#928d83;
+    --line:#d9d3c7; --line2:#c8c1b3; --hair:#e5e0d5;
+    --indigo:#2f4a63; --indigo-t:#e6eaee; --indigo-l:#c3cfda;
+    --koke:#4d5c37; --koke-t:#eaece1; --koke-l:#cdd3bf;
+    --bengara:#8d4a38; --bengara-t:#f2e8e4; --bengara-l:#e0c9c0;
+    --yamabuki:#a5701a; --yamabuki-t:#f5eeDD; --yamabuki-l:#e7d9b6;
+    --t-xs:12px; --t-sm:13px; --t-md:14px; --t-lg:16px; --t-xl:21px; --t-xxl:27px;
+    --mono:'SF Mono',ui-monospace,Menlo,monospace; --r:7px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font:var(--t-md)/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;padding:0 0 80px}
+  .wrap{max-width:960px;margin:0 auto;padding:0 28px}
+  header{border-bottom:1px solid var(--line);margin-bottom:28px;padding:40px 0 22px}
+  .eyebrow{font:var(--t-xs)/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:12px}
+  h1{font-size:var(--t-xxl);font-weight:640;letter-spacing:-.01em;margin:0 0 8px}
+  .sub{color:var(--ink2);font-size:var(--t-lg);max-width:70ch}
+  h2{font-size:var(--t-xl);font-weight:600;letter-spacing:-.01em;margin:38px 0 6px;padding-top:20px;border-top:1px solid var(--hair)}
+  h2 .n{font:var(--t-sm) var(--mono);color:var(--ink4);margin-right:10px}
+  h3{font-size:var(--t-lg);font-weight:600;margin:22px 0 6px}
+  p{margin:8px 0;max-width:74ch;color:var(--ink2)}
+  .lede{color:var(--ink);font-size:var(--t-lg)}
+  code{font:var(--t-xs) var(--mono);background:var(--paper2);border:1px solid var(--hair);border-radius:4px;padding:1px 5px;color:var(--ink)}
+  em{color:var(--ink);font-style:normal;font-weight:560}
+  .chip{display:inline-flex;align-items:center;gap:5px;font:var(--t-xs) var(--mono);letter-spacing:.03em;
+    padding:2px 8px;border-radius:20px;border:1px solid var(--line2);color:var(--ink2);background:var(--paper2)}
+  .chip.spec{color:var(--indigo);background:var(--indigo-t);border-color:var(--indigo-l)}
+  .chip.doc{color:var(--yamabuki);background:var(--yamabuki-t);border-color:var(--yamabuki-l)}
+  .chip.code{color:var(--ink2);background:var(--paper2);border-color:var(--line2)}
+  .chip.actual{color:var(--koke);background:var(--koke-t);border-color:var(--koke-l)}
+  .chip.win{color:var(--koke);background:var(--koke-t);border-color:var(--koke-l)}
+  .chip.lose{color:var(--bengara);background:var(--bengara-t);border-color:var(--bengara-l)}
+
+  /* the mock */
+  .mock{border:1px solid var(--line2);border-radius:var(--r);background:#fbf9f4;margin:16px 0 6px;overflow:hidden;
+    box-shadow:0 1px 0 #fff inset, 0 6px 20px -14px rgba(40,35,25,.35)}
+  .mock .topbar{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--hair);background:var(--paper2)}
+  .mock .topbar b{font-size:var(--t-md)}
+  .mock .topbar .count{font:var(--t-xs) var(--mono);color:var(--bengara);background:var(--bengara-t);border:1px solid var(--bengara-l);border-radius:20px;padding:1px 8px}
+  .caption{font:var(--t-xs)/1.4 var(--mono);color:var(--ink4);margin:2px 2px 22px;letter-spacing:.02em}
+  .finding{padding:16px}
+  .finding .ftitle{font-size:var(--t-lg);font-weight:600;margin-bottom:2px}
+  .finding .fq{color:var(--ink3);font-size:var(--t-sm);margin-bottom:14px}
+  .sides{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:720px){.sides{grid-template-columns:1fr}}
+  .side{border:1px solid var(--line);border-radius:var(--r);background:var(--paper);overflow:hidden;display:flex;flex-direction:column}
+  .side.win{border-color:var(--koke-l);box-shadow:0 0 0 1px var(--koke-l)}
+  .side .shead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border-bottom:1px solid var(--hair);background:#fbf9f4}
+  .side .src{font:var(--t-xs) var(--mono);color:var(--ink4)}
+  .side .sbody{padding:11px}
+  .side .quote{font-size:var(--t-sm);color:var(--ink);line-height:1.5}
+  .side .quote .h{background:var(--bengara-t);border-bottom:1px solid var(--bengara-l);padding:0 2px}
+  /* the picture side — a base replica with a claim applied */
+  .pic{background:#fff;border:1px solid var(--hair);border-radius:5px;margin-top:2px;padding:0;overflow:hidden}
+  .pic .pcap{font:10px var(--mono);color:var(--ink4);padding:4px 8px;border-bottom:1px solid var(--hair);letter-spacing:.04em}
+  .repl{padding:14px;position:relative;min-height:92px}
+  .repl .card{border:1px solid var(--line2);border-radius:6px;padding:9px 11px;background:var(--paper);width:190px}
+  .repl .card .t{font-size:var(--t-xs);color:var(--ink3);margin-bottom:6px}
+  .repl .card .val{font:var(--t-xl) var(--mono);color:var(--ink);font-weight:600}
+  .repl .ring{position:absolute;border:2px solid var(--bengara);border-radius:7px;box-shadow:0 0 0 4px var(--bengara-t)}
+  .repl.ok .card{border-color:var(--koke-l)} .repl.ok .ring{border-color:var(--koke);box-shadow:0 0 0 4px var(--koke-t)}
+  .side .resolve{margin-top:auto;padding:9px 11px;border-top:1px solid var(--hair);display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .btn{font:var(--t-xs) var(--mono);border:1px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:5px;padding:4px 12px;cursor:default}
+  .btn.ghost{background:transparent;color:var(--ink2);border-color:var(--line2)}
+  .resolve .rk{font:10px var(--mono);color:var(--ink4)}
+
+  ul{margin:8px 0;padding-left:20px;color:var(--ink2)} li{margin:5px 0;max-width:72ch}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  .box{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;background:#fbf9f4}
+  .box h3{margin-top:0}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:var(--t-sm)}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--hair);vertical-align:top}
+  th{font:var(--t-xs) var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--ink4);font-weight:400}
+  td code{white-space:nowrap}
+  .step{display:flex;gap:12px;margin:10px 0;align-items:baseline}
+  .step .num{flex:none;width:24px;height:24px;border-radius:50%;background:var(--indigo);color:#fff;
+    font:var(--t-xs) var(--mono);display:grid;place-items:center;margin-top:2px}
+  .step .sc b{font-size:var(--t-md)}
+  .flag{border-left:3px solid var(--yamabuki);background:var(--yamabuki-t);padding:10px 14px;border-radius:0 6px 6px 0;margin:12px 0;color:var(--ink)}
+  .flag b{color:var(--yamabuki)}
+  .ok{color:var(--koke);font-weight:560}
+  footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink4);font-size:var(--t-sm)}
+</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">specboard · requirement framework · 2026-09-08</div>
+  <h1>Part B — the Conflicts page</h1>
+  <div class="sub">Part A shipped (five buckets, stamps, slots, question cards; the board and demo/todo both dogfood it, 37/37 green). Part B is the other half of the method: when two sources state one fact <em>incompatibly</em>, it is a conflict, not a gap — and the Conflicts page is where a human picks the canonical side. This scopes the four changes that turn today's page into that.</div>
+</header>
+
+<p class="lede">The page already exists — its R1–R5 are step 3 of the flow (a conflict is one fact stated two ways; both positions shown with provenance; you pick canon; resolving dispatches the rewrite; decisions survive a rescan). Part B <em>extends</em> it; it replaces nothing.</p>
+
+<h2><span class="n">MOCK</span>What a finding becomes</h2>
+<p>Today a finding has two sides, <code>a</code> and <code>b</code>, each a quote. Part B makes sides a <em>list</em>, each carrying a <em>kind</em> — where the claim came from — and, where it can, a <em>picture</em> instead of a quote.</p>
+
+<div class="mock">
+  <div class="topbar"><b>Conflicts</b><span class="count">1 open</span><span style="flex:1"></span><span class="chip">board · R2</span></div>
+  <div class="finding">
+    <div class="ftitle">How wide is the requirement card's canvas?</div>
+    <div class="fq">One fact — the card's rendered width — stated three incompatible ways across the spec, the code, and the running app.</div>
+    <div class="sides">
+
+      <div class="side">
+        <div class="shead"><span class="chip spec">SPEC</span><span class="src">prd.md · R2</span></div>
+        <div class="sbody">
+          <div class="quote">"…one card that <span class="h">scrolls inside itself</span>, its canvas the full <span class="h">960px</span> reading width."</div>
+        </div>
+        <div class="resolve"><span class="rk">loses → rewrite the prd</span><button class="btn ghost">Make canon</button></div>
+      </div>
+
+      <div class="side win">
+        <div class="shead"><span class="chip code">CODE</span><span class="src">build-board.mjs:844</span></div>
+        <div class="sbody">
+          <div class="quote">A side with a <em>claim</em> renders as a picture — the screen's own base replica with the claim applied, on the reader's stepper:</div>
+          <div class="pic">
+            <div class="pcap">EXPECTED · code's claim on the base</div>
+            <div class="repl ok">
+              <div class="card"><div class="t">canvas width</div><div class="val">720<span style="font-size:13px;color:#928d83">px</span></div></div>
+              <div class="ring" style="left:11px;top:11px;width:206px;height:64px"></div>
+            </div>
+          </div>
+        </div>
+        <div class="resolve"><span class="rk ok">wins → nothing rewritten</span><button class="btn">Make canon</button></div>
+      </div>
+
+      <div class="side">
+        <div class="shead"><span class="chip actual">ACTUAL</span><span class="src">harvested · run cc60b52</span></div>
+        <div class="sbody">
+          <div class="pic">
+            <div class="pcap">ACTUAL · what the app rendered</div>
+            <div class="repl">
+              <div class="card"><div class="t">canvas width</div><div class="val">720<span style="font-size:13px;color:#928d83">px</span></div></div>
+              <div class="ring" style="left:11px;top:11px;width:206px;height:64px"></div>
+            </div>
+          </div>
+        </div>
+        <div class="resolve"><span class="rk">wins → the written side is red</span><button class="btn ghost">Make canon</button></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div class="caption">Three sides, three kinds. SPEC (indigo) is a quote; CODE and ACTUAL carry a claim, so they render as pictures — the base the card is harvested from, the claim applied, on the same stepper Part A's reader already runs. The Actual recording sits beside them. A side with no claim stays a quote. Colours are the existing dye tokens + a mark; no new status colour is introduced here.</div>
+
+<h3>How many sides? Two is the floor, there is no ceiling</h3>
+<p>A side is an item in a <em>list</em>, not one of a fixed <code>a</code>/<code>b</code> pair — so the count follows the disagreement, not a template.</p>
+<div class="grid">
+  <div class="box">
+    <h3>Two sources</h3>
+    <p>The floor. The same grid renders <em>two columns side by side</em> — spec-vs-code, code-vs-actual, whichever two disagree. No special case, no empty third slot.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <div style="border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--paper)"><span class="chip spec">SPEC</span></div>
+      <div style="border:1px solid var(--koke-l);border-radius:6px;padding:8px;background:var(--paper);box-shadow:0 0 0 1px var(--koke-l)"><span class="chip actual">ACTUAL</span></div>
+    </div>
+  </div>
+  <div class="box">
+    <h3>Many sources — e.g. three docs disagree</h3>
+    <p>Each doc that states the fact differently is its <em>own</em> <code>doc</code> side, carrying that doc's path as its source — plus any <code>spec</code>/<code>code</code>/<code>actual</code> side. Still <em>one finding</em> (one fact), N sides. The row <em>wraps or scrolls</em>, so six sides read as cleanly as two; the picture sides share the one stepper.</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+      <span class="chip spec">SPEC</span><span class="chip doc">DOC · a.md</span><span class="chip doc">DOC · b.md</span><span class="chip doc">DOC · c.md</span><span class="chip code">CODE</span><span class="chip actual">ACTUAL</span>
+    </div>
+  </div>
+</div>
+<p style="margin-top:12px"><em>One thing to keep straight:</em> a finding is <em>one fact stated incompatibly</em>. Three docs describing three <em>different</em> facts are three findings, not three sides of one. Three docs giving three answers to the <em>same</em> question (how wide is the canvas?) are three sides of one finding. The scan (change 2) groups by the fact, so this is a scan-time call — and, like everything it writes, "leave it out if unsure".</p>
+
+<h3>The three play modes — inherited, for free</h3>
+<p>A picture side <em>is</em> Part A's reader: the base with a claim applied, on the same stepper. So <code>auto</code> · <code>semi-auto</code> · <code>step</code> carry over with zero new code — the mode picker drives every picture side and the Actual recording together, exactly as it drives the Focus reader today. A single-moment claim (a width, a count) has one still, so the modes are moot there; a claim that spans several moments plays through them under whichever mode is set. Nothing new is designed here — reusing the stepper is the whole point of doing A before B.</p>
+
+<h2><span class="n">6.1–6.4</span>The four changes, in order</h2>
+
+<div class="step"><div class="num">1</div><div class="sc"><b>Sides carry a kind.</b> A finding's sides become a list of <code>{ kind:'spec'|'doc'|'code'|'actual', source, date?, quote, claim?:{locator,expected} }</code>. Two sides is the floor. Existing <code>a</code>/<code>b</code> findings migrate as two <code>spec</code> sides; settled keys are content-keyed already (R5) and survive untouched. <span class="ok">Pure, unit-tested migration.</span></div></div>
+
+<div class="step"><div class="num">2</div><div class="sc"><b>The scan is bounded per screen.</b> Its comparison surface is exactly the screen's prd, the docs the prd's grounding notes cite, and the code files they cite — nothing wider. Still a <code>claude</code> job, still "leave it out if unsure", still stamped as authored (never a measured green).</div></div>
+
+<div class="step"><div class="num">3</div><div class="sc"><b>A side can be a picture.</b> Where a side carries a <code>claim</code> and the screen has a harvested base replica, the card renders that side as the base with the claim applied — one Expected column per side, the Actual recording beside them, on the reader's one stepper with its three play modes. This is why Part A's Expected-view work is the prerequisite: Part B reuses <code>graft</code> · <code>stand</code> · the srcdoc sheet as-is. It also retires the parked hand-drawn <code>compare-player</code> mock; only its row shape survives.</div></div>
+
+<div class="step"><div class="num">4</div><div class="sc"><b>Resolve follows the loser's kind.</b> <code>spec</code> → the existing rewrite dispatch. <code>doc</code> → recorded as a note for the doc's owner, no rewrite outside the board. <code>code</code> → recorded; the rule card reads <em>mismatch</em> until a red-first test and a fix land. <code>actual</code> → never rewritten (a written side winning over the actual makes the row red; the actual winning makes the written side lose).</div></div>
+
+<h2><span class="n">PLAN</span>Files &amp; tests</h2>
+<table>
+  <tr><th>Change</th><th>Where</th><th>Proof</th></tr>
+  <tr><td>Sides → kinded list + a/b migration</td><td><code>tools/conflicts.mjs</code> (new, pure) · <code>spec/_conflict-decisions.json</code> shape</td><td><code>tools/conflicts.test.mjs</code> — migration + content-key survival (red-first)</td></tr>
+  <tr><td>Bounded per-screen scan</td><td><code>tools/serve-board.mjs</code> scan job · the claude prompt</td><td>lives outside the deterministic suite (a real claude job), like today's scan/rewrite</td></tr>
+  <tr><td>Picture side</td><td><code>tools/build-board.mjs</code> (conflicts render) · reuses <code>tools/board/graft.js</code></td><td>the existing reader-compose gate (<code>npm run proof mirror</code>) already covers grafted pictures</td></tr>
+  <tr><td>Resolve-by-kind</td><td><code>tools/serve-board.mjs</code> resolve endpoint · <code>cardState</code> reads mismatch for a lost <code>code</code> side</td><td>conflicts screen E2E: R3/R4 extended per kind (red-first)</td></tr>
+  <tr><td>Dogfood</td><td><code>spec/conflicts/prd.md</code> — buckets + new requirements for kinds &amp; picture sides</td><td>conflicts screen suite, re-harvested</td></tr>
+</table>
+
+<h2><span class="n">DECIDE</span>What's mine vs yours</h2>
+<div class="grid">
+  <div class="box">
+    <h3>Structural — I decide &amp; build</h3>
+    <ul>
+      <li>The side schema and the <code>a</code>/<code>b</code> → two-<code>spec</code> migration.</li>
+      <li>Reusing <code>graft</code>/<code>stand</code> for picture sides (no new render path).</li>
+      <li>The bounded scan surface (prd + cited docs + cited code).</li>
+    </ul>
+  </div>
+  <div class="box">
+    <h3>Meaning — your call</h3>
+    <ul>
+      <li>The <em>four kinds</em> themselves — is <code>spec/doc/code/actual</code> the right set, or is one missing?</li>
+      <li>Resolve-by-kind semantics: is a lost <code>code</code> side really "mismatch until a red-first fix", and is <code>actual</code> truly never rewritten?</li>
+      <li>Any new requirement's wording on the conflicts screen (canon on write, yours to edit).</li>
+    </ul>
+  </div>
+</div>
+
+<div class="flag"><b>One dependency, already met.</b> Part B's picture side needs a screen's harvested <em>base replica</em> + a claim — both of which Part A's Expected view already ships (the reader composes exactly this today). So B needs A, and A is done. Nothing in B needs a new capture or a new render primitive.</div>
+
+<h2><span class="n">ORDER</span>Recommendation</h2>
+<p>Build in the numbered order — 1 (kinds + migration) is the spine everything hangs off, and it's pure and safe. 2–3 are additive (a wider scan, a richer render) and can't regress Part A. 4 (resolve-by-kind) touches the one existing behaviour (the rewrite dispatch), so it lands last with the conflicts-screen tests around it.</p>
+<p>Rough size: change 1 is an afternoon (pure + tests). 3 is the largest but is mostly wiring the existing graft into the conflicts render. 2 and 4 are small. Call it a focused day or two, most of it low-risk because the render primitive already exists.</p>
+
+<footer>
+  Scope only — nothing here is built yet. The design source is <code>docs/superpowers/specs/2026-09-07-requirement-framework-design.md</code> §6. Say the word and I'll start with change 1 (kinds + migration, red-first), or answer the three meaning questions first.
+</footer>
+</div>
