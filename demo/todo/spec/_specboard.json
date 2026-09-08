@@ -1,10 +1,10 @@
 {
-  "version": "0.49.4",
+  "version": "0.50.0",
   "files": {
-    "tools/spec-store.mjs": "7dffd7b061a3e5eb3e8e99376fc25cf6eba6c891ff7b17c1da7ee9bc562169e5",
+    "tools/spec-store.mjs": "36e2d4a858fbafb0c90a23b1757aa1ad0d4511703dfee5ecc5adab5c69c6a35b",
     "tools/coverage.mjs": "2f97051ed7035c0d75255a957d9c8ffd56192f920b3e6ad4fc7888dcbb902397",
     "tools/journey.mjs": "8ea1d34d2db8a4152e15a0dc123b61bee5b8c5efaa1fbfcf95945533031fecfa",
-    "tools/build-board.mjs": "587ddda274e6efb1d96008a674f914f8478e4b7f5ba3c9a2beb45021fd8f2239",
+    "tools/build-board.mjs": "c94c63b773b826a94f7d5fb66595b703cf2078cbf0d685a81b7fadc61744a920",
     "tools/store.mjs": "f3d57745e7a4c39775e38fbb4a4ea5386e9e58bb4b69af417bec5b733811a38b",
     "tools/store-address.mjs": "b236814e4b27143345da9ec8a357dcbdc7905e183c9eaa84c25e2456a5a4c887",
     "tools/store-sync.mjs": "572734ea1d1ddf926832f2608f758eb388b487d6818af19cc8c3ac4859b9a031",
@@ -14,16 +14,17 @@
     "tools/store-blob-s3.mjs": "672647354e6a59fda2aba152936768b44377d84b0cb4b6dcd3d7bb95b7020202",
     "tools/store-import.mjs": "8619e0d6b7bf3a014040acc0dba1732aff81a9280d574cdb67e7f92c71542374",
     "tools/static-allow.mjs": "0e241e37ee2c0b76449c51eac27d59edcdf7292030d2526d1923b4630aa07dfa",
-    "tools/behavior.mjs": "e8e77bd5993afddd792716ae333068ecf35027ea3fbd930bc20de8257c03a445",
+    "tools/behavior.mjs": "9427347b51e525637294f00a46ab3ed48e2694f3fca0d17802d0f4cadb995436",
+    "tools/cards.mjs": "e164a678645a629f0cc7500f02e000db67c11c34e4ac2ba6a107d84fe3fa15c0",
     "tools/flow.mjs": "4051dcf5db27b585edba65b85bf1bc3eca1232f4233c6fc8d177da80f5fe16d4",
-    "tools/reqhash.mjs": "212fac74a5e289dbc3ca3b556fe0f6bf0fd5e6bc1513ab28eb8421be04cc0e89",
+    "tools/reqhash.mjs": "7b0b545b4b20ee28d2ae69677ebd9e8078e28c348a944322b71874d8dd70a1aa",
     "tools/viz.mjs": "fa035aca6f5a2ecff818e880af10ffe69514ab109ad04a8a6d2358c654844e11",
     "tools/overlay-geometry.mjs": "72591fda64b3099fc4bc5ad4e6014bab35edec699f35f88ace66bf0ca0284b24",
     "tools/callout-text.mjs": "8680430c35fa290b7f3ef3aee4989184044728c3054e5ad52d7d3a7ae5e29a93",
     "tools/ci-select.mjs": "6cf8cc5148cbf7c453d7ab4c724e76e00c1ac5187002f6bdb82fdb18b9af56ae",
     "tools/evidence.mjs": "65dde332120e06eca1b4c0298cb5fe13a14729c77b5d4db7575ac598017100c3",
     "tools/compose.mjs": "0bc7cda2ef3ece3df0c522265eb9d38b95663384d41b00e664d300c49ae6a76f",
-    "tools/board/client.js": "472c7a9481f932811fe0a8abad66b16d07eeb5020a7ef9dd1b4896284bb3bcdf",
+    "tools/board/client.js": "2080edbc42d93e69307ff73ec2987d38a1d8ae225d3afc8beeaa70536d22ecfb",
     "tools/board/stepper.js": "34ded540558ae27f1810f095f775d1adb354120b056a5e4f9582179cfcbb7aad",
     "tools/board/words.js": "81badf895a3d1c632dfa145a457b0e1c654ddd3b82a2d32163324f6e4ac1d0f0",
     "tools/board/graft.js": "6f321ff69081a5258c074f33301c07744c32de4e83c36be57e0a2bce205ee52b",
@@ -34,12 +35,12 @@
     "tools/crawl.mjs": "96f8d1f2bf5eda998ffd45c98c8feb83c74314b46e2583993fac461966bb4b14",
     "tools/ship-record.mjs": "0eb6523946d9735a9483052c719c5b3c93f3ab85a69894fcb3d8f74ca8c74b62",
     "tools/staff.mjs": "e9e9c7a03e8799469400dfc5e36686add3b72c09f72d0abe0d163e36bb41fdb9",
-    "tools/proof-integrity.mjs": "c6018aff085966f6993a35c81f6ccb848c68f6303bb7fb734a9d3dc444b75a24",
+    "tools/proof-integrity.mjs": "7e14d87ca50b47d5d5fd086ad21aa7c543778355104e9b560e37e63b0c6e76dc",
     "tools/replica-gate.mjs": "69fb211d5b7c249a2796970b863e1e9527e6aef9c1ff7429f8e6fbf5e0e64d93",
     "tools/reader-compose-check.mjs": "840243ce7f8454bf53fafaa8f48792207b01b5e0d1b750f9d5151da439e1e05d",
     "tools/lift-client.mjs": "855a5a50f81837189d8af9e7578a13f80d579413df79e405b45a909a28cbf8f2",
     "tools/auth-projects.mjs": "57676e72b55108a2ceb7cceda67eddfa61e06625351c5faf94e30cc42f0ee5b7",
-    "tools/_skeleton.mjs": "f5c11ff1dbf05b3b9832715213deb3cb77a3e9edbdb8ee987b176c1f058e06c1",
+    "tools/_skeleton.mjs": "2a35bcb7e0846ed65cb14dbde834fca46e17b3bd2fc6041b17076a4581dd766d",
     "playwright.board.ts": "58bc1073e6e8685825ec29a947e3671452d9e17449c68c810511ba29320c1dd6",
     "spec/_design.css": "d52efe5af281a632b4c3c4e58bb11cbcd3a484c1e7464e4e89ccd5391baabc88",
     "spec/_base.ts": "e09caa4cd93de31f93b2b5835197e03f150ee06f0b6803b6cca9ad13113f03e9",
@@ -54,12 +55,5 @@
     "spec/_seed.ts": "0d769678a64a44f986909d158d17e12f6d216fe6a7eb83666a93c32fd5b7db8e",
     "spec/_escapes.md": "8f6b115b794be1c19a3e830d98b9f3dd81acc4fe1b2341a9a2fbb73c2d60a0ed",
     "templates/specboard-ci.yml": "21750670acac44d7644a72e0c4649fb538909622ec27c7e39b373dbb1c855862"
-  },
-  "project": {
-    "name": "Tsumiki",
-    "tagline": "task-tracker demo"
-  },
-  "projectId": "tsumiki-e681dd",
-  "db": "local",
-  "media": "local"
+  }
 }
