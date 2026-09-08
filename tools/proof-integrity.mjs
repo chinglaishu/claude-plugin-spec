@@ -57,6 +57,23 @@ export function hasValueAssertion (body) {
 // do that today.
 const CALL = /checkReq\(\s*(['"])([^'"]+)\1/g
 
+// Is `id` (on `screen`) tagged by any checkReq or coverReqs in this ALREADY-COMMENT-MASKED source?
+// A tag is bare (`'Q1'`) or screen-qualified (`'todo:Q1'`). Used only to REFUSE a tagged question
+// card — a rule's coverage is derived from the run, never from this static read.
+export function isTagged (maskedSrc, id, screen) {
+  const q = screen ? `${screen}:${id}` : null
+  const quoted = new RegExp(`(['"])(?:${screen ? `${screen}:` : ''})?${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\1`, 'g')
+  // any quoted occurrence of the bare or qualified id inside a checkReq(...) or coverReqs(...) call
+  for (const m of String(maskedSrc || '').matchAll(/\b(?:checkReq|coverReqs)\(([^)]*)/g)) {
+    quoted.lastIndex = 0
+    if (quoted.test(m[1])) {
+      // guard: the quoted token must be exactly the id or screen:id, not a longer id sharing a prefix
+      for (const t of m[1].matchAll(/(['"])([^'"]+)\1/g)) if (t[2] === id || t[2] === q) return true
+    }
+  }
+  return false
+}
+
 // …and PROSE IS NOT A BLOCK either (fix round 2, 2026-09-04). A comment naming a call — board's own
 // "// this is the SECOND checkReq('R19') of the test" — was read as a real one, inventing a fourth
 // block for a two-beat requirement and clamping it onto the last beat: a phantom that no edit to
@@ -855,8 +872,22 @@ export function lintIntent (prdText, specSource, opts = {}) {
   for (const h of opts.helpers || []) {
     for (const [k, v] of functionBodies(h)) if (!bodies.has(k)) bodies.set(k, v)
   }
+  const scan = maskComments(String(specSource || ''))
   const rows = []
   for (const r of reqs) {
+    // A ## Q question card is NEVER a coverage target (the framework, the human 2026-09-07): it is a
+    // behaviour nobody owns yet, resolved by being rewritten into an ## R or deleted. Tagging one is a
+    // lint error; an untagged one is simply skipped — nothing to prove, so no gap row either.
+    if (r.kind === 'question') {
+      if (isTagged(scan, r.id, screen)) {
+        rows.push({
+          screen, id: r.id, beat: 0, facts: 0, claims: 0, soft: 0, ok: false, state: 'question-tagged',
+          why: `question — ${r.id} is a question card ("is this a requirement?"), never a coverage target; ` +
+            'a test tags it. Rewrite it into an ## R (a fresh id) or delete it, then tag the R'
+        })
+      }
+      continue
+    }
     const beh = parseBehavior(r.body)
     if (!beh) {
       rows.push({ screen, id: r.id, beat: 0, facts: 0, claims: 0, soft: 0, ok: true, state: 'no-beat', why: 'no behaviour block — nothing authored for a claim to cover' })
