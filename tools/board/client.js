@@ -3459,8 +3459,20 @@ const B = window.__BOARD__ || {}
       // paints data-status) and exposes its id/title/state on hover / keyboard focus (a title attr +
       // the CSS bubble, where the state's word lives). A screen with no families renders the same bar
       // with no labels and no ticks.
-      let group = null; let groupKey = null
+      // BUCKETS lead the map (the requirement framework, the human 2026-09-07): when the dot's
+      // data-bkt changes, a bucket label (its fixed key + tool-owned name) opens a new bucket section
+      // and the family grouping restarts inside it. A screen with no buckets (data-bkt absent) renders
+      // exactly as before — no bucket labels, families flat.
+      const BUCKET_NAME = { '①': "The main thing's life", '②': 'Every derived number', '③': 'Every view & chip', '④': 'Survival', '⑤': 'The mistake path' }
+      let group = null; let groupKey = null; let bktKey = null
       reqs.forEach(function (rr, i) {
+        const bkt = rr.getAttribute('data-bkt') || ''
+        if (bkt && bkt !== bktKey) {
+          const bl = document.createElement('span'); bl.className = 'fbkt'; bl.setAttribute('data-bkt', bkt)
+          const k = document.createElement('span'); k.className = 'fbk'; k.textContent = bkt; bl.appendChild(k)
+          bl.appendChild(document.createTextNode(' ' + (BUCKET_NAME[bkt] || '')))
+          dots.appendChild(bl); bktKey = bkt; group = null; groupKey = null
+        }
         const fam = rr.getAttribute('data-fam') || ''
         if (!group || fam !== groupKey) {
           if (group) {

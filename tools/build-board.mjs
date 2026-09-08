@@ -3095,6 +3095,12 @@ export function build () {
     align-items:center; min-width:0; scrollbar-width:thin; }
   /* one group per family: its label, then its dots */
   .ffam { display:inline-flex; align-items:center; gap:5px; padding:0 var(--s1); }
+  /* a BUCKET label leads its section of the jump-map (the framework, the human 2026-09-07) — the
+     fixed key in ink, the tool-owned name beside it; a hair rule before it via margin. */
+  .fbkt { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; margin-left:var(--s2);
+    padding:0 var(--s2) 0 var(--s1); border-left:1px solid var(--hair-2); font-size:var(--t-xs); color:var(--ink); font-weight:600; }
+  .fbkt:first-child { border-left:0; margin-left:0; }
+  .fbkt .fbk { font-size:var(--t-md); color:var(--ink-2); font-weight:400; }
   .ffl { font:var(--t-micro) var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3);
     white-space:nowrap; margin-right:2px; }
   .ffl b { color:var(--ink); font-weight:500; }
