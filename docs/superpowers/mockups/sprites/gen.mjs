@@ -7,6 +7,11 @@ import path from 'node:path';
 
 const KEY = process.env.ATLAS_CLOUD_API_KEY;
 if (!KEY) throw new Error('ATLAS_CLOUD_API_KEY missing');
+// COST CONTROL (the human, 2026-09-09): every call is paid. The run refuses to make more than MAX_IMAGES
+// calls (default 4) unless you raise it on purpose: MAX_IMAGES=20 node gen.mjs. No automatic retries.
+const MAX = Number(process.env.MAX_IMAGES || 4);
+let spent = 0;
+function budget(what) { if (spent >= MAX) throw new Error(`budget: ${MAX} image(s) already requested — raise MAX_IMAGES to continue (${what})`); spent++; }
 const OUT = path.dirname(new URL(import.meta.url).pathname);
 const API = 'https://api.atlascloud.ai/api/v1/model/generateImage';
 
@@ -32,7 +37,8 @@ const EXPR = {
   sulk:      'a sulking pout, puffed cheeks, eyebrows down, eyes glancing away to the side',
 };
 
-async function call(body, tries = 3) {
+async function call(body, tries = 1) {
+  budget(body.model);
   for (let i = 1; i <= tries; i++) {
     try {
       const r = await fetch(API, { method: 'POST', headers: { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
@@ -73,5 +79,12 @@ async function character(name) {
     } catch (e) { console.error(`${name}-${expr} FAILED: ${e.message}`); }
   }
 }
+let planned = 0;
+for (const name of Object.keys(CAST)) {
+  if (!(await exists(path.join(OUT, `${name}-neutral.url`)))) planned++;
+  for (const expr of Object.keys(EXPR)) if (!(await exists(path.join(OUT, `${name}-${expr}.png`)))) planned++;
+}
+console.log(`plan: ${planned} paid image(s) · budget MAX_IMAGES=${MAX}`);
+if (planned > MAX) { console.error(`refusing: plan exceeds the budget — run with MAX_IMAGES=${planned} to spend it`); process.exit(2); }
 await Promise.all(Object.keys(CAST).map(character));
 console.log('done');
