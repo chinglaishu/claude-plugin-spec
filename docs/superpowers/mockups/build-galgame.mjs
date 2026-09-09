@@ -34,15 +34,27 @@ async (dataUrl) => {
     const x = p % W, y = (p - x) / W;
     if (x > 0) stack.push(p-1); if (x < W-1) stack.push(p+1); if (y > 0) stack.push(p-W); if (y < H-1) stack.push(p+W);
   }
-  // soften the edge one pixel: any opaque pixel touching a keyed one gets partial alpha if it is near-bg
-  const out = new Uint8ClampedArray(d);
+  // strip the model's white rim highlight: erode LIGHT boundary pixels inward, round by round, until a
+  // dark contour line stops it (cel line art always has one), at most ERODE px deep
+  const ERODE = 18, LIGHT = 150;
+  const light = i => Math.min(d[i], d[i+1], d[i+2]) > LIGHT;
+  for (let r = 0; r < ERODE; r++) {
+    const kill = [];
+    for (let p = 0; p < W*H; p++) {
+      if (d[p*4+3] === 0 || !light(p*4)) continue;
+      const x = p % W, y = (p - x) / W;
+      if ((x > 0 && d[(p-1)*4+3] === 0) || (x < W-1 && d[(p+1)*4+3] === 0) || (y > 0 && d[(p-W)*4+3] === 0) || (y < H-1 && d[(p+W)*4+3] === 0)) kill.push(p);
+    }
+    if (!kill.length) break;
+    for (const p of kill) d[p*4+3] = 0;
+  }
+  // then one feather ring so the contour is not jagged: boundary pixels at half alpha
   for (let p = 0; p < W*H; p++) {
     if (d[p*4+3] === 0) continue;
     const x = p % W, y = (p - x) / W;
-    const nb = [p-1, p+1, p-W, p+W].filter(q => q >= 0 && q < W*H && d[q*4+3] === 0).length;
-    if (nb && Math.abs(d[p*4]-bg[0]) + Math.abs(d[p*4+1]-bg[1]) + Math.abs(d[p*4+2]-bg[2]) < TOL*3) out[p*4+3] = 0;
+    if ((x > 0 && d[(p-1)*4+3] === 0) || (x < W-1 && d[(p+1)*4+3] === 0) || (y > 0 && d[(p-W)*4+3] === 0) || (y < H-1 && d[(p+W)*4+3] === 0)) d[p*4+3] = 150;
   }
-  im.data.set(out); g.putImageData(im, 0, 0);
+  g.putImageData(im, 0, 0);
   return c.toDataURL('image/webp', 0.86);
 }`;
 
